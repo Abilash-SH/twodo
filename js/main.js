@@ -160,8 +160,16 @@ function init() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && L.onboarded) { scheduleRender(); checkReminders(); } });
 
   if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw', err));
-    navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.open === 'chat' && Auth.user()) ChatUI.open(); });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(reg => {
+      // look for a new version whenever the app comes back to the screen
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+    }).catch(err => console.warn('sw', err));
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.open === 'chat' && Auth.user()) ChatUI.open();
+      if (e.data && e.data.reload && !sessionStorage.getItem('twodo:reloaded:' + e.data.reload)) {
+        sessionStorage.setItem('twodo:reloaded:' + e.data.reload, '1'); location.reload(); // a new version just took over
+      }
+    });
   }
 }
 

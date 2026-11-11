@@ -1,5 +1,5 @@
 /* Twodo service worker: offline app shell + encrypted push reminders. Bump VERSION when you deploy changes. */
-const VERSION = 'twodo-v3.2.0';
+const VERSION = 'twodo-v3.2.1';
 const SHELL = [
   './', 'index.html', 'styles.css', 'chat.css', 'manifest.webmanifest', 'config.js',
   'js/util.js', 'js/store.js', 'js/parse.js', 'js/keys.js', 'js/cloud.js', 'js/live.js', 'js/sync.js', 'js/push.js', 'js/pair.js',
@@ -7,18 +7,32 @@ const SHELL = [
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
+// Always fetch the new version's files from the server: the browser's own HTTP cache may still hold the old ones.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
+// When this replaces an older version, reload the open app once so the update shows right away.
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil((async () => {
+    const keys = await caches.keys();
+    const updating = keys.some(k => k !== VERSION && k.startsWith('twodo-'));
+    await Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)));
+    await self.clients.claim();
+    if (!updating) return;
+    for (const c of await self.clients.matchAll({ type: 'window' })) {
+      if ('navigate' in c) c.navigate(c.url).catch(() => c.postMessage({ reload: VERSION }));
+      else c.postMessage({ reload: VERSION });
+    }
+  })());
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // never touch sync traffic
   e.respondWith(caches.open(VERSION).then(async cache => {
     const hit = await cache.match(e.request, { ignoreSearch: true });
-    const net = fetch(e.request).then(res => { if (res.ok) cache.put(e.request, res.clone()); return res; }).catch(() => hit);
+    // fast + offline: answer from the cache, and refresh it from the server (checking, not trusting the HTTP cache)
+    const net = fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
+      .then(res => { if (res.ok) cache.put(e.request, res.clone()); return res; }).catch(() => hit);
     return hit || net;
   }));
 });
