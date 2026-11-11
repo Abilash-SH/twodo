@@ -15,15 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      # actions pinned to exact commits, and dependencies to exact versions + checksums (package-lock.json),
+      # so nothing new can sneak into a job that holds your Firebase and push keys
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           sparse-checkout: .github/reminders
-      - uses: actions/setup-node@v6
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
       - name: Install
         working-directory: .github/reminders
-        run: npm install --no-audit --no-fund --silent web-push@3
+        run: npm ci --ignore-scripts --no-audit --no-fund --silent
       - name: Send due reminders
         working-directory: .github/reminders
         env:

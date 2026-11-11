@@ -78,7 +78,9 @@ const Chat = {
       const prev = this.msgs[id];
       if (prev && prev._u === v.u) continue;
       let o; try { o = await decryptObj(Sync.key, v.d); } catch (e) { continue; }
-      this.msgs[id] = { id, f: v.f, ts: o.ts || v.u, t: o.t || '', fx: o.fx || null, task: o.task || null, del: !!o.del, _u: v.u, status: 'sent' };
+      if (!o || typeof o !== 'object') continue;
+      const tk = o.task && typeof o.task === 'object' ? { id: cStr(o.task.id, 80), title: cStr(o.task.title, 2000), due: DAY_RE.test(o.task.due) ? o.task.due : null, time: TIME_RE.test(o.task.time) ? o.task.time : null } : null;
+      this.msgs[id] = { id, f: v.f, ts: cNum(o.ts) || v.u, t: cStr(o.t, 20000), fx: FX.valid(o.fx) ? o.fx : null, task: tk, del: !!o.del, _u: v.u, status: 'sent' };
       if (!prev) fresh.push(this.msgs[id]);
     }
     const initial = !this.loaded; this.loaded = true;
@@ -131,7 +133,7 @@ const Chat = {
     if (this.xPending) { this.xPending = false; this.writeX(); }
     const before = this.rx, rx = {};
     for (const [mid, byUid] of Object.entries(this.eTree.rx || {})) {
-      for (const [uid, v] of Object.entries(byUid || {})) { const o = await this.dec(v); if (o && o.r) (rx[mid] = rx[mid] || {})[uid] = o.r; }
+      for (const [uid, v] of Object.entries(byUid || {})) { const o = await this.dec(v); if (o && TAPBACKS.includes(o.r)) (rx[mid] = rx[mid] || {})[uid] = o.r; }
     }
     if (this.loadedE) for (const [mid, by] of Object.entries(rx)) {
       const r = by[pu], m = this.msgs[mid];
@@ -144,17 +146,17 @@ const Chat = {
   partnerTyping() { return this.partnerTypingUntil > Date.now(); },
   // Online = their app is open on screen (a heartbeat every 45 s); otherwise "last seen" is when it last was.
   partnerOnline() { const p = this.presence; return !!p && p.on && Date.now() - p.beat < 100e3; },
+  // short and quiet: "last seen just now · 5m ago · 9:41 PM · yesterday · Mon · 22 Oct"
   lastSeenText() {
     const p = this.presence; if (!p || !p.at) return '';
     const t = Math.min(p.at, Date.now()), ago = Date.now() - t;
     if (ago < 60e3) return 'last seen just now';
-    if (ago < 3600e3) return `last seen ${Math.floor(ago / 60e3)} min ago`;
-    const dt = new Date(t), time = dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const sod = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    if (ago < 3600e3) return `last seen ${Math.floor(ago / 60e3)}m ago`;
+    const dt = new Date(t), sod = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
     const days = Math.round((sod(new Date()) - sod(dt)) / 864e5);
-    if (days === 0) return `last seen today at ${time}`;
-    if (days === 1) return `last seen yesterday at ${time}`;
-    if (days < 7) return `last seen ${dt.toLocaleDateString([], { weekday: 'long' })} at ${time}`;
+    if (days === 0) return `last seen ${dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+    if (days === 1) return 'last seen yesterday';
+    if (days < 7) return `last seen ${dt.toLocaleDateString([], { weekday: 'short' })}`;
     return `last seen ${dt.toLocaleDateString([], { day: 'numeric', month: 'short' })}`;
   },
 

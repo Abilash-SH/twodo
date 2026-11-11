@@ -50,7 +50,9 @@
 
 /* ---------- Base ---------- */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
+/* black only behind the page while a card is open (the page shrinks back like iOS) */
+html:has(body.sheet-open), body.sheet-open { background: #000; }
 html { touch-action: manipulation; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
@@ -1010,3 +1012,28 @@ input.me-name:focus { background: var(--fill); }
 .me-colors button { width: 30px; height: 30px; }
 .me-colors button.on { box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5px var(--c); }
 .me-hint { margin: 12px 0 0; font-size: 13px; color: var(--label2); }
+
+/* the app follows the keyboard as it slides (see main.js → keyboard) */
+body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .32s cubic-bezier(.2,.8,.2,1), top .32s cubic-bezier(.2,.8,.2,1); }
+body.kb-anim #layer { transition: height .32s cubic-bezier(.2,.8,.2,1), top .32s cubic-bezier(.2,.8,.2,1); }
+
+/* ===================== To-dos & reminders ===================== */
+.hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 2px 16px 12px; }
+.hub-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; gap: 10px 8px; padding: 12px 14px 11px; border: 0; border-radius: 20px;
+  text-align: left; color: var(--label); background: color-mix(in srgb, var(--c) 9%, var(--bg2)); box-shadow: 0 0 0 .5px color-mix(in srgb, var(--c) 14%, transparent);
+  transition: transform .25s var(--bounce), background-color .2s; }
+[data-theme="dark"] .hub-card { background: color-mix(in srgb, var(--c) 15%, var(--bg2)); }
+.hub-card:active { transform: scale(.96); }
+.hub-ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--c); }
+.hub-ic .i { width: 18px; height: 18px; stroke-width: 2.2; }
+.hub-ic b { font: 700 15px/1 var(--round); font-variant-numeric: tabular-nums; }
+.hub-n { justify-self: end; font: 750 24px/1 var(--round); font-variant-numeric: tabular-nums; }
+.hub-t { grid-column: 1 / -1; font-size: 15px; font-weight: 600; color: var(--label2); }
+.hub-done { display: flex; align-items: center; gap: 12px; width: calc(100% - 32px); margin: 0 16px 24px; padding: 12px 14px; border: 0; border-radius: 16px; text-align: left;
+  font-size: 16px; color: var(--label); background: var(--fill); }
+.hub-done > .i:first-child { color: var(--c-gray); }
+.hub-done .val { color: var(--label2); font-size: 14px; }
+.hub-done .chev { width: 15px; height: 15px; color: var(--label3); stroke-width: 2.6; }
+.hub-done:active { opacity: .7; }
+.searchbar span { flex: 1; }
+.link-btn { border: 0; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--accent); }

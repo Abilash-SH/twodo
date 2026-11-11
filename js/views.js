@@ -10,9 +10,10 @@ const topView = () => Nav.stack[Nav.stack.length - 1];
 const specKey = s => s.type === 'list' ? 'l:' + s.id : s.type === 'smart' ? 's:' + s.key : s.type;
 const viewPrefs = key => (L.view[key] = L.view[key] || {});
 function viewTitle(spec) {
-  if (spec.type === 'home') return 'Twodo';
+  if (spec.type === 'home') return homeIsChat() ? 'Chat' : 'To-dos';
   if (spec.type === 'search') return 'Search';
   if (spec.type === 'tips') return 'Tips';
+  if (spec.type === 'todos') return 'To-dos';
   if (spec.type === 'list') { const l = D.lists[spec.id]; return l ? l.name : 'List'; }
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
   return SMART[spec.key].title;
@@ -42,6 +43,7 @@ function renderNow() {
 const VIEW_SHELL = `<header class="nav"><div class="nav-side l"></div><div class="nav-title"></div><div class="nav-side r"></div></header><div class="vbody"></div>`;
 // Home is your chat once you're signed in; without accounts it shows today's to-dos instead.
 const homeIsChat = () => typeof ChatUI !== 'undefined' && cloudReady() && !!Auth.user();
+const alertsOn = () => !!L.settings.notify || (typeof Push !== 'undefined' && Push.configured() && Push.on());
 function makeView(spec) {
   const v = document.createElement('section');
   v.className = 'view'; v._spec = spec;
@@ -109,7 +111,7 @@ function doPop({ instant = false } = {}) {
 /* ---------- Big screens (iPad landscape, computers): the ☰ menu stays open on the left ---------- */
 const Split = { mq: matchMedia('(min-width: 960px)'), on: false };
 function splitCheck() {
-  const on = Split.mq.matches;
+  const on = !!(typeof Drawer !== 'undefined' && Drawer.el) && Split.mq.matches;
   if (on === Split.on) return;
   Split.on = on;
   document.body.classList.toggle('split', on);
@@ -157,12 +159,13 @@ function renderView(v) {
   title.textContent = viewTitle(spec);
   if (spec.type === 'search') return renderSearch(v);
   const prevSpec = idx > 0 ? Nav.stack[idx - 1]._spec : null;
-  const backTo = !prevSpec ? '' : prevSpec.type !== 'home' ? esc(viewTitle(prevSpec)) : homeIsChat() ? 'Chat<span class="chat-badge" hidden></span>' : 'Home';
+  const backTo = !prevSpec ? '' : prevSpec.type !== 'home' ? esc(viewTitle(prevSpec)) : homeIsChat() ? 'Chat<span class="chat-badge" hidden></span>' : 'To-dos';
   left.innerHTML = prevSpec ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${backTo}</span></button>` : '';
-  if (spec.type === 'home') {
-    left.innerHTML = `<button class="nav-btn menu-btn" data-a="menu" type="button" aria-label="Menu">${ic('menu')}</button>`;
-    right.innerHTML = `<button class="nav-btn" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}</button>`;
-    body.innerHTML = homeHTML();
+  if (spec.type === 'home' || spec.type === 'todos') {
+    if (spec.type === 'home') left.innerHTML = `<button class="nav-btn" data-a="settings" type="button" aria-label="Settings">${ic('gear')}</button>`;
+    right.innerHTML = '';
+    body.innerHTML = hubHTML();
+    if (typeof Chat !== 'undefined') Chat.updateBadge();
     return;
   }
   if (typeof Chat !== 'undefined') Chat.updateBadge();
@@ -171,17 +174,24 @@ function renderView(v) {
   renderTaskView(v);
 }
 
-// Home without accounts: today's to-dos (with accounts, Home is the chat — see chatui.js)
-function homeHTML() {
-  const all = liveTasks(), today = all.filter(SMART.today.match), doneT = all.filter(doneToday).length;
-  const groups = buildGroups({ type: 'smart', key: 'today' }, today, 'smart').filter(g => g.items.length);
-  const ideas = [['📞', 'Call mom tomorrow 6pm'], ['🍝', 'Dinner fri 8pm @us'], ['🛒', 'Milk and eggs #groceries'], ['💊', 'Vitamins every day 9am']];
-  const list = groups.length ? groups.map(g => groupHTML(g, { showList: true, hideToday: true })).join('')
-    : `<div class="hm-empty"><span class="e">${doneT ? '🎉' : '☀️'}</span><h3>${doneT ? 'All done for today' : 'Nothing due today'}</h3>
-        <p>Type what to remember in the box below — Twodo works out the when.</p>
-        <div class="hm-ideas">${ideas.map(([e, t]) => `<button type="button" data-a="idea" data-v="${esc(t)}">${e} ${esc(t)}</button>`).join('')}</div></div>`;
-  return `<h1 class="large-title">Today</h1><div class="subtitle">${esc(new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
-    ${installBannerHTML()}${list}${doneT && groups.length ? `<div class="hm-done">${ic('check', 'xs')} ${doneT} done today</div>` : ''}`;
+// To-dos & reminders: every list in one place. Opened with the to-do button on the chat (or Home without accounts).
+function hubHTML() {
+  const all = liveTasks(), cnt = k => all.filter(SMART[k].match).length;
+  const card = k => { const m = SMART[k], n = cnt(k);
+    return `<button class="hub-card" data-a="smart" data-k="${k}" type="button" style="--c:var(--c-${m.color})"><span class="hub-ic">${k === 'today' ? `<b>${new Date().getDate()}</b>` : ic(m.icon)}</span>
+      <span class="hub-n">${n || ''}</span><span class="hub-t">${esc(m.title)}</span></button>`; };
+  const doneWeek = all.filter(t => t.done && t.doneAt > Date.now() - 7 * 864e5).length;
+  const rows = lists().map(l => { const n = all.filter(t => !t.done && listOf(t).id === l.id).length;
+    return `<button class="cell" data-a="list" data-id="${esc(l.id)}" type="button"><span class="list-ic" style="--c:var(--c-${l.color})">${esc(l.emoji)}</span><span class="grow">${esc(l.name)}</span>${l.private ? ic('lock', 'lock') : ''}<span class="val">${n || ''}</span>${ic('chevR', 'chev')}</button>`; }).join('');
+  const streak = calcStreak();
+  const stats = [streak ? `🔥 ${streak}-day streak` : '', doneWeek ? `💞 ${doneWeek} done together this week` : ''].filter(Boolean).join(' · ');
+  return `<h1 class="large-title">To-dos</h1>${stats ? `<div class="subtitle">${esc(stats)}</div>` : ''}
+    <button class="searchbar" data-a="search" type="button">${ic('search')}<span>Search tasks, notes, #tags</span></button>
+    ${installBannerHTML()}
+    <div class="hub-grid">${['today', 'upcoming', 'reminders', 'us', 'pinned', 'all'].map(card).join('')}</div>
+    <button class="hub-done" data-a="smart" data-k="done" type="button">${ic('check', 'sm')}<span class="grow">Completed</span><span class="val">${doneWeek ? `${doneWeek} this week` : ''}</span>${ic('chevR', 'chev')}</button>
+    <div class="sec-h sub">My Lists</div>
+    <div class="group">${rows}<button class="cell accent" data-a="addlist" type="button"><span class="list-ic" style="--c:var(--accent)">${ic('plus', 'sm')}</span><span class="grow">New List</span></button></div>`;
 }
 
 let installEvt = null;
@@ -249,6 +259,14 @@ function buildGroups(spec, tasks, sortMode) {
     }
     return [...by.entries()].sort((x, y) => x[0].localeCompare(y[0])).map(e => e[1]);
   }
+  if (spec.key === 'reminders') {
+    const at = t => t.due + ' ' + t.time, hm = nowHM();
+    const byTime = arr => arr.sort((x, y) => at(x).localeCompare(at(y)));
+    const missed = tasks.filter(t => t.due < t0 || (t.due === t0 && t.time < hm)), next = byTime(tasks.filter(t => !missed.includes(t)));
+    const by = new Map();
+    for (const t of next) { if (!by.has(t.due)) by.set(t.due, { title: fmtDate(t.due, { long: true }), items: [] }); by.get(t.due).items.push(t); }
+    return [{ title: 'Missed', cls: 'red', items: byTime(missed) }, ...by.values()];
+  }
   if (spec.key === 'all') return lists().map(l => ({ title: `${l.emoji} ${l.name}`, color: l.color, items: S(tasks.filter(t => listOf(t).id === l.id)) }));
   if (spec.key === 'us') return [
     { title: 'Overdue', cls: 'red', items: S(tasks.filter(t => t.due && t.due < t0)) },
@@ -274,6 +292,7 @@ const EMPTY = {
   pinned: ['📌', 'Nothing pinned', 'Swipe left on a task to pin it here.'],
   all: ['🌿', 'All clear', 'Your to-do list is empty. Nice.'],
   done: ['✅', 'Nothing completed yet', 'Finished tasks show up here.'],
+  reminders: ['🔔', 'No reminders yet', 'Give a to-do a time, like “call mom 6pm”, and it shows up here.'],
 };
 const emptyHTML = (e, h, p) => `<div class="empty"><span class="e">${e}</span><h3>${esc(h)}</h3><p>${esc(p)}</p></div>`;
 
@@ -295,6 +314,7 @@ function renderTaskView(v) {
     base = live.filter(sm.match); doneSet = live.filter(sm.doneMatch);
     if (spec.key === 'today') sub = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
     else if (spec.key === 'us') sub = 'Shared between you two 💞';
+    else if (spec.key === 'reminders') sub = alertsOn() ? `${ic('bell', 'xs')} You’ll get an alert at each time` : `Alerts are off · <button class="link-btn" data-a="alerts" type="button">Turn on</button>`;
     else sub = `${base.length} ${isDone ? 'completed' : 'to do'}`;
   }
   const groups = buildGroups(spec, base, vp.sort || 'smart').filter(g => g.items.length);

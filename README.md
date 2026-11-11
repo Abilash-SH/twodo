@@ -67,17 +67,26 @@ Reminders arrive within roughly **5–15 minutes** of the due time, because GitH
 | Pairing | The space key travels to your partner wrapped with an ECDH + HKDF key. The **safety code** lets you confirm nobody swapped public keys in transit. |
 | Database access | Rules allow only the two members of a space to read or write it. Usernames are first-come and can't be stolen. Requests can only be read by their recipient. |
 | Secret lists | Never leave the phone they're on. |
-| Push | The sender (GitHub Action) relays still-encrypted titles. Web Push adds another layer of encryption to each phone. |
+| Push | The sender (GitHub Action) relays still-encrypted titles. Web Push adds another layer of encryption to each phone. It only sends to people in the same space and only to real push services, and it installs exact, checksummed versions of its code (`package-lock.json`, actions pinned to commits). |
+| The page itself | A Content Security Policy lets only this site's own scripts run and only lets the app talk to Firebase. Everything that arrives from sync (names, colours, emoji, photos, numbers, reactions) is checked before it's shown. |
 
 **What's still visible:** Firebase can see your email, username, display name and colour, and *when* records change or reminders are due. It can't see what your tasks say.
 
-**Your biggest levers:** turn on **two-factor authentication** on GitHub and on the Google account that owns Firebase (whoever controls the code or the project could ship a malicious version), keep a **passcode/Face ID** on your phones (the app stores its working copy on the device), and lock sign-ups once you're both set up.
+**What's public on purpose:** `config.js` holds your Firebase *web API key* and database address, and later the push *public* key. These identify your project; they don't unlock anything (the rules and your logins do). There are **no passwords, private keys or service accounts in this repository or its history.** The push *private* key and the Firebase service account live only in GitHub → Settings → Secrets.
+
+**Five minutes in the Firebase / Google Cloud consoles (do these once):**
+1. **Republish the rules:** Realtime Database → Rules → paste [`firebase.rules.json`](firebase.rules.json) → Publish (they now also limit who reminders can go to and which push servers can be used).
+2. **Close sign-ups once you both have accounts:** Authentication → Settings → User actions → untick **Enable create (sign-up)**. After that nobody else can even make an account on your project.
+3. **Lock the API key to your site:** Google Cloud console → APIs & Services → Credentials → the *Browser key* → Application restrictions: **Websites** → add `https://abilash-sh.github.io/*`.
+4. Authentication → Settings → keep **Email enumeration protection** on.
+
+**Your biggest levers:** turn on **two-factor authentication** on GitHub and on the Google account that owns Firebase (whoever controls the code or the project could ship a malicious version), keep a **passcode/Face ID** on your phones (the app stores its working copy on the device), and use a long, unique password for Twodo.
 
 ---
 
 ## 5. Messages 💬
-Once you're signed in, **Home is your chat**: your partner's photo on the left, yours on the right, joined by a little heart line that comes alive when you're both online.
-- Under their name: **online**, **typing…** or **last seen …** (an encrypted heartbeat every ~45 s while the app is open, so it's accurate to about a minute).
+Once you're signed in, **Home is your chat**, with the conversation taking up the screen. At the top: their name, with your two small photos and a heart above it. Two small floating buttons sit in the corners: **Settings** (top left) and **To-dos & reminders** (top right).
+- Under their name, quietly: **online**, **typing…** or **last seen 5m ago / 9:41 PM / yesterday** (an encrypted heartbeat every ~45 s while the app is open, so it's accurate to about a minute).
 - Your bubbles wear your colour, theirs wear theirs. Under your last message, an outline **♡** means sent and a filled **♥** means seen. Big emoji when you send just one to three.
 - Tap either photo to see it big; only your own can be changed (Settings shows only your profile).
 - **Hold the send arrow** for *Send with effect*. **Bubble effects:** Slam, Loud, Gentle, Invisible Ink. **Screen effects:** Echo, Spotlight, Balloons, Confetti, Love, Lasers, Fireworks, Celebration.
@@ -91,12 +100,13 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 
 ## 6. Using it
 - **Type naturally** in the bottom box: `Dinner @us fri 8pm !!` · `Milk #groceries` · `Gym every mon 7am` · `Call mom tomorrow 6pm`. Tap a chip to ignore a guess. Paste several lines to add several tasks.
-- **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
-- **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
+- **Gestures:** swipe a task right to complete · left to pin or delete · long-press for quick actions · **swipe right anywhere else (or from the left edge) to go back to the chat** · drag sheets down to close. On a computer: the ‹ button or Esc.
+- **To-dos & reminders** (top-right button): Today (Overdue / Morning / Afternoon / Tonight), Upcoming, **Reminders** (everything with a time, missed ones first), Together, Pinned, All, Completed, search, your streak, plus your own lists and a 🎁 Secret list.
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
-- **Home** is your chat. Tap **✓** (top right) for your to-dos; everything else is in the **☰ menu** (or swipe in from the left edge). Without accounts, Home shows today's to-dos instead.
-- **Any screen:** phones (portrait or landscape), iPads and computers. On an iPad in landscape or a computer, the menu stays open on the left.
-- **💡 Tips & tricks:** every tip, with little animated demos, lives in the ☰ menu and in Settings.
+- **Home** is your chat. Without accounts, Home is To-dos instead.
+- **Keyboard:** on iPhone the chat moves up and down with the keyboard and keeps the latest message in view (it learns your keyboard's height the first time you type).
+- **Any screen:** phones (portrait or landscape), iPads and computers.
+- **💡 Tips & tricks:** every tip, with little animated demos, lives in Settings.
 
 ## Updating
 After changing files, bump `VERSION` in `sw.js` so phones fetch the new version.
@@ -105,8 +115,9 @@ After changing files, bump `VERSION` in `sw.js` so phones fetch the new version.
 ```
 config.js              your public Firebase settings (edit this)
 firebase.rules.json    database access rules (paste into Firebase)
-.github/workflows/reminders.yml  + .github/reminders/send.mjs   free push sender
+.github/workflows/reminders.yml  + .github/reminders/send.mjs   free push sender (pinned by package-lock.json)
 index.html · styles.css · sw.js · manifest.webmanifest · icons/
+js/boot.js     runs first: theme before first paint, refuses to run inside other sites' frames
 js/keys.js     crypto: password KDF, ECDH pairing, safety code, key store
 js/cloud.js    Firebase Auth (REST), accounts, usernames
 js/live.js     live connections that reconnect instantly (and after the phone wakes up)
@@ -117,7 +128,7 @@ js/account.js  Together settings + account sheets
 js/gate.js     sign-in screen
 js/chat.js · js/chatui.js · js/effects.js · chat.css   Messages
 js/tips.js     the Tips & tricks screen
-js/menu.js     the ☰ menu
+js/menu.js     the ☰ menu (switched off for now; Settings and To-dos have their own buttons)
 js/*.js        the rest of the app (views, gestures, parser, focus timer…)
 PROMPT.md      the original prompt
 ```

@@ -99,7 +99,7 @@
 .c-quick button:active { transform: scale(.92); }
 
 /* composer: a floating glass pill */
-.chatbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: flex-end; gap: 8px;
+.chatbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: flex-end; gap: 8px; transition: padding .32s cubic-bezier(.2,.8,.2,1);
   padding: 10px max(calc(12px + var(--safe-right)), calc((100% - 820px) / 2)) calc(10px + var(--safe-bottom)) max(calc(12px + var(--safe-left)), calc((100% - 820px) / 2)); pointer-events: none; }
 .chatbar > * { pointer-events: auto; }
 body.kb .chatbar { padding-bottom: 8px; }
@@ -150,71 +150,69 @@ body.kb .chatbar { padding-bottom: 8px; }
 .fx-layer { position: fixed; inset: 0; z-index: 270; pointer-events: none; overflow: hidden; }
 .bub.echo { position: absolute; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* ===================== Home: you two at the top, the conversation below ===================== */
+/* ===================== Home: the conversation first, you two quietly on top ===================== */
 .chatview { overflow: hidden; touch-action: auto;
-  background: radial-gradient(95% 42% at 0% 0%, color-mix(in srgb, var(--pt-c) 13%, transparent), transparent 72%),
-    radial-gradient(95% 42% at 100% 100%, color-mix(in srgb, var(--me-c) 13%, transparent), transparent 72%), var(--bg); }
-.chatbody { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 134px) var(--safe-right) calc(var(--safe-bottom) + 74px) var(--safe-left); }
-body.kb .chatbody { padding-bottom: 66px; }
+  background: radial-gradient(95% 42% at 0% 0%, color-mix(in srgb, var(--pt-c) 11%, transparent), transparent 72%),
+    radial-gradient(95% 42% at 100% 100%, color-mix(in srgb, var(--me-c) 11%, transparent), transparent 72%), var(--bg); }
+.chatbody { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; overflow-anchor: none;
+  padding: var(--head-full, calc(var(--safe-top) + var(--head-h, 92px))) var(--safe-right) calc(var(--safe-bottom) + 72px) var(--safe-left); }
+body.kb .chatbody { padding-bottom: 64px; }
 .chatlist { display: flex; flex-direction: column; padding-bottom: 6px; max-width: 820px; margin: 0 auto; }
 .c-typing { max-width: 820px; margin: 0 auto; }
 .chatview.nopair .chatbar, .chatview.nopair .c-typing { display: none; }
 
-.chat-nav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: grid; grid-template-columns: 52px 1fr 52px; align-items: center; justify-items: center;
-  padding: calc(var(--safe-top) + 8px) calc(10px + var(--safe-right)) 10px calc(10px + var(--safe-left));
-  background: var(--chat-bar); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); }
-.chat-nav.scrolled { box-shadow: 0 .5px 0 color-mix(in srgb, var(--label) 8%, transparent); }
-.ch-side { position: relative; width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; color: var(--label);
-  background: color-mix(in srgb, var(--label) 6%, transparent); transition: transform .25s var(--bounce), background-color .2s; }
-.ch-side:active { transform: scale(.9); }
-.ch-side .i { width: 22px; height: 22px; stroke-width: 2.2; }
-body.split .chatview [data-a="menu"] { visibility: hidden; }
-.todo-n { position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px; background: var(--me-c); color: var(--me-ink);
-  font-size: 11px; font-weight: 700; line-height: 19px; text-align: center; box-shadow: 0 0 0 2px var(--bg); }
-.todo-n[hidden] { display: none; }
+.chat-nav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: grid; grid-template-columns: 44px 1fr 44px; align-items: start; justify-items: center;
+  padding: calc(var(--safe-top) + 6px) calc(12px + var(--safe-right)) 8px calc(12px + var(--safe-left));
+  background: var(--chat-bar); -webkit-backdrop-filter: blur(22px) saturate(170%); backdrop-filter: blur(22px) saturate(170%); transition: box-shadow .25s; }
+.chat-nav.scrolled { box-shadow: 0 .5px 0 color-mix(in srgb, var(--label) 7%, transparent); }
 
-/* the two of you, linked */
-.lovebar { display: flex; align-items: center; justify-content: center; gap: 2px; }
-.lb-av { position: relative; flex: none; width: 60px; height: 60px; padding: 0; border: 0; border-radius: 50%; background: none; transition: transform .3s var(--bounce); }
-.lb-av:active { transform: scale(.93); }
-.lb-av .av { display: block; width: 60px; height: 60px; line-height: 60px; font-size: 25px; }
-.lb-av.pt .av { box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 4.5px color-mix(in srgb, var(--pt-c) 75%, transparent), 0 8px 20px -6px color-mix(in srgb, var(--pt-c) 60%, transparent); }
-.lb-av.me .av { box-shadow: 0 0 0 2.5px var(--bg), 0 0 0 4.5px color-mix(in srgb, var(--me-c) 75%, transparent), 0 8px 20px -6px color-mix(in srgb, var(--me-c) 60%, transparent); }
+/* the two small floating buttons: Settings (left), To-dos & reminders (right) */
+.fab-btn { position: relative; width: 38px; height: 38px; margin-top: -2px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--label);
+  background: color-mix(in srgb, var(--bg2) 72%, transparent); box-shadow: 0 0 0 .5px color-mix(in srgb, var(--label) 9%, transparent), 0 4px 14px -6px rgba(0,0,0,.18);
+  transition: transform .25s var(--bounce), background-color .2s; }
+.fab-btn:active { transform: scale(.88); }
+.fab-btn .i { width: 19px; height: 19px; stroke-width: 1.9; }
+.fab-dot { position: absolute; top: 1px; right: 1px; width: 9px; height: 9px; border-radius: 50%; background: var(--me-c); box-shadow: 0 0 0 2px var(--bg); }
+.fab-dot.warn { background: var(--c-red); }
+.fab-dot[hidden] { display: none; }
+
+/* who you're talking to: the name leads; your two photos and the little heart sit above it */
+.ch-who { display: flex; flex-direction: column; align-items: center; min-width: 0; max-width: 100%; }
+.lovebar { display: flex; align-items: center; justify-content: center; gap: 1px; }
+.lb-av { position: relative; flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: none; transition: transform .3s var(--bounce); }
+.lb-av:active { transform: scale(.9); }
+.lb-av .av { display: block; width: 34px; height: 34px; line-height: 34px; font-size: 15px; }
+.lb-av.pt .av { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px color-mix(in srgb, var(--pt-c) 70%, transparent); }
+.lb-av.me .av { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px color-mix(in srgb, var(--me-c) 70%, transparent); }
 .lb-ghost { display: grid !important; place-items: center; color: var(--label3); background: none !important;
-  border: 2px dashed color-mix(in srgb, var(--label) 22%, transparent); box-shadow: none !important; }
-.lb-ghost .i { width: 26px; height: 26px; }
-.nopair .lb-line { stroke: color-mix(in srgb, var(--label) 25%, transparent); }
-.pres { position: absolute; right: 1px; bottom: 1px; width: 15px; height: 15px; border-radius: 50%; background: var(--c-green); box-shadow: 0 0 0 3px var(--bg);
-  transform: scale(0); transition: transform .35s var(--bounce); }
-.lovebar.live .pres { transform: scale(1); }
-.lb-link { position: relative; width: clamp(64px, 22vw, 108px); height: 34px; display: grid; place-items: center; cursor: pointer; }
+  border: 1.5px dashed color-mix(in srgb, var(--label) 25%, transparent); box-shadow: none !important; }
+.lb-ghost .i { width: 17px; height: 17px; }
+.lb-link { position: relative; width: 42px; height: 22px; display: grid; place-items: center; cursor: pointer; }
 .lb-link svg:first-child { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.lb-line { fill: none; stroke: url(#lbLine); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: .1 7; opacity: .55; transition: opacity .4s; }
+.lb-line { fill: none; stroke: url(#lbLine); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: .1 6; opacity: .5; transition: opacity .4s; }
+.nopair .lb-line { stroke: color-mix(in srgb, var(--label) 25%, transparent); }
 .lb-s1 { stop-color: var(--pt-c); } .lb-s2 { stop-color: var(--me-c); }
-.lovebar.live .lb-line { opacity: 1; animation: lbFlow 1.6s linear infinite; }
-@keyframes lbFlow { to { stroke-dashoffset: -14.2; } }
-.lb-heart { position: relative; width: 28px; height: 28px; margin-top: -10px; filter: drop-shadow(0 4px 8px color-mix(in srgb, var(--me-c) 40%, transparent)); }
-.lovebar.live .lb-heart { animation: lbBeat 2.6s ease-in-out infinite; }
-.lb-heart.beat { animation: lbTap .7s var(--bounce) !important; }
-@keyframes lbBeat { 0%, 70%, 100% { transform: scale(1); } 76% { transform: scale(1.18); } 84% { transform: scale(.98); } 90% { transform: scale(1.12); } }
-@keyframes lbTap { 0% { transform: scale(1); } 35% { transform: scale(1.5); } 100% { transform: scale(1); } }
-.lb-name { grid-column: 1 / -1; margin-top: 8px; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font: 700 18px/1.2 var(--round); letter-spacing: .1px; color: var(--label); }
-.c-sub { grid-column: 1 / -1; min-height: 16px; margin-top: 2px; font-size: 12.5px; line-height: 16px; color: var(--label2); }
-.c-sub.online { color: var(--c-green); font-weight: 600; }
-.c-sub.typing { color: color-mix(in srgb, var(--pt-c) 80%, var(--label)); font-weight: 600; }
+.lovebar.live .lb-line { opacity: .9; animation: lbFlow 1.8s linear infinite; }
+@keyframes lbFlow { to { stroke-dashoffset: -12.2; } }
+.lb-heart { position: relative; width: 16px; height: 16px; margin-top: -7px; filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--me-c) 35%, transparent)); }
+.lb-heart.beat { animation: lbTap .7s var(--bounce); }
+@keyframes lbTap { 0% { transform: scale(1); } 35% { transform: scale(1.6); } 100% { transform: scale(1); } }
+.lb-name { margin-top: 5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 650 17px/21px var(--round); letter-spacing: .1px; color: var(--label); }
+.c-sub { display: flex; align-items: center; justify-content: center; gap: 4px; height: 15px; font-size: 11.5px; line-height: 15px; color: var(--label2); white-space: nowrap; transition: color .2s; }
+.c-sub:empty { height: 0; }
+.c-sub.online::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c-green); }
+.c-sub.typing { color: color-mix(in srgb, var(--pt-c) 75%, var(--label)); }
 
-@media (min-width: 700px) { .lb-av, .lb-av .av { width: 66px; height: 66px; line-height: 66px; } .chatbody { padding-top: calc(var(--safe-top) + 140px); } }
+:root { --head-h: 92px; }
+@media (min-width: 700px) { .lb-av, .lb-av .av { width: 38px; height: 38px; line-height: 38px; } :root { --head-h: 98px; } }
 /* phones on their side: one compact row */
 @media (max-height: 500px) {
-  .chat-nav { padding-top: calc(var(--safe-top) + 5px); padding-bottom: 5px; }
-  .lb-av, .lb-av .av { width: 36px; height: 36px; line-height: 36px; font-size: 16px; }
-  .pres { width: 11px; height: 11px; box-shadow: 0 0 0 2px var(--bg); }
-  .lb-link { height: 24px; } .lb-heart { width: 20px; height: 20px; margin-top: -6px; }
-  .lb-name, .c-sub { display: none; }
-  .ch-side { width: 38px; height: 38px; }
-  .chatbody { padding-top: calc(var(--safe-top) + 58px); }
+  .chat-nav { padding-top: calc(var(--safe-top) + 4px); padding-bottom: 4px; align-items: center; }
+  .ch-who { flex-direction: row; gap: 10px; }
+  .lb-av, .lb-av .av { width: 28px; height: 28px; line-height: 28px; font-size: 12px; }
+  .lb-link { width: 30px; height: 18px; } .lb-heart { width: 13px; height: 13px; margin-top: -5px; }
+  .lb-name { margin-top: 0; font-size: 15px; } .c-sub { display: none; }
+  :root { --head-h: 48px; }
 }
 
 /* ===================== Photo viewer ===================== */

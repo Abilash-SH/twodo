@@ -5,6 +5,7 @@ const FX = {
   bubble: [['slam', 'Slam'], ['loud', 'Loud'], ['gentle', 'Gentle'], ['ink', 'Invisible Ink']],
   screen: [['echo', 'Echo'], ['spotlight', 'Spotlight'], ['balloons', 'Balloons'], ['confetti', 'Confetti'], ['love', 'Love'], ['lasers', 'Lasers'], ['fireworks', 'Fireworks'], ['celebration', 'Celebration']],
   isBubble: fx => ['slam', 'loud', 'gentle', 'ink'].includes(fx),
+  valid: fx => typeof fx === 'string' && FX.bubble.concat(FX.screen).some(f => f[0] === fx),
 };
 // iMessage-style automatic effects for certain phrases
 function autoFx(text) {
@@ -39,8 +40,9 @@ function playBubbleFx(el, fx, scroller) {
   } else if (fx === 'gentle') {
     el.animate([{ transform: 'scale(.3)', opacity: 0.2 }, { transform: 'scale(.3)', opacity: 1, offset: 0.25 }, { transform: 'scale(1)', opacity: 1 }],
       { duration: 2600, easing: 'cubic-bezier(.2,.7,.2,1)' });
-  } else if (fx === 'pop') {
-    el.animate([{ transform: 'scale(.5) translateY(14px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 480, easing: spring });
+  } else if (fx === 'pop') { // a new bubble grows out of its own corner, softly
+    el.style.transformOrigin = el.closest('.msg-row.me') ? '100% 100%' : '0 100%';
+    el.animate([{ transform: 'translateY(10px) scale(.86)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1.08)' });
   }
 }
 

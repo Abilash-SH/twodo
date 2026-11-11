@@ -29,7 +29,7 @@ function island({ e = '✨', text = '', sub = '', btn = '', onBtn = null, ms = 2
   const el = Island.el; if (!el) return;
   clearTimeout(Island.timer);
   Island.onBtn = onBtn; Island.mode = 'toast';
-  el.innerHTML = `<span class="e">${e}</span><span class="txt">${esc(text)}${sub ? `<small>${esc(sub)}</small>` : ''}</span><button class="ib" type="button">${esc(btn)}</button>`;
+  el.innerHTML = `<span class="e">${esc(e)}</span><span class="txt">${esc(text)}${sub ? `<small>${esc(sub)}</small>` : ''}</span><button class="ib" type="button">${esc(btn)}</button>`;
   el.classList.remove('live');
   el.classList.add('on', 'toast');
   el.animate([{ transform: 'scale(.94)' }, { transform: 'scale(1.02)' }, { transform: 'scale(1)' }], { duration: 450, easing: 'cubic-bezier(.34,1.56,.64,1)' });

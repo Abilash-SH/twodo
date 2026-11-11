@@ -93,15 +93,70 @@ function boot() {
   if (location.hash === '#chat') { history.replaceState({ d: 1 }, '', location.pathname + location.search); setTimeout(() => ChatUI.open(), 900); }
 }
 
+/* ---------- Keyboard: keep the app exactly in the visible area, and move with the keyboard instead of jumping ----------
+   iOS only reports the keyboard once it has finished sliding up, so the app learns its height the first time and
+   from then on makes room as the keyboard starts to appear (and glides back down as it leaves). */
+const KB = {
+  maxH: 0, w: 0, pending: 0, animT: 0,
+  key() { return 'twodo:kb' + (innerWidth > innerHeight ? 'l' : 'p'); },
+  learned() { try { return +localStorage.getItem(this.key()) || 0; } catch (e) { return 0; } },
+  learn(h) { try { localStorage.setItem(this.key(), String(Math.round(h))); } catch (e) { /* private mode */ } },
+};
+const isField = el => !!el && !!el.matches && (el.isContentEditable || el.matches('textarea, select, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=button]):not([type=submit]):not([type=color])'));
+const isTypingField = el => isField(el) && !el.readOnly && !el.matches('select, input[type=date], input[type=time], input[type=datetime-local], input[type=month], input[type=week]');
+function setViewportBox(h, top, animate) {
+  const root = document.documentElement.style;
+  if (animate && !reducedMotion.matches) {
+    document.body.classList.add('kb-anim'); clearTimeout(KB.animT);
+    KB.animT = setTimeout(() => document.body.classList.remove('kb-anim'), 400);
+  }
+  root.setProperty('--vvh', Math.round(h) + 'px'); root.setProperty('--vvt', Math.round(top) + 'px');
+}
 function onViewport() {
-  const vv = window.visualViewport, root = document.documentElement.style;
-  root.setProperty('--vvh', (vv ? vv.height : innerHeight) + 'px');
-  root.setProperty('--vvt', (vv ? vv.offsetTop : 0) + 'px');
-  const kb = !!vv && vv.height < innerHeight * 0.78;
-  document.body.classList.toggle('kb', kb);
-  // iOS sometimes leaves the page nudged up after the keyboard closes, which shifts the whole layout
-  const typing = document.activeElement && document.activeElement.matches('input, textarea, select');
-  if (!kb && !typing && (window.scrollY || document.documentElement.scrollTop)) window.scrollTo(0, 0);
+  const vv = window.visualViewport, el = document.activeElement, field = isField(el);
+  if (innerWidth !== KB.w) { KB.w = innerWidth; KB.maxH = 0; } // rotated
+  if (!field) KB.maxH = Math.max(KB.maxH, innerHeight);
+  const vh = vv ? vv.height : innerHeight, top = vv ? vv.offsetTop : 0;
+  const kb = field && !!vv && vh < innerHeight * 0.8;
+  if (kb) {
+    document.body.classList.add('kb');
+    if (isTypingField(el)) KB.learn(innerHeight - vh);
+    KB.pending = 0; setViewportBox(vh, top); return;
+  }
+  if (field && performance.now() < KB.pending) return; // the keyboard is still sliding up into the room we made
+  document.body.classList.remove('kb');
+  if (field) { setViewportBox(vh, top); return; } // e.g. a hardware keyboard: nothing covers the page
+  // Nothing focused: use the whole screen (iOS can leave the visual viewport offset after the keyboard closes)
+  setViewportBox(innerHeight, 0);
+  if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+}
+function keyboardWillShow(e) {
+  if (!isIOS || !isTypingField(e.target) || document.body.classList.contains('kb')) return;
+  const h = KB.learned(); if (!h || h > innerHeight * 0.7) return;
+  KB.pending = performance.now() + 1000;
+  document.body.classList.add('kb');
+  setViewportBox(innerHeight - h, 0, true);
+  setTimeout(() => {
+    const vv = window.visualViewport;
+    if (isField(document.activeElement) && vv && vv.height >= innerHeight * 0.8) KB.learn(0); // no on-screen keyboard came (hardware keyboard)
+    KB.pending = 0; onViewport();
+  }, 1050);
+}
+function keyboardWillHide() {
+  if (isField(document.activeElement)) return; // just moved to another field
+  KB.pending = 0;
+  document.body.classList.remove('kb');
+  setViewportBox(innerHeight, 0, isIOS);
+  if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+  setTimeout(healViewport, 180);
+}
+// iOS home-screen apps can get stuck a little shorter after the keyboard closes; a quick re-layout restores full height
+function healViewport() {
+  if (!isIOS || !standalone() || isField(document.activeElement) || KB.maxH - innerHeight <= 4) return;
+  const app = $('#app'), keep = [...document.querySelectorAll('.chatbody, .view')].map(x => [x, x.scrollTop]);
+  app.style.display = 'none'; void app.offsetHeight; app.style.display = '';
+  keep.forEach(([x, t]) => { x.scrollTop = t; });
+  onViewport();
 }
 
 function init() {
@@ -111,11 +166,12 @@ function init() {
   shade = document.createElement('div'); shade.className = 'shade';
   Island.el = $('#isl');
   initMenu(); initComposer(); initGestures(); initFocus(); initImport();
-  Drawer.init(); splitCheck();
+  splitCheck(); // (the ☰ menu, Drawer, is off for now: Settings and To-dos have their own buttons on the chat)
   onViewport();
   if (window.visualViewport) { visualViewport.addEventListener('resize', onViewport); visualViewport.addEventListener('scroll', onViewport); }
   addEventListener('resize', onViewport);
-  document.addEventListener('focusout', () => setTimeout(() => { if (!document.activeElement || !document.activeElement.matches('input, textarea, select')) onViewport(); }, 60));
+  document.addEventListener('focusin', keyboardWillShow);
+  document.addEventListener('focusout', () => setTimeout(keyboardWillHide, 30));
   if (location.hash.startsWith('#join=')) history.replaceState(null, '', location.pathname + location.search);
 
   if (cloudReady()) {

@@ -9,8 +9,8 @@ const TIP_CATS = [
 const kb = s => `<kbd>${s}</kbd>`;
 const TIPS = [
   // Basics
-  { c: 'basics', e: '🏠', t: 'Home is your chat', d: 'You two sit at the top, your conversation below. Tap <b>✓</b> (top right) for your to-dos; everything else is in the <b>☰ menu</b> — tap it or swipe in from the left edge.' },
-  { c: 'basics', e: '➕', t: 'Add a task by typing', d: 'Open your to-dos (✓), type in the box at the bottom and tap ↑. It goes into the list you’re in, or your Inbox.' },
+  { c: 'basics', e: '🏠', t: 'Home is your chat', d: 'Your conversation fills the screen. The small button at the <b>top right</b> opens To-dos &amp; reminders; the one at the <b>top left</b> opens Settings.' },
+  { c: 'basics', e: '➕', t: 'Add a task by typing', d: 'Open To-dos (top right), type in the box at the bottom and tap ↑. It goes into the list you’re in, or your Inbox.' },
   { c: 'basics', e: '📥', t: 'Choose where it goes', d: 'Tap the list name inside the box (like <b>📥 Inbox ⌄</b>) to pick another list, or just type <b>#groceries</b>.' },
   { c: 'basics', e: '📋', t: 'Paste a whole list', d: 'Paste several lines and Twodo adds one task per line. Perfect for groceries.' },
   { c: 'basics', e: '📝', t: 'Tap a task for details', d: 'Notes, date, time, repeat, priority, who it’s for, list, tags and subtasks. Everything saves instantly.' },
@@ -24,21 +24,22 @@ const TIPS = [
   { c: 'gestures', e: '👉', t: 'Swipe right to complete', d: 'Swipe a task to the right. Changed your mind? Tap the circle again right away.', demo: 'swipeR' },
   { c: 'gestures', e: '👈', t: 'Swipe left to pin or delete', d: 'A short swipe shows Pin and Delete; a long swipe deletes straight away.', demo: 'swipeL' },
   { c: 'gestures', e: '👆', t: 'Long-press for quick actions', d: 'Move to Today, Tomorrow or the weekend, set priority or person, move list, duplicate or start a focus timer.', demo: 'press' },
-  { c: 'gestures', e: '⬅️', t: 'Swipe from the edge to go back', d: 'Slide from the left edge of the screen to go back, just like iPhone apps.', demo: 'edge' },
+  { c: 'gestures', e: '⬅️', t: 'Swipe right to go back', d: 'Drag to the right from the left edge, or anywhere that isn’t a task, to slide back to the chat. On a computer, use ‹ or Esc.', demo: 'edge' },
   { c: 'gestures', e: '⬇️', t: 'Drag sheets down to close', d: 'Task details, Settings and other cards close when you pull them down.', demo: 'sheetdown' },
   // Organize
   { c: 'organize', e: '☀️', t: 'Today, sorted for you', d: 'Today splits into Overdue, Morning, Afternoon and Tonight. Upcoming groups tasks by day, then by month.' },
   { c: 'organize', e: '👥', t: 'Filter by person', d: () => `Every list has an <b>All · ${esc(shortName(myName()))} · ${esc(shortName(ptName()))} · Us</b> switch at the top.` },
   { c: 'organize', e: '⋯', t: 'Sort, show completed, share', d: 'The ⋯ button sorts a list and shows or clears completed tasks. On your own lists it also edits the list or shares it as text.' },
   { c: 'organize', e: '🔁', t: 'Repeating tasks', d: 'Type <b>daily</b>, <b>weekdays</b> or <b>every mon</b>. When you finish one, the next appears automatically.' },
-  { c: 'organize', e: '🔎', t: 'Search everything', d: 'Open the ☰ menu and tap Search to find titles, notes, subtasks and #tags. On a computer, press ⌘K.' },
-  { c: 'organize', e: '📌', t: 'Pin what matters', d: 'Pinned tasks stay at the top of every list and in Pinned in the ☰ menu.' },
+  { c: 'organize', e: '🔎', t: 'Search everything', d: 'In To-dos, tap Search to find titles, notes, subtasks and #tags. On a computer, press ⌘K.' },
+  { c: 'organize', e: '📌', t: 'Pin what matters', d: 'Pinned tasks stay at the top of every list and in Pinned in To-dos.' },
+  { c: 'organize', e: '🔔', t: 'Reminders', d: 'Every to-do with a time shows up in <b>Reminders</b> in To-dos, missed ones first.' },
   // Together
   { c: 'together', e: '💌', t: 'Add your partner like a friend', d: 'Tap <b>＋ Add partner</b>, search their @username and tap Add. They accept and your lists sync.', act: ['invite', 'Add partner'] },
   { c: 'together', e: '🔢', t: 'Check the safety code', d: 'When you send or accept a request, both phones show the same 8-digit code. If they match, nobody tampered with your connection.' },
   { c: 'together', e: '🫶', t: 'Share tasks with @', d: '<b>@us</b> puts a task in Together for both of you; <b>@name</b> gives it to them. You’ll get a nudge when they finish it.' },
   { c: 'together', e: '🎁', t: 'The Secret list', d: 'Anything in a Secret list stays on your phone and never syncs. Perfect for planning surprises.' },
-  { c: 'together', e: '🔥', t: 'Streaks & progress', d: 'The top of the ☰ menu shows your streak and how much you’ve done together this week.' },
+  { c: 'together', e: '🔥', t: 'Streaks & progress', d: 'The top of To-dos shows your streak and how much you’ve done together this week.' },
   // Messages
   { c: 'messages', e: '💬', t: 'Message your partner', d: 'Your chat is Home. Under their name you’ll see <b>online</b>, <b>typing…</b> or when they were last seen. Everything is end-to-end encrypted.', act: ['chat', 'Open chat'] },
   { c: 'messages', e: '🤍', t: 'Hearts, not ticks', d: 'Under your last message: an outline ♡ means sent, a filled ♥ means they’ve seen it.' },
@@ -55,7 +56,6 @@ const TIPS = [
   { c: 'focus', e: '🎉', t: 'Clear the day', d: 'Finish everything due today for a little celebration.' },
   // App & privacy
   { c: 'app', e: '📲', t: 'Add to Home Screen', d: 'In Safari: Share → <b>Add to Home Screen</b>. You get full screen, push reminders and a faster launch. Always open Twodo from that icon.' },
-  { c: 'app', e: '🖥️', t: 'Big screen, two panes', d: 'On an iPad in landscape or on a computer, the ☰ menu stays open on the left and whatever you open shows on the right.' },
   { c: 'app', e: '✈️', t: 'Works offline', d: 'Keep going without signal. Everything syncs as soon as you’re back online.' },
   { c: 'app', e: '🎨', t: 'Make it yours', d: 'Settings → your photo, name and colour (it’s your message colour and the app’s accent), theme, haptics, sounds and celebrations.', act: ['settings', 'Open Settings'] },
   { c: 'app', e: '🔐', t: 'Private by design', d: 'Tasks and messages are encrypted on your phones before they’re saved. Your password never leaves your phone.' },

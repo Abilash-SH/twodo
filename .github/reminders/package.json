@@ -1,0 +1,9 @@
+{
+  "name": "twodo-reminders",
+  "private": true,
+  "type": "module",
+  "description": "Sends Twodo push reminders (run by .github/workflows/reminders.yml). Dependencies are pinned by package-lock.json.",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

@@ -80,7 +80,9 @@ const Sync = {
     if ((v.u || 0) <= this.localU(k)) return;
     let obj;
     try { obj = await decryptObj(this.key, v.d); } catch (e) { return; } // wrong key or tampered → ignore
+    obj = cleanRecord(obj); // checked before it can reach the screen
     if (!obj || (obj.updatedAt || 0) <= this.localU(k)) return;
+    if (k !== 'people' && recKey(obj) !== k) return; // a record can't pretend to be another one
     const local = this.getRec(k);
     if (local && this.isPrivate(local)) return; // never overwrite something that's private on this phone
     obj._s = 1;

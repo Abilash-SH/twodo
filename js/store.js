@@ -17,10 +17,53 @@ const defaultLocal = () => ({
 let D = { tasks: {}, lists: {}, people: null };
 let L = defaultLocal();
 
+/* ---------- Never trust stored or synced records: anything shown in the page is checked here first ----------
+   Colours must come from the palette, numbers must be numbers, photos must be small inline images. */
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/, TIME_RE = /^\d{2}:\d{2}$/, PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+const cStr = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+const cColor = (c, d) => (PALETTE.includes(c) ? c : d);
+const cNum = (v, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : d);
+const cEmoji = v => { // one emoji (a single character as the user sees it)
+  const t = cStr(v, 32).trim(); if (!t) return '';
+  try { return new Intl.Segmenter().segment(t)[Symbol.iterator]().next().value.segment; } catch (e) { return [...t].slice(0, 2).join(''); }
+};
+function cleanPerson(p, d) {
+  if (!p || typeof p !== 'object') return { ...d };
+  const o = { ...p, name: cStr(p.name, 40).trim() || d.name, color: cColor(p.color, d.color) };
+  if (!(typeof p.photo === 'string' && p.photo.length < 150000 && PHOTO_RE.test(p.photo))) delete o.photo;
+  if (o.uid !== undefined && typeof o.uid !== 'string') delete o.uid;
+  return o;
+}
+function cleanRecord(r) {
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
+  if (r.kind === 'people' || r.id === 'people') {
+    return { ...r, kind: 'people', id: 'people', a: cleanPerson(r.a, { name: 'Me', color: 'blue' }), b: cleanPerson(r.b, { name: 'Partner', color: 'pink' }), updatedAt: cNum(r.updatedAt) };
+  }
+  if (r.kind === 'list') {
+    return { ...r, id: cStr(r.id, 80), name: cStr(r.name, 60), emoji: cEmoji(r.emoji) || '📝', color: cColor(r.color, 'blue'),
+      private: !!r.private, deleted: !!r.deleted, order: cNum(r.order), createdAt: cNum(r.createdAt), updatedAt: cNum(r.updatedAt) };
+  }
+  if (r.kind === 'task') {
+    const o = { ...r, id: cStr(r.id, 80), listId: cStr(r.listId, 80) || 'inbox', notes: cStr(r.notes, 20000),
+      priority: [1, 2, 3].includes(r.priority) ? r.priority : 0, pomos: Math.max(0, Math.min(9999, Math.floor(cNum(r.pomos)))),
+      due: typeof r.due === 'string' && DAY_RE.test(r.due) ? r.due : null, time: typeof r.time === 'string' && TIME_RE.test(r.time) ? r.time : null,
+      repeat: typeof r.repeat === 'string' && Object.prototype.hasOwnProperty.call(REPEATS, r.repeat) ? r.repeat : null,
+      assignee: ['a', 'b', 'both'].includes(r.assignee) ? r.assignee : null,
+      createdBy: ['a', 'b'].includes(r.createdBy) ? r.createdBy : undefined, doneBy: ['a', 'b'].includes(r.doneBy) ? r.doneBy : undefined,
+      tags: Array.isArray(r.tags) ? r.tags.filter(x => typeof x === 'string').map(x => x.slice(0, 40)).slice(0, 30) : [],
+      subtasks: Array.isArray(r.subtasks) ? r.subtasks.filter(x => x && typeof x === 'object').slice(0, 200).map(x => ({ id: cStr(x.id, 80), title: cStr(x.title, 1000), done: !!x.done })) : [],
+      done: !!r.done, pinned: !!r.pinned, deleted: !!r.deleted, doneAt: cNum(r.doneAt, null), createdAt: cNum(r.createdAt), updatedAt: cNum(r.updatedAt) };
+    if (r.title !== undefined) o.title = cStr(r.title, 2000);
+    return o;
+  }
+  return null;
+}
+const cleanMap = m => { const out = {}; for (const [k, v] of Object.entries(m && typeof m === 'object' ? m : {})) { const c = cleanRecord(v); if (c && c.id === k) out[k] = c; } return out; };
+
 function load() {
   try {
     const d = JSON.parse(localStorage.getItem(KD) || 'null');
-    if (d) D = { tasks: d.tasks || {}, lists: d.lists || {}, people: d.people || null };
+    if (d) D = { tasks: cleanMap(d.tasks), lists: cleanMap(d.lists), people: d.people ? cleanRecord(d.people) : null };
   } catch (e) { console.warn('load data', e); }
   try {
     const l = JSON.parse(localStorage.getItem(KL) || 'null');
@@ -161,6 +204,7 @@ const SMART = {
   upcoming: { title: 'Upcoming',  color: 'red',    icon: 'cal',   match: t => !t.done && !!t.due && t.due > todayStr(), doneMatch: t => t.done && !!t.due && t.due > todayStr() },
   us:       { title: 'Together',  color: 'pink',   icon: 'heart', match: t => !t.done && t.assignee === 'both', doneMatch: t => t.done && t.assignee === 'both' },
   pinned:   { title: 'Pinned',    color: 'orange', icon: 'pin',   match: t => !t.done && t.pinned, doneMatch: t => t.done && t.pinned },
+  reminders: { title: 'Reminders', color: 'purple', icon: 'bell', match: t => !t.done && !!t.due && !!t.time, doneMatch: t => t.done && !!t.due && !!t.time },
   all:      { title: 'All',       color: 'indigo', icon: 'tray',  match: t => !t.done, doneMatch: t => t.done },
   done:     { title: 'Completed', color: 'gray',   icon: 'check', match: t => t.done, doneMatch: () => false },
 };

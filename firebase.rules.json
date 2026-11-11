@@ -53,14 +53,14 @@
             "x": {
               "$uid": {
                 ".write": "auth != null && auth.uid === $uid && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
-                ".validate": "newData.hasChildren(['u', 'd']) && newData.child('d').isString()"
+                ".validate": "newData.hasChildren(['u', 'd']) && newData.child('u').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 2000"
               }
             },
             "rx": {
               "$msg": {
                 "$uid": {
                   ".write": "auth != null && auth.uid === $uid && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
-                  ".validate": "newData.hasChildren(['u', 'd']) && newData.child('d').isString()"
+                  ".validate": "newData.hasChildren(['u', 'd']) && newData.child('u').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 2000"
                 }
               }
             }
@@ -82,7 +82,12 @@
         ".read": "auth != null && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
         ".write": "auth != null && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
         "$id": {
-          ".validate": "newData.hasChildren(['at', 'd', 'to']) && newData.child('at').isNumber() && newData.child('d').isString()"
+          ".validate": "newData.hasChildren(['at', 'd', 'to']) && newData.child('at').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 8000",
+          "to": {
+            "$to": {
+              ".validate": "newData.val() === true && root.child('spaces').child($space).child('members').child($to).exists()"
+            }
+          }
         }
       }
     },
@@ -91,7 +96,7 @@
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
         "$sub": {
-          ".validate": "newData.hasChildren(['endpoint', 'keys'])"
+          ".validate": "newData.hasChildren(['endpoint', 'keys']) && newData.child('endpoint').isString() && newData.child('endpoint').val().length < 1000 && newData.child('endpoint').val().matches(/^https:\\/\\/(fcm\\.googleapis\\.com|web\\.push\\.apple\\.com|updates\\.push\\.services\\.mozilla\\.com|[a-z0-9-]+\\.notify\\.windows\\.com)\\//)"
         }
       }
     }

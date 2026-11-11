@@ -215,7 +215,8 @@ function endDrawer(g, cancelled) {
   if (!cancelled && (g.dx > Drawer.el.offsetWidth * 0.3 || g.vx > 0.4)) Drawer.show(); else Drawer.close();
 }
 
-/* ---------- Edge swipe back ---------- */
+/* ---------- Swipe back (from the edge, or a sideways drag anywhere that isn't a task row or a control) ---------- */
+const NO_PAN = 'input, textarea, select, [contenteditable], .seg, .pills, .tip-pills, .no-pan';
 function moveEdge(e) {
   const dx = Math.max(0, e.clientX - G.x0);
   if (!G.active && dx > 6) { G.active = true; stackEl.classList.add('dragging'); Nav.dragging = true; }
@@ -243,7 +244,7 @@ function initGestures() {
   stackEl.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const sx = e.clientX - stackEl.getBoundingClientRect().left;
-    if (!Split.on && Nav.stack.length === 1 && sx < 22 && e.pointerType !== 'mouse' && !Drawer.open) {
+    if (Drawer.el && !Split.on && Nav.stack.length === 1 && sx < 22 && e.pointerType !== 'mouse' && !Drawer.open) {
       G = { kind: 'drawer', pid: e.pointerId, x0: e.clientX, dx: 0, active: false, vx: 0, lastX: e.clientX, lastT: performance.now() };
       return;
     }
@@ -252,6 +253,12 @@ function initGestures() {
       return;
     }
     const ti = e.target.closest('.ti');
+    // Anywhere else on a screen you opened: drag sideways to the right to go back (task rows keep their own swipes)
+    if (!ti && Nav.stack.length > 1 && !Split.on && e.pointerType !== 'mouse' && !e.target.closest(NO_PAN)) {
+      if (openRow && !e.target.closest('.act-r')) closeOpenRow();
+      G = { kind: 'pan', pid: e.pointerId, x0: e.clientX, y0: e.clientY, top: topView(), prev: Nav.stack[Nav.stack.length - 2], w: stackEl.offsetWidth, dx: 0, active: false, vx: 0, lastX: e.clientX, lastT: performance.now() };
+      return;
+    }
     if (!ti) { if (openRow && !e.target.closest('.act-r')) closeOpenRow(); return; }
     const row = ti.parentElement;
     if (openRow && openRow !== row) closeOpenRow();
@@ -263,6 +270,13 @@ function initGestures() {
   });
   addEventListener('pointermove', e => {
     if (!G || e.pointerId !== G.pid) return;
+    if (G.kind === 'pan') { // decide: scrolling (let it be) or a swipe back (follow the finger from here)
+      const dx = e.clientX - G.x0, dy = e.clientY - G.y0;
+      if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { G = null; return; }
+      if (dx < -12) { G = null; return; }
+      if (dx > 12 && dx > Math.abs(dy) * 1.4) { G.kind = 'edge'; G.x0 = e.clientX - 7; G.lastX = e.clientX; G.lastT = performance.now(); }
+      return;
+    }
     if (G.kind === 'edge') return moveEdge(e);
     if (G.kind === 'drawer') return moveDrawer(e);
     if (G.mode === 'lp' || G.mode === 'scroll') return;
@@ -284,6 +298,7 @@ function initGestures() {
     if (!G || e.pointerId !== G.pid) return;
     const g = G; G = null;
     if (g.kind === 'drawer') { endDrawer(g, e.type === 'pointercancel'); return; }
+    if (g.kind === 'pan') return;
     if (g.kind === 'edge') {
       // cancelled = the system took the gesture over (e.g. the iPhone's own back swipe): never pop here as well
       if (e.type === 'pointercancel') Nav.edgeCancelAt = performance.now();
@@ -341,8 +356,9 @@ function onAction(name, el) {
     case 'dismissPair': L.tips.pair = 1; save(); scheduleRender(); return;
     case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; scheduleRender(); } return;
     case 'tips': return openTips();
-    case 'menu': return Drawer.show();
-    case 'todos': return navTo({ type: 'smart', key: 'today' });
+    case 'todos': return navTo({ type: 'todos' });
+    case 'search': return openSearch();
+    case 'alerts': return openSettings();
     case 'idea': Cmp.ta.value = el.dataset.v; updateComposer(); Cmp.ta.focus(); return;
     case 'tipcat': return pickTipCat(el.closest('.view'), el.dataset.v);
     case 'tipact': return el.dataset.v === 'invite' ? openInviteSheet() : el.dataset.v === 'chat' ? ChatUI.open() : openSettings();

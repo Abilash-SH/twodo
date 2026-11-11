@@ -45,8 +45,12 @@ const EARLY = 90e3;            // runs are every ~5 min, so send up to 90 s earl
 const STALE = 6 * 3600e3;      // skip anything more than 6 h overdue
 const KEEP = 3 * 864e5;        // delete entries 3 days after they were due
 const rem = (await db('rem')) || {};
-const subsCache = {};
+const subsCache = {}, membersCache = {};
 const subsOf = async uid => (subsCache[uid] ??= ((await db(`push/${uid}`)) || {}));
+const membersOf = async space => (membersCache[space] ??= ((await db(`spaces/${space}/members`)) || {}));
+// Only ever talk to real push services (a subscription is just a URL someone saved)
+const PUSH_HOSTS = /^(fcm\.googleapis\.com|web\.push\.apple\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.notify\.windows\.com)$/;
+const okEndpoint = e => { try { const u = new URL(e); return u.protocol === 'https:' && (PUSH_HOSTS.test(u.hostname) || u.hostname === env.TEST_PUSH_HOST); } catch { return false; } };
 const updates = {};
 let sent = 0, cleaned = 0, due = 0;
 
@@ -57,8 +61,11 @@ for (const [space, items] of Object.entries(rem)) {
     if (r.sent || r.at > now + EARLY || r.at < now - STALE) continue;
     due++;
     const payload = JSON.stringify({ s: space, id, d: r.d });
+    const members = await membersOf(space);
     for (const uid of Object.keys(r.to || {})) {
+      if (members[uid] !== true) continue; // reminders only go to the two people in that space
       for (const [sid, sub] of Object.entries(await subsOf(uid))) {
+        if (!sub || !okEndpoint(sub.endpoint) || !sub.keys) continue;
         try {
           await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload,
             { TTL: 3600, urgency: 'high', topic: id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) });

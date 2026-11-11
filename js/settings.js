@@ -217,9 +217,10 @@ function initImport() {
       const j = JSON.parse(await f.text()), d = j.data || j;
       if (!d || typeof d.tasks !== 'object') throw new Error('bad');
       let n = 0;
-      for (const [id, t] of Object.entries(d.tasks || {})) if (!D.tasks[id] || (t.updatedAt || 0) > (D.tasks[id].updatedAt || 0)) { D.tasks[id] = t; commit(t, { silent: true }); n++; }
-      for (const [id, l] of Object.entries(d.lists || {})) if (!D.lists[id] || (l.updatedAt || 0) > (D.lists[id].updatedAt || 0)) { D.lists[id] = l; commit(l, { silent: true }); n++; }
-      if (d.people && (!D.people || (d.people.updatedAt || 0) > (D.people.updatedAt || 0))) { D.people = d.people; commit(D.people, { silent: true }); }
+      for (const [id, t] of Object.entries(cleanMap(d.tasks))) if (!D.tasks[id] || (t.updatedAt || 0) > (D.tasks[id].updatedAt || 0)) { D.tasks[id] = t; commit(t, { silent: true }); n++; }
+      for (const [id, l] of Object.entries(cleanMap(d.lists))) if (!D.lists[id] || (l.updatedAt || 0) > (D.lists[id].updatedAt || 0)) { D.lists[id] = l; commit(l, { silent: true }); n++; }
+      const pp = d.people && cleanRecord(d.people);
+      if (pp && (!D.people || (pp.updatedAt || 0) > (D.people.updatedAt || 0))) { D.people = pp; commit(D.people, { silent: true }); }
       ensureBasics(); scheduleRender(); island({ e: '📦', text: `Imported ${n} item${n === 1 ? '' : 's'}` });
     } catch (err) { island({ e: '⚠️', text: 'That file isn’t a Twodo backup' }); }
   });

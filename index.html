@@ -2,6 +2,8 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
+  <!-- Only this site's own scripts may run, and the app may only talk to Firebase: a strong guard against injected code -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' data: blob:; connect-src 'self' https://*.firebaseio.com https://*.firebasedatabase.app https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-src 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Twodo</title>
   <meta name="description" content="A beautiful to-do list made for two.">
@@ -17,21 +19,13 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="chat.css">
-  <script>
-    // Apply theme before first paint to avoid a flash
-    try {
-      var s = JSON.parse(localStorage.getItem('twodo:local') || '{}').settings || {};
-      var dark = s.theme === 'dark' || (s.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    } catch (e) {}
-  </script>
+  <script src="js/boot.js"></script>
 </head>
 <body class="launching">
   <div id="splash" aria-hidden="true">
     <div class="sp-mark"><svg viewBox="10 22 80 56"><circle class="s1" cx="38" cy="50" r="24"/><circle class="s2" cx="62" cy="50" r="24"/><path class="sck" d="M35.5 51l10.5 10.5 20.5-23"/></svg></div>
     <div class="sp-word">Twodo</div><div class="sp-tag">made for two</div>
   </div>
-  <script>window.splashT = performance.now();</script>
   <div id="app">
     <div id="stack"></div>
 

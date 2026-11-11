@@ -68,16 +68,18 @@ const ChatUI = {
     v.innerHTML = `
       <div class="chatbody"><div class="chatlist"></div><div class="c-typing"></div></div>
       <header class="chat-nav">
-        <button class="nav-btn ch-side" data-a="menu" type="button" aria-label="Menu">${ic('menu')}</button>
-        <div class="lovebar">
-          <button class="lb-av pt" data-pv="pt" type="button" aria-label="View photo"><span class="av-slot"></span><i class="pres"></i></button>
-          <span class="lb-link" aria-hidden="true"><svg viewBox="0 0 100 34" preserveAspectRatio="none"><defs><linearGradient id="lbLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs><path class="lb-line" d="M3 27 Q50 -4 97 27"/></svg>
-            <svg class="lb-heart" viewBox="0 0 24 24"><defs><linearGradient id="lbHeart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs>
-              <path d="M12 20.3s-7.6-4.6-9.4-9.3C1.4 7.6 3.7 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.7 3.3 4.5 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="url(#lbHeart)"/></svg></span>
-          <button class="lb-av me" data-pv="me" type="button" aria-label="View your photo"><span class="av-slot"></span></button>
+        <button class="fab-btn" data-a="settings" type="button" aria-label="Settings">${ic('gear')}<i class="fab-dot warn" hidden></i></button>
+        <div class="ch-who">
+          <div class="lovebar">
+            <button class="lb-av pt" data-pv="pt" type="button" aria-label="View photo"><span class="av-slot"></span></button>
+            <span class="lb-link" aria-hidden="true"><svg viewBox="0 0 100 34" preserveAspectRatio="none"><defs><linearGradient id="lbLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs><path class="lb-line" d="M3 27 Q50 -4 97 27"/></svg>
+              <svg class="lb-heart" viewBox="0 0 24 24"><defs><linearGradient id="lbHeart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs>
+                <path d="M12 20.3s-7.6-4.6-9.4-9.3C1.4 7.6 3.7 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.7 3.3 4.5 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="url(#lbHeart)"/></svg></span>
+            <button class="lb-av me" data-pv="me" type="button" aria-label="View your photo"><span class="av-slot"></span></button>
+          </div>
+          <div class="lb-name"></div><div class="c-sub"></div>
         </div>
-        <button class="nav-btn ch-side todo-btn" data-a="todos" type="button" aria-label="To-dos">${ic('todo')}<span class="todo-n" hidden></span></button>
-        <div class="lb-name"></div><div class="c-sub"></div>
+        <button class="fab-btn" data-a="todos" type="button" aria-label="To-dos and reminders">${ic('todo')}<i class="fab-dot" hidden></i></button>
       </header>
       <button class="c-jump" type="button" hidden>${ic('chevD', 'xs')} New message</button>
       <div class="chatbar">
@@ -100,8 +102,9 @@ const ChatUI = {
     if (slots[0].innerHTML !== a) slots[0].innerHTML = a;
     if (slots[1].innerHTML !== b) slots[1].innerHTML = b;
     v.querySelector('.lb-name').textContent = paired ? person(pk).name : 'Your partner';
-    const n = liveTasks().filter(SMART.today.match).length, badge = v.querySelector('.todo-n');
-    badge.hidden = !n; badge.textContent = n > 9 ? '9+' : String(n);
+    const [setDot, todoDot] = v.querySelectorAll('.fab-dot');
+    setDot.hidden = !(Sync.state === 'error' || (L.auth && L.auth.expired)); // something needs you in Settings
+    todoDot.hidden = !liveTasks().some(SMART.today.match);                     // something is due today
     this.subLine();
     if (this.lastVer !== Chat.ver || v.querySelector('.tcard')) this.queueDraw();
     if (this.isOpen()) Chat.markRead();
@@ -139,8 +142,13 @@ const ChatUI = {
     return { cls: 'c-status sent', h: heart + '<span class="sr">Sent</span>' };
   },
   // Everything the list shows, in order, as keyed items: [{ k, cls, h, id? }]
+  limit: 120,
   items() {
-    const me = L.auth.uid, ms = Object.values(Chat.msgs).sort((a, b) => (a.id < b.id ? -1 : 1));
+    const me = L.auth.uid, sorted = Object.values(Chat.msgs).sort((a, b) => (a.id < b.id ? -1 : 1));
+    // reading older messages? new ones mustn't push rows out of the top (that would make the page jump)
+    if (this.total && sorted.length > this.total && !this.pinned) this.limit += sorted.length - this.total;
+    this.total = sorted.length;
+    const ms = sorted.length > this.limit ? sorted.slice(-this.limit) : sorted;
     if (!(L.pair && L.pair.status === 'paired')) {
       const inc = typeof Inbox !== 'undefined' ? Inbox.incoming() : [], sent = L.pair && L.pair.status === 'sent';
       return [{ k: 'pair' + inc.length + (sent ? 's' : ''), cls: 'c-empty', h: inc.length
@@ -201,10 +209,20 @@ const ChatUI = {
     this.drawTyping(false);
     this.lastVer = Chat.ver;
     fresh.forEach(el => el.querySelectorAll('.bub.ink').forEach(b => Ink.attach(b)));
-    if (opts.toBottom || opts.sentId || near) body.scrollTop = body.scrollHeight;
+    const incoming = (opts.newIds || []).length > 0;
+    if (opts.toBottom || opts.sentId || (near && !incoming)) { body.scrollTop = body.scrollHeight; this.pinned = true; }
+    else if (near && incoming) { body.scrollTo({ top: body.scrollHeight, behavior: reducedMotion.matches ? 'auto' : 'smooth' }); this.pinned = true; }
     if (opts.sentId) this.animateSent(opts.sentId, opts.fromRect);
     for (const id of opts.newIds || []) this.animateIn(id);
-    if ((opts.newIds || []).length && !near) v.querySelector('.c-jump').hidden = false;
+    if (incoming && !near) v.querySelector('.c-jump').hidden = false;
+  },
+  loadOlder() {
+    this.moreT = 0;
+    const v = this.view; if (!v || this.total <= this.limit) return;
+    const body = v.querySelector('.chatbody'), h = body.scrollHeight, t = body.scrollTop;
+    this.limit += 120;
+    this.reconcile(v.querySelector('.chatlist'), this.items());
+    body.scrollTop = t + (body.scrollHeight - h);
   },
   drawTyping(scroll = true) {
     const v = this.view; if (!v || !v.isConnected) return;
@@ -263,7 +281,8 @@ const ChatUI = {
     const el = this.view && this.view.querySelector('.c-sub'); if (!el) return;
     const paired = !!(L.pair && L.pair.status === 'paired');
     const t = paired && Chat.partnerTyping(), on = paired && Chat.partnerOnline();
-    el.textContent = !paired ? 'Not connected yet' : t ? 'typing…' : on ? 'online' : Chat.lastSeenText();
+    const txt = !paired ? 'not connected yet' : t ? 'typing…' : on ? 'online' : Chat.lastSeenText();
+    if (el.textContent !== txt) el.textContent = txt;
     el.classList.toggle('typing', t); el.classList.toggle('online', on && !t);
     this.view.querySelector('.lovebar').classList.toggle('live', on);
   },
@@ -311,7 +330,6 @@ const ChatUI = {
     [send, heart, plus].forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
     input.addEventListener('input', () => { this.autosize(input); Chat.setTyping(!!input.value.trim()); });
     input.addEventListener('blur', () => Chat.setTyping(false));
-    input.addEventListener('focus', () => setTimeout(() => { body.scrollTop = body.scrollHeight; }, 300));
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !isTouch) { e.preventDefault(); this.sendNow(input.value); } });
     // tap = send, hold = "Send with effect"
     let held = false, holdT = null;
@@ -322,13 +340,19 @@ const ChatUI = {
     heart.addEventListener('click', () => this.sendNow('❤️', 'love'));
     plus.addEventListener('click', () => this.openShare(plus));
     jump.addEventListener('click', () => { body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }); });
+    this.pinned = true;
     body.addEventListener('scroll', () => {
-      const near = body.scrollHeight - body.scrollTop - body.clientHeight < 140;
-      if (near) { jump.hidden = true; if (document.activeElement !== input || true) Chat.markRead(); }
+      const gap = body.scrollHeight - body.scrollTop - body.clientHeight;
+      this.pinned = gap < 80;
+      if (gap < 140) { jump.hidden = true; Chat.markRead(); }
       v.querySelector('.chat-nav').classList.toggle('scrolled', body.scrollTop > 2);
+      if (body.scrollTop < 400 && this.total > this.limit && !this.moreT) this.moreT = requestAnimationFrame(() => this.loadOlder());
     }, { passive: true });
-    if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (this.isOpen() && this.nearBottom) body.scrollTop = body.scrollHeight; });
-    body.addEventListener('scroll', () => { this.nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 140; }, { passive: true });
+    // The keyboard opening/closing (or rotating) changes the chat's height: keep the latest message in view, in the same frame
+    if (window.ResizeObserver) new ResizeObserver(() => { if (this.pinned) body.scrollTop = body.scrollHeight; }).observe(body);
+    // the conversation starts right under the header, whatever its height (text size, rotation, notch)
+    const head = v.querySelector('.chat-nav');
+    if (window.ResizeObserver) new ResizeObserver(() => v.style.setProperty('--head-full', head.offsetHeight + 'px')).observe(head);
 
     // bubbles: tap ink to reveal, double-tap = ❤️, long-press = tapbacks + menu
     list.addEventListener('click', e => {
