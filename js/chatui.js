@@ -36,7 +36,8 @@ function chatSound(kind) {
         o.connect(g).connect(out); o.start(t0 + at); o.stop(t0 + at + dur + 0.05);
       }
     };
-    if (kind === 'send') { note(784, 0, 0.22); note(1175, 0.06, 0.32); }      // G5 → D6
+    if (kind === 'love') { out.gain.value = 0.045; [[1047, 0, .6], [1319, .11, .6], [1568, .22, .7], [2093, .36, 1.1]].forEach(([f, a, d]) => note(f, a, d)); } // a soft rising arpeggio
+    else if (kind === 'send') { note(784, 0, 0.22); note(1175, 0.06, 0.32); }      // G5 → D6
     else { note(1047, 0, 0.5); note(784, 0.11, 0.62); }                        // C6 → G5
   } catch (e) { /* no audio */ }
 }
@@ -77,16 +78,19 @@ const ChatUI = {
                 <path d="M12 20.3s-7.6-4.6-9.4-9.3C1.4 7.6 3.7 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.7 3.3 4.5 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="url(#lbHeart)"/></svg></span>
             <button class="lb-av me" data-pv="me" type="button" aria-label="View your photo"><span class="av-slot"></span></button>
           </div>
-          <div class="lb-name"></div><div class="c-sub"></div>
+          <div class="ch-pill"><div class="lb-name"></div><div class="c-sub"></div></div>
         </div>
         <button class="fab-btn" data-a="todos" type="button" aria-label="To-dos and reminders">${ic('todo')}<i class="fab-dot" hidden></i></button>
       </header>
       <button class="c-jump" type="button" hidden>${ic('chevD', 'xs')} New message</button>
       <div class="chatbar">
-        <button class="cb-plus" type="button" aria-label="Share a to-do">${ic('plus')}</button>
-        <div class="cb-pill"><textarea class="cb-in" rows="1" placeholder="Message" aria-label="Message" enterkeyhint="${isTouch ? 'enter' : 'send'}"></textarea>
-          <button class="cb-heart" type="button" aria-label="Send a heart">❤️</button>
-          <button class="cb-send" type="button" aria-label="Send. Hold for effects">${ic('arrowUp')}</button></div>
+        <div class="cb-reply" hidden><span class="rb-ic">${ic('reply')}</span><div class="rb-t"><b></b><span></span></div><button class="rb-x" type="button" aria-label="Cancel reply">${ic('x')}</button></div>
+        <div class="cb-row">
+          <button class="cb-plus" type="button" aria-label="Share a to-do">${ic('plus')}</button>
+          <div class="cb-pill"><textarea class="cb-in" rows="1" placeholder="Message" aria-label="Message" enterkeyhint="${isTouch ? 'enter' : 'send'}"></textarea>
+            <button class="cb-heart" type="button" aria-label="Send a heart">❤️</button>
+            <button class="cb-send" type="button" aria-label="Send. Hold for effects">${ic('arrowUp')}</button></div>
+        </div>
       </div>`;
     this.bind(v);
   },
@@ -115,15 +119,23 @@ const ChatUI = {
   rowParts(m, mine, start, end) {
     const side = mine ? 'me' : 'them';
     if (m.del) return { cls: `msg-row ${side} start end`, h: `<div class="unsent">${mine ? 'You' : esc(firstWord(ptName()))} unsent a message</div>` };
-    let inner; const n = !m.task && m.fx !== 'ink' ? jumboCount(m.t) : 0;
+    let inner; const n = !m.task && !m.rp && m.fx !== 'ink' ? jumboCount(m.t) : 0;
     if (m.task) inner = this.cardHTML(m.task, mine);
     else if (n) inner = `<div class="jumbo n${n}">${esc(m.t)}</div>`;
-    else inner = `<div class="bub ${side}${m.fx === 'ink' ? ' ink' : ''}">${linkify(esc(m.t))}</div>`;
-    const rs = Object.entries(Chat.rx[m.id] || {});
-    const tb = rs.length ? `<div class="tapb">${rs.map(([uid, e]) => `<span class="${uid === L.auth.uid ? 'mine' : ''}">${e}</span>`).join('')}</div>` : '';
+    else inner = `<div class="bub ${side}${m.fx === 'ink' ? ' ink' : ''}${m.rp ? ' has-rq' : ''}">${m.rp ? this.quoteHTML(m.rp) : ''}${linkify(esc(m.t))}</div>`;
+    // reactions: one small glass capsule on the bubble's corner, grouped by emoji
+    const by = {}; for (const [uid, e] of Object.entries(Chat.rx[m.id] || {})) (by[e] = by[e] || []).push(uid);
+    const rs = Object.entries(by);
+    const tb = rs.length ? `<div class="tapb">${rs.map(([e, us]) => `<span class="${us.includes(L.auth.uid) ? 'mine' : ''}">${e}${us.length > 1 ? `<b>${us.length}</b>` : ''}</span>`).join('')}</div>` : '';
     const fail = m.status === 'failed' ? `<button class="c-fail" data-retry="${m.id}" type="button" aria-label="Retry sending">!</button>` : '';
     const av = mine ? '' : `<span class="c-av">${end ? avatar(partnerKey()) : ''}</span>`;
     return { cls: `msg-row ${side}${start ? ' start' : ''}${end ? ' end' : ''}${rs.length ? ' has-tb' : ''}`, h: `${fail}${av}<div class="bwrap">${inner}${tb}</div>` };
+  },
+  // a reply's little quote: who it answers and the first words (from the live message if we still have it)
+  previewOf(m) { return String(m.del ? 'Unsent message' : m.task ? '📋 ' + m.task.title : m.t || '').replace(/\s+/g, ' ').trim().slice(0, 120); },
+  quoteHTML(rp) {
+    const ref = Chat.msgs[rp.id], who = rp.f === L.auth.uid ? 'You' : firstWord(ptName()), q = ref ? this.previewOf(ref) : rp.q;
+    return `<span class="rq" data-rq="${esc(rp.id)}" role="button"><b>${esc(who)}</b><span>${esc(q || 'Message')}</span></span>`;
   },
   cardHTML(tk, mine) {
     const t = D.tasks[tk.id], live = t && !t.deleted ? t : null, done = !!(live && live.done);
@@ -260,8 +272,17 @@ const ChatUI = {
   playPending() {
     const me = L.auth.uid, cand = Object.values(Chat.msgs).filter(m => m.f !== me && m.fx && !m.del && !Chat.played[m.id] && Date.now() - m.ts < 864e5).sort((a, b) => (a.id < b.id ? -1 : 1));
     cand.forEach(m => { Chat.played[m.id] = 1; }); Chat.saveSoon();
-    const m = cand[cand.length - 1]; if (!m) return;
-    setTimeout(() => { const el = this.el(m.id); if (el) this.playFx(m, el); }, 450);
+    const m = cand[cand.length - 1];
+    if (m) setTimeout(() => { const el = this.el(m.id); if (el) this.playFx(m, el); }, 450);
+    else { // a "love you" pair that completed while the app was closed
+      const recent = Object.values(Chat.msgs).filter(x => x.f !== me && isLove(x.t) && Date.now() - x.ts < 864e5).sort((a, b) => a.ts - b.ts);
+      for (const x of recent.reverse()) if (Chat.lovePair(x)) { setTimeout(() => this.loveYou(), 900); break; }
+    }
+  },
+  loveYou() {
+    if (!this.isOpen()) return;
+    const ids = Object.values(Chat.msgs).filter(m => !m.del && isLove(m.t) && Date.now() - m.ts < 660e3).sort((a, b) => b.ts - a.ts).slice(0, 2).map(m => m.id);
+    LoveYou.play({ ptAv: avatar(partnerKey()), meAv: avatar(L.me), ids });
   },
 
   /* ---------- events from the data layer ---------- */
@@ -269,8 +290,10 @@ const ChatUI = {
     const me = L.auth.uid, incoming = fresh.filter(m => m.f !== me && !m.del);
     if (this.isOpen()) {
       this.draw({ newIds: initial ? [] : incoming.map(m => m.id) });
-      if (incoming.length && !initial) { chatSound('recv'); haptic('light'); }
+      let pair = null;
+      if (incoming.length && !initial) { chatSound('recv'); haptic('light'); for (const m of incoming) pair = Chat.lovePair(m) || pair; }
       Chat.markRead(); if (initial) this.playPending();
+      if (pair) setTimeout(() => this.loveYou(), 650);
     } else if (!initial && incoming.length) {
       const m = incoming[incoming.length - 1];
       island({ e: '💬', text: `${firstWord(ptName())}: ${m.task ? '📋 ' + m.task.title : m.t}`, sub: m.fx ? `Sent with ${(FX.bubble.concat(FX.screen).find(f => f[0] === m.fx) || [, 'an effect'])[1]}` : '', btn: 'Reply', onBtn: () => this.open(), ms: 4500 });
@@ -282,7 +305,7 @@ const ChatUI = {
     const paired = !!(L.pair && L.pair.status === 'paired');
     const t = paired && Chat.partnerTyping(), on = paired && Chat.partnerOnline();
     const txt = !paired ? 'not connected yet' : t ? 'typing…' : on ? 'online' : Chat.lastSeenText();
-    if (el.textContent !== txt) el.textContent = txt;
+    if (el.textContent !== txt) { el.textContent = txt; el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap'); }
     el.classList.toggle('typing', t); el.classList.toggle('online', on && !t);
     this.view.querySelector('.lovebar').classList.toggle('live', on);
   },
@@ -307,12 +330,18 @@ const ChatUI = {
     if (!Chat.ready()) return island({ e: '⚠️', text: 'Not connected yet', sub: 'Check you’re online and paired' });
     if (!fx && text) fx = autoFx(text);
     const from = input.getBoundingClientRect();
-    const m = Chat.send({ t: text, fx, task });
+    const rp = this.replyTo && !task ? { id: this.replyTo.id, f: this.replyTo.f, q: this.replyTo.q } : null;
+    const m = Chat.send({ t: text, fx, task, rp });
     Chat.played[m.id] = 1;
+    if (rp) this.clearReply();
+    const typing = document.activeElement === input;
     if (!task) { input.value = ''; this.autosize(input); }
+    if (typing) input.focus({ preventScroll: true }); // the keyboard stays up for the next message
     this.draw({ sentId: m.id, fromRect: from });
     setTimeout(() => { if (m.status === 'sending') this.queueDraw(); }, 950);
     chatSound('send'); haptic('light');
+    const pair = Chat.lovePair(m); if (pair) setTimeout(() => this.loveYou(), 420);
+    const sb = this.view.querySelector('.cb-send'); if (sb && !reducedMotion.matches) sb.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 -22px', opacity: 0, offset: .5 }, { translate: '0 14px', opacity: 0, offset: .51 }, { translate: '0 0', opacity: 1 }], { duration: 460, easing: 'cubic-bezier(.3,.8,.3,1)' });
   },
   autosize(input) {
     input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 120) + 'px';
@@ -327,7 +356,6 @@ const ChatUI = {
       if (b) return viewPhoto(b.dataset.pv === 'me' ? L.me : partnerKey(), b.querySelector('.av'));
       if (e.target.closest('.lb-link')) { haptic('light'); const h = v.querySelector('.lb-heart'); h.classList.remove('beat'); void h.getBoundingClientRect(); h.classList.add('beat'); }
     });
-    [send, heart, plus].forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
     input.addEventListener('input', () => { this.autosize(input); Chat.setTyping(!!input.value.trim()); });
     input.addEventListener('blur', () => Chat.setTyping(false));
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !isTouch) { e.preventDefault(); this.sendNow(input.value); } });
@@ -335,10 +363,10 @@ const ChatUI = {
     let held = false, holdT = null;
     send.addEventListener('pointerdown', () => { held = false; holdT = setTimeout(() => { held = true; haptic('medium'); this.openFxPicker(input.value.trim()); }, 450); });
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => send.addEventListener(ev, () => clearTimeout(holdT)));
-    send.addEventListener('click', () => { if (held) { held = false; return; } this.sendNow(input.value); });
+    tapKeep(send, () => { if (held) { held = false; return; } this.sendNow(input.value); }, input);
     send.addEventListener('contextmenu', e => e.preventDefault());
-    heart.addEventListener('click', () => this.sendNow('❤️', 'love'));
-    plus.addEventListener('click', () => this.openShare(plus));
+    tapKeep(heart, () => this.sendNow('❤️', 'love'), input);
+    tapKeep(plus, () => this.openShare(plus), input);
     jump.addEventListener('click', () => { body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' }); });
     this.pinned = true;
     body.addEventListener('scroll', () => {
@@ -354,10 +382,17 @@ const ChatUI = {
     const head = v.querySelector('.chat-nav');
     if (window.ResizeObserver) new ResizeObserver(() => v.style.setProperty('--head-full', head.offsetHeight + 'px')).observe(head);
 
+    // the composer's height changes with the reply bar and long messages: keep the list clear of it, and stay at the bottom
+    const bar = v.querySelector('.chatbar');
+    if (window.ResizeObserver) new ResizeObserver(() => { v.style.setProperty('--bar-h', bar.offsetHeight + 'px'); if (this.pinned) body.scrollTop = body.scrollHeight; }).observe(bar);
+    v.querySelector('.rb-x').addEventListener('click', () => { this.clearReply(); haptic('light'); });
+    this.bindSwipeReply(list);
+
     // bubbles: tap ink to reveal, double-tap = ❤️, long-press = tapbacks + menu
     list.addEventListener('click', e => {
       const q = e.target.closest('[data-quick]'); if (q) return this.sendNow(q.dataset.quick, q.dataset.quick === '❤️' ? 'love' : null);
       const r = e.target.closest('[data-retry]'); if (r) return Chat.retry(r.dataset.retry);
+      const rq = e.target.closest('[data-rq]'); if (rq) return this.jumpTo(rq.dataset.rq);
       const chk = e.target.closest('[data-taskchk]');
       if (chk) { const t = D.tasks[chk.dataset.taskchk]; if (t) { toggleDone(t.id, { instant: true }); setTimeout(() => this.queueDraw(), 100); } return; }
       if (performance.now() < (this.suppressUntil || 0)) return;
@@ -381,6 +416,78 @@ const ChatUI = {
     });
     list.addEventListener('contextmenu', e => { const row = e.target.closest('.msg-row'); if (!row) return; e.preventDefault(); if (!isTouch) this.openBubbleMenu(row); });
   },
+  /* ---------- reply ---------- */
+  setReply(m) {
+    const v = this.view; if (!v || !m || m.del) return;
+    this.replyTo = { id: m.id, f: m.f, q: this.previewOf(m) };
+    this.drawReply(true);
+    v.querySelector('.cb-in').focus({ preventScroll: true });
+    haptic('light');
+  },
+  clearReply() { this.replyTo = null; this.drawReply(); },
+  drawReply(pop) {
+    const v = this.view; if (!v) return;
+    const bar = v.querySelector('.cb-reply'), r = this.replyTo;
+    clearTimeout(this.replyT);
+    if (r) {
+      bar.querySelector('b').textContent = r.f === L.auth.uid ? 'Replying to yourself' : 'Replying to ' + firstWord(ptName());
+      bar.querySelector('.rb-t span').textContent = r.q || 'Message';
+      bar.classList.remove('out'); bar.hidden = false;
+      if (pop) { bar.classList.remove('in'); void bar.offsetWidth; bar.classList.add('in'); }
+    } else if (!bar.hidden) {
+      bar.classList.add('out');
+      this.replyT = setTimeout(() => { if (!this.replyTo) { bar.hidden = true; bar.classList.remove('out', 'in'); } }, 240);
+    }
+  },
+  // scroll to the message a reply quotes, and let it glow for a moment
+  jumpTo(id) {
+    const v = this.view; if (!v || !Chat.msgs[id]) return;
+    let row = this.el(id);
+    if (!row) { this.limit = Math.max(this.limit, this.total); this.reconcile(v.querySelector('.chatlist'), this.items()); row = this.el(id); }
+    if (!row) return;
+    const body = v.querySelector('.chatbody');
+    row.closest('.msg-row').scrollIntoView({ block: 'center', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    setTimeout(() => { row.classList.remove('hl'); void row.offsetWidth; row.classList.add('hl'); setTimeout(() => row.classList.remove('hl'), 1400); }, 280);
+    haptic('light'); body.dispatchEvent(new Event('scroll'));
+  },
+  // swipe a message to the right to reply (mouse drag works too; the long-press menu has Reply as well)
+  bindSwipeReply(list) {
+    const TH = 56;
+    list.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      const row = e.target.closest('.msg-row[data-id]'); if (!row || e.target.closest('a, button')) return;
+      const m = Chat.msgs[row.dataset.id]; if (!m || m.del) return;
+      const x0 = e.clientX, y0 = e.clientY, pid = e.pointerId; let lock = null, hint = null, dx = 0, hit = false;
+      const move = ev => {
+        if (ev.pointerId !== pid) return;
+        const mx = ev.clientX - x0, my = ev.clientY - y0;
+        if (lock === null) {
+          if (Math.abs(my) > 9 || mx < -9) return end(false);
+          if (mx > 9 && mx > Math.abs(my) * 1.3) {
+            lock = 'x'; clearTimeout(this.lp); this.suppressUntil = performance.now() + 700;
+            hint = document.createElement('span'); hint.className = 'rp-hint'; hint.innerHTML = ic('reply'); row.append(hint);
+            row.classList.add('swiping'); row.style.transition = 'none';
+          } else return;
+        }
+        dx = Math.max(0, mx);
+        const t = Math.min(88, dx < TH ? dx : TH + (dx - TH) * 0.22);
+        row.style.transform = `translateX(${t}px)`;
+        const p = Math.min(1, dx / TH);
+        hint.style.opacity = String(Math.min(1, p * 1.3)); hint.style.scale = String(0.5 + 0.5 * p);
+        if (dx >= TH && !hit) { hit = true; hint.classList.add('hit'); haptic('medium'); }
+        else if (dx < TH && hit) { hit = false; hint.classList.remove('hit'); }
+      };
+      const end = fire => {
+        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel);
+        if (lock !== 'x') return;
+        row.style.transition = 'transform .42s cubic-bezier(.34,1.56,.64,1)'; row.style.transform = '';
+        setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, 440);
+        if (fire && hit) this.setReply(m);
+      };
+      const up = ev => { if (ev.pointerId === pid) end(true); }, cancel = ev => { if (ev.pointerId === pid) end(false); };
+      addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', cancel);
+    });
+  },
   quickHeart(row) {
     const id = row.dataset.id, m = Chat.msgs[id]; if (!m || m.del) return;
     Chat.react(id, '❤️'); haptic('success');
@@ -393,18 +500,19 @@ const ChatUI = {
     const id = row.dataset.id, m = Chat.msgs[id]; if (!m || m.del) return;
     const mine = m.f === L.auth.uid, myR = (Chat.rx[id] || {})[L.auth.uid], w = row.querySelector('.bwrap');
     haptic('medium');
-    const items = [];
+    const items = [['reply', 'Reply', 'reply']];
     if (m.t) items.push(['copy', 'Copy', 'copy']);
     if (m.t) items.push(['task', 'Make it a task', 'check']);
     if (m.task && D.tasks[m.task.id]) items.push(['open', 'Open task', 'list']);
     if (mine && m.status === 'failed') items.push(['retry', 'Try again', 'repeat']);
     if (mine && m.status === 'sent' && Date.now() - m.ts < 15 * 60e3) items.push(['unsend', 'Undo Send', 'trash']);
-    const html = `<div class="mpal tbp">${TAPBACKS.map(e => `<button data-m="react" data-v="${e}" class="${myR === e ? 'on' : ''}" type="button"><span>${e}</span></button>`).join('')}</div>` +
+    const html = `<div class="mpal tbp">${REACTS.map((e, i) => `<button data-m="react" data-v="${e}" style="--i:${i}" class="${myR === e ? 'on' : ''}" type="button" aria-label="React ${e}"><span>${e}</span></button>`).join('')}</div>` +
       (items.length ? '<div class="mgap"></div>' + items.map(([k, label, icon]) => `<button class="mi${k === 'unsend' ? ' red' : ''}" data-m="${k}" type="button">${label}${ic(icon)}</button>`).join('') : '');
     showMenu({
       rect: w.getBoundingClientRect(), preview: `<div class="msg-row ${mine ? 'me' : 'them'} end bare">${w.outerHTML}</div>`, html, align: mine ? 'right' : 'left',
       onPick: async (k, val) => {
-        if (k === 'react') return Chat.react(id, val);
+        if (k === 'react') { haptic('light'); return Chat.react(id, val); }
+        if (k === 'reply') return this.setReply(m);
         if (k === 'copy') { if (await copyText(m.t)) island({ e: '📋', text: 'Copied', ms: 1200 }); return; }
         if (k === 'open') return openTaskSheet(m.task.id);
         if (k === 'retry') return Chat.retry(id);

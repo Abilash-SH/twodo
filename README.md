@@ -100,6 +100,7 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 
 ## 6. Using it
 - **Type naturally** in the bottom box: `Dinner @us fri 8pm !!` · `Milk #groceries` · `Gym every mon 7am` · `Call mom tomorrow 6pm`. Tap a chip to ignore a guess. Paste several lines to add several tasks.
+- **Messages:** swipe a message right to reply (tap the quote to jump to the original) · press and hold to react ❤️ 😂 😮 🥹 🔥 👍, Reply or Copy · when you both say “love you” within 10 minutes, a little celebration plays · the keyboard stays open while you send.
 - **Gestures:** swipe a task right to complete · left to pin or delete · long-press for quick actions · **swipe right anywhere else (or from the left edge) to go back to the chat** · drag sheets down to close. On a computer: the ‹ button or Esc.
 - **To-dos & reminders** (top-right button): Today (Overdue / Morning / Afternoon / Tonight), Upcoming, **Reminders** (everything with a time, missed ones first), Together, Pinned, All, Completed, search, your streak, plus your own lists and a 🎁 Secret list.
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).

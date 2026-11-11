@@ -19,7 +19,7 @@ function applyTheme() {
     if (ph) root.style.setProperty('--ph-' + k, `url("${ph}")`); else root.style.removeProperty('--ph-' + k);
   }
   const meta = $('meta[name="theme-color"]');
-  if (meta) meta.content = document.body.classList.contains('launching') ? '#F6528C' : dark ? '#0D0C10' : '#FAF8FB';
+  if (meta) meta.content = document.body.classList.contains('launching') ? '#E98BB1' : dark ? '#0D0C10' : '#FAF8FB';
 }
 darkMQ.addEventListener?.('change', applyTheme);
 

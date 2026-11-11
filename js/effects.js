@@ -114,7 +114,7 @@ function heartPath(x, cx, cy, size) {
 
 const ScreenFx = {
   balloons() {
-    const cols = ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#AF52DE', '#FF2D55'];
+    const cols = ['#F29B9B', '#F5BE95', '#F3DA8F', '#9AD8B3', '#9DB7F0', '#C9A9EA', '#F2A3C0'];
     const W = innerWidth, H = innerHeight;
     const B = Array.from({ length: 16 }, (_, i) => ({ x: Math.random() * W, y: H + 50 + Math.random() * H * 0.7, r: 24 + Math.random() * 16, c: cols[i % cols.length], sp: 2.4 + Math.random() * 1.8, ph: Math.random() * 6 }));
     fxCanvas(5, (x, t) => {
@@ -130,7 +130,7 @@ const ScreenFx = {
     });
   },
   confetti() {
-    const cols = ['#FF2D55', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#AF52DE', '#5AC8FA'], W = innerWidth;
+    const cols = ['#F2A3C0', '#F5BE95', '#F3DA8F', '#9AD8B3', '#9DB7F0', '#C9A9EA', '#A6DAF2'], W = innerWidth;
     const P = Array.from({ length: 220 }, () => ({ x: Math.random() * W, y: -20 - Math.random() * 500, vy: 2 + Math.random() * 3, w: 6 + Math.random() * 6, h: 4 + Math.random() * 4, c: cols[(Math.random() * cols.length) | 0], a: Math.random() * 6, va: 0.05 + Math.random() * 0.12, sw: Math.random() * 6 }));
     fxCanvas(4.5, (x, t) => {
       for (const p of P) {
@@ -153,13 +153,13 @@ const ScreenFx = {
       x.shadowColor = 'rgba(255,45,85,.6)'; x.shadowBlur = 40; x.fillStyle = g; heartPath(x, px, py, s); x.fill(); x.shadowBlur = 0;
       if (t > 0.55 && t < 2.6) for (const h of small) {
         const k = (t - 0.55) * 60; x.globalAlpha = Math.max(0, 1 - (t - 0.55) / 2);
-        x.fillStyle = '#FF2D55'; heartPath(x, cx + Math.cos(h.a) * h.v * k, cy + Math.sin(h.a) * h.v * k, h.s); x.fill();
+        x.fillStyle = '#F2A3C0'; heartPath(x, cx + Math.cos(h.a) * h.v * k, cy + Math.sin(h.a) * h.v * k, h.s); x.fill();
       }
       x.globalAlpha = 1;
     });
   },
   fireworks() {
-    const W = innerWidth, H = innerHeight, cols = ['#FF453A', '#FFD60A', '#30D158', '#64D2FF', '#BF5AF2', '#FF9F0A', '#FFFFFF'];
+    const W = innerWidth, H = innerHeight, cols = ['#FF453A', '#FFD60A', '#9AD8B3', '#64D2FF', '#BF5AF2', '#FF9F0A', '#FFFFFF'];
     const P = []; let next = 0;
     const burst = () => { const cx = W * (0.15 + Math.random() * 0.7), cy = H * (0.12 + Math.random() * 0.45), c = cols[(Math.random() * cols.length) | 0];
       for (let i = 0; i < 90; i++) { const a = Math.random() * Math.PI * 2, v = 1.5 + Math.random() * 4.5; P.push({ x: cx, y: cy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, c }); } };
@@ -228,3 +228,33 @@ const ScreenFx = {
 };
 
 function playScreenFx(fx, opts = {}) { const f = ScreenFx[fx]; if (f) f(opts); }
+
+
+/* ---------- Love You: when you both say it, the two of you meet in the middle of the screen ---------- */
+const LoveYou = {
+  play({ ptAv = '', meAv = '', ids = [] } = {}) {
+    document.querySelectorAll('.ly-layer').forEach(n => n.remove());
+    const calm = reducedMotion.matches, layer = document.createElement('div');
+    layer.className = 'ly-layer' + (calm ? ' calm' : '');
+    const parts = calm ? '' : Array.from({ length: 28 }, (_, i) => {
+      const x = (Math.random() * 90 - 45).toFixed(1), dx = (Math.random() * 40 - 20).toFixed(1), s = (0.55 + Math.random() * 1.0).toFixed(2);
+      const d = (2.1 + Math.random() * 1.7).toFixed(2), dl = (1.25 + Math.random() * 1.1).toFixed(2), r = (Math.random() * 50 - 25).toFixed(0);
+      return `<i class="ly-p c${i % 3}" style="--x:${x}vw;--dx:${dx}vw;--s:${s};--d:${d}s;--dl:${dl}s;--r:${r}deg">♥</i>`;
+    }).join('');
+    layer.innerHTML = `<div class="ly-glow"></div>
+      <div class="ly-stage">
+        <div class="ly-av l">${ptAv}</div>
+        <div class="ly-heart"><i class="ly-ring"></i><i class="ly-ring r2"></i>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lyG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs>
+            <path d="M12 20.3s-7.6-4.6-9.4-9.3C1.4 7.6 3.7 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.7 3.3 4.5 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="url(#lyG)"/></svg></div>
+        <div class="ly-av r">${meAv}</div>
+      </div>${parts}<div class="ly-cap">You both said it</div>`;
+    document.body.append(layer);
+    // the two messages glow while it plays
+    for (const id of ids) { const el = ChatUI.el(id); if (el) { el.classList.add('ly-on'); setTimeout(() => el.classList.remove('ly-on'), 3600); } }
+    chatSound('love');
+    [0, 700, 1250, 1800].forEach((t, i) => setTimeout(() => haptic(i === 0 ? 'success' : 'light'), t + 600));
+    setTimeout(() => layer.classList.add('out'), calm ? 1800 : 3900);
+    setTimeout(() => layer.remove(), calm ? 2200 : 4500);
+  },
+};

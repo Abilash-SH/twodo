@@ -123,15 +123,14 @@ function initComposer() {
   });
   Cmp.ta.addEventListener('blur', () => { Cmp.blurT = setTimeout(() => { if (document.activeElement !== Cmp.ta) Cmp.el.classList.remove('focus'); }, 150); });
   // Keep the keyboard open when tapping pills / buttons inside the composer
-  [Cmp.pills, Cmp.send, Cmp.chips].forEach(el => el.addEventListener('mousedown', e => e.preventDefault()));
+  [Cmp.pills, Cmp.chips].forEach(el => el.addEventListener('mousedown', e => e.preventDefault()));
   Cmp.pills.addEventListener('click', e => { const b = e.target.closest('.pill'); if (b) insertToken(b.dataset.kind, b.dataset.tok); });
   Cmp.chips.addEventListener('click', e => {
     const b = e.target.closest('.chip'); if (!b) return;
     if (b.dataset.k) Cmp.ignored.add(b.dataset.k); else if (b.dataset.off) Cmp.ignored.delete(b.dataset.off); else return;
     haptic('light'); updateComposer();
   });
-  Cmp.send.addEventListener('click', () => { submitComposer(); });
-  Cmp.plus.addEventListener('mousedown', e => e.preventDefault());
+  tapKeep(Cmp.send, () => { submitComposer(); }, Cmp.ta);
   // Tap the list name under the text box to choose where new tasks go
   Cmp.ctx.setAttribute('role', 'button'); Cmp.ctx.setAttribute('tabindex', '0'); Cmp.ctx.style.cursor = 'pointer';
   Cmp.ctx.addEventListener('mousedown', e => e.preventDefault());

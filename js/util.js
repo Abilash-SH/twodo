@@ -47,6 +47,7 @@ const ICONS = {
   moon: '<path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/>',
   sofa: '<path d="M5 11V8.5A2.5 2.5 0 017.5 6h9A2.5 2.5 0 0119 8.5V11"/><path d="M3 12.5a1.8 1.8 0 013.5 0V15h11v-2.5a1.8 1.8 0 013.5 0V18H3z"/><path d="M5 18v2M19 18v2"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  reply: '<path d="M9.5 5L4 10.5 9.5 16"/><path d="M4 10.5h9.5a6.5 6.5 0 016.5 6.5v1.5"/>',
   repeat: '<path d="M17 2.5l3 3-3 3"/><path d="M4 11.5v-1a5 5 0 015-5h11"/><path d="M7 21.5l-3-3 3-3"/><path d="M20 12.5v1a5 5 0 01-5 5H4"/>',
   flag: '<path d="M5 21V4.5M5 4.5h11.5l-2 4.25 2 4.25H5"/>',
   person: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0115 0"/>',
@@ -128,7 +129,7 @@ function confetti() {
   const dpr = Math.min(2, devicePixelRatio || 1), W = innerWidth, H = innerHeight;
   c.width = W * dpr; c.height = H * dpr; c.style.width = W + 'px'; c.style.height = H + 'px';
   const x = c.getContext('2d'); x.scale(dpr, dpr);
-  const cols = ['#FF2D55', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#AF52DE', '#5AC8FA'];
+  const cols = ['#F2A3C0', '#F5BE95', '#F3DA8F', '#9AD8B3', '#9DB7F0', '#C9A9EA', '#A6DAF2'];
   const P = Array.from({ length: 160 }, () => ({
     x: W / 2 + (Math.random() - 0.5) * 80, y: H * 0.32,
     vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 4,
@@ -164,4 +165,25 @@ async function copyText(text) {
     let ok = false; try { ok = document.execCommand('copy'); } catch (e2) { /* ignore */ }
     ta.remove(); return ok;
   }
+}
+
+/* A button that doesn't steal the keyboard: on iOS, tapping a button closes the keyboard (the field loses focus) before the click.
+   While a field is focused we cancel the touch so focus stays, and run the action ourselves on release. */
+function tapKeep(btn, fn, field) {
+  let own = false, x0 = 0, y0 = 0;
+  btn.addEventListener('mousedown', e => e.preventDefault());
+  btn.addEventListener('touchstart', e => {
+    const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY;
+    own = !!field && document.activeElement === field;
+    if (own && e.cancelable) e.preventDefault();
+  }, { passive: false });
+  btn.addEventListener('touchend', e => {
+    if (!own) return; own = false;
+    const t = e.changedTouches[0];
+    if (Math.hypot(t.clientX - x0, t.clientY - y0) > 14) return;
+    if (e.cancelable) e.preventDefault();
+    fn(e);
+  }, { passive: false });
+  btn.addEventListener('touchcancel', () => { own = false; });
+  btn.addEventListener('click', fn);
 }

@@ -65,6 +65,7 @@ function pushView(spec, { replace = false } = {}) {
   shade.style.transition = 'none'; shade.style.opacity = '0';
   void v.offsetWidth;
   shade.style.transition = '';
+  v.classList.add('enter'); setTimeout(() => v.classList.remove('enter'), 1100);
   v.classList.remove('offright');
   if (prev) prev.classList.add('under');
   shade.style.opacity = '.12';

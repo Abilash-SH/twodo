@@ -3,9 +3,10 @@
    ========================================================================== */
 
 :root {
-  --c-blue: #007AFF; --c-indigo: #5856D6; --c-purple: #AF52DE; --c-pink: #FF2D55;
-  --c-red: #FF3B30; --c-orange: #FF9500; --c-yellow: #FFCC00; --c-green: #34C759;
-  --c-teal: #30B0C7; --c-gray: #8E8E93; --c-brown: #A2845E; --c-mint: #00C7BE;
+  /* soft, dusty pastels: calm to look at, still readable as text and icons */
+  --c-blue: #7592DB; --c-indigo: #8582D6; --c-purple: #A883D3; --c-pink: #DB82A8;
+  --c-red: #DD7878; --c-orange: #DB9462; --c-yellow: #CDAC52; --c-green: #66B88A;
+  --c-teal: #5FB1BC; --c-gray: #9494A2; --c-brown: #AC8F78; --c-mint: #5CC2B2;
 
   --accent: var(--c-blue);
   --bg: #F2F2F7; --bg2: #FFFFFF; --bg3: #F2F2F7;
@@ -30,9 +31,9 @@
 }
 
 [data-theme="dark"] {
-  --c-blue: #0A84FF; --c-indigo: #5E5CE6; --c-purple: #BF5AF2; --c-pink: #FF375F;
-  --c-red: #FF453A; --c-orange: #FF9F0A; --c-yellow: #FFD60A; --c-green: #30D158;
-  --c-teal: #40C8E0; --c-gray: #98989D; --c-brown: #AC8E68; --c-mint: #63E6E2;
+  --c-blue: #93AEEC; --c-indigo: #A19EEA; --c-purple: #C0A0E6; --c-pink: #EC9DBE;
+  --c-red: #EC9090; --c-orange: #EBAC7C; --c-yellow: #E0C377; --c-green: #85CFA4;
+  --c-teal: #7FC9D3; --c-gray: #A6A6B2; --c-brown: #C0A48D; --c-mint: #7DD5C6;
 
   --bg: #000000; --bg2: #1C1C1E; --bg3: #2C2C2E;
   --cell: #1C1C1E; --sheet: #1C1C1E;
@@ -813,7 +814,7 @@ button.banner span { display: block; color: var(--label2); font-size: 14px; }
 
 /* ===================== Launch animation ===================== */
 #splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
-  background: radial-gradient(120% 80% at 15% 0%, #FF6B98 0%, transparent 55%), linear-gradient(150deg, #FF376E 0%, #AF52DE 55%, #5856D6 100%);
+  background: radial-gradient(120% 80% at 15% 0%, #F5A9C4 0%, transparent 55%), linear-gradient(150deg, #EE86AC 0%, #B592DE 55%, #8C8AD9 100%);
   transition: opacity .45s ease .18s; animation: spSafety .4s ease 5s forwards; }
 #splash .sp-mark { width: 150px; height: 105px; animation: spPulse .32s ease-in-out .78s; }
 #splash svg { width: 100%; height: 100%; overflow: visible; }
@@ -1014,8 +1015,8 @@ input.me-name:focus { background: var(--fill); }
 .me-hint { margin: 12px 0 0; font-size: 13px; color: var(--label2); }
 
 /* the app follows the keyboard as it slides (see main.js → keyboard) */
-body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .32s cubic-bezier(.2,.8,.2,1), top .32s cubic-bezier(.2,.8,.2,1); }
-body.kb-anim #layer { transition: height .32s cubic-bezier(.2,.8,.2,1), top .32s cubic-bezier(.2,.8,.2,1); }
+body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .4s cubic-bezier(.22,.9,.28,1), top .4s cubic-bezier(.22,.9,.28,1); }
+body.kb-anim #layer { transition: height .4s cubic-bezier(.22,.9,.28,1), top .4s cubic-bezier(.22,.9,.28,1); }
 
 /* ===================== To-dos & reminders ===================== */
 .hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 2px 16px 12px; }

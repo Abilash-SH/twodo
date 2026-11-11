@@ -105,10 +105,11 @@ const KB = {
 const isField = el => !!el && !!el.matches && (el.isContentEditable || el.matches('textarea, select, input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=button]):not([type=submit]):not([type=color])'));
 const isTypingField = el => isField(el) && !el.readOnly && !el.matches('select, input[type=date], input[type=time], input[type=datetime-local], input[type=month], input[type=week]');
 function setViewportBox(h, top, animate) {
-  const root = document.documentElement.style;
+  const root = document.documentElement.style, prev = parseFloat(root.getPropertyValue('--vvh')) || 0;
+  if (animate === undefined) animate = !!prev && Math.abs(prev - h) > 60; // any big change (the keyboard) glides instead of jumping
   if (animate && !reducedMotion.matches) {
     document.body.classList.add('kb-anim'); clearTimeout(KB.animT);
-    KB.animT = setTimeout(() => document.body.classList.remove('kb-anim'), 400);
+    KB.animT = setTimeout(() => document.body.classList.remove('kb-anim'), 460);
   }
   root.setProperty('--vvh', Math.round(h) + 'px'); root.setProperty('--vvt', Math.round(top) + 'px');
 }

@@ -6,7 +6,11 @@
 'use strict';
 
 const CHAT_KEY = 'twodo:chat';
-const TAPBACKS = ['❤️', '👍', '👎', '😂', '‼️', '❓'];
+const REACTS = ['❤️', '😂', '😮', '🥹', '🔥', '👍'];                       // what the picker offers
+const TAPBACKS = [...REACTS, '👎', '‼️', '❓'];                              // what we accept (older versions also had these)
+const MSG_ID = /^[0-9a-z]{9,24}$/;
+const LOVE_RE = /(^|[^a-z])(i\s*)?(love|luv|lub)\s*(you|u|ya|yaa|uu)\b|(^|[^a-z])ily\b|\bi\s*love\s*you\b/i;
+const isLove = t => typeof t === 'string' && t.length <= 120 && LOVE_RE.test(t);
 
 const Chat = {
   space: null, msgs: {}, rx: {}, played: {}, read: 0, ver: 0, loaded: false,
@@ -80,7 +84,8 @@ const Chat = {
       let o; try { o = await decryptObj(Sync.key, v.d); } catch (e) { continue; }
       if (!o || typeof o !== 'object') continue;
       const tk = o.task && typeof o.task === 'object' ? { id: cStr(o.task.id, 80), title: cStr(o.task.title, 2000), due: DAY_RE.test(o.task.due) ? o.task.due : null, time: TIME_RE.test(o.task.time) ? o.task.time : null } : null;
-      this.msgs[id] = { id, f: v.f, ts: cNum(o.ts) || v.u, t: cStr(o.t, 20000), fx: FX.valid(o.fx) ? o.fx : null, task: tk, del: !!o.del, _u: v.u, status: 'sent' };
+      const rp = o.rp && typeof o.rp === 'object' && MSG_ID.test(o.rp.id) ? { id: o.rp.id, f: cStr(o.rp.f, 80), q: cStr(o.rp.q, 140) } : null; // a reply's quote: plain text only, shown escaped
+      this.msgs[id] = { id, f: v.f, ts: cNum(o.ts) || v.u, t: cStr(o.t, 20000), fx: FX.valid(o.fx) ? o.fx : null, task: tk, rp, del: !!o.del, _u: v.u, status: 'sent' };
       if (!prev) fresh.push(this.msgs[id]);
     }
     const initial = !this.loaded; this.loaded = true;
@@ -143,6 +148,17 @@ const Chat = {
     this.rx = rx; this.bump(); this.saveSoon();
     if (typeof ChatUI !== 'undefined') ChatUI.onState();
   },
+  // Both of you said "love you" within 10 minutes: returns the other person's message to pair with m (once only)
+  lovePair(m) {
+    if (!m || m.del || !isLove(m.t) || this.played['ly' + m.id]) return null;
+    let o = null;
+    for (const x of Object.values(this.msgs)) {
+      if (x.f === m.f || x.del || !isLove(x.t) || this.played['ly' + x.id] || x.ts > m.ts || m.ts - x.ts > 600e3) continue;
+      if (!o || x.ts > o.ts) o = x;
+    }
+    if (o) { this.played['ly' + m.id] = 1; this.played['ly' + o.id] = 1; this.saveSoon(); }
+    return o;
+  },
   partnerTyping() { return this.partnerTypingUntil > Date.now(); },
   // Online = their app is open on screen (a heartbeat every 45 s); otherwise "last seen" is when it last was.
   partnerOnline() { const p = this.presence; return !!p && p.on && Date.now() - p.beat < 100e3; },
@@ -162,9 +178,9 @@ const Chat = {
 
   /* ---------- actions ---------- */
   newId() { return Date.now().toString(36).padStart(9, '0') + Math.random().toString(36).slice(2, 7); },
-  send({ t = '', fx = null, task = null }) {
+  send({ t = '', fx = null, task = null, rp = null }) {
     const id = this.newId(), ts = Date.now();
-    const m = { id, f: L.auth.uid, ts, t, fx, task, del: false, _u: ts, status: 'sending' };
+    const m = { id, f: L.auth.uid, ts, t, fx, task, rp, del: false, _u: ts, status: 'sending' };
     this.msgs[id] = m; this.bump(); this.saveSoon();
     if (this.typingOn) this.setTyping(false);
     this.write(m);
@@ -172,7 +188,7 @@ const Chat = {
   },
   async write(m) {
     try {
-      const d = await encryptObj(Sync.key, { ts: m.ts, t: m.t, fx: m.fx, task: m.task, del: m.del });
+      const d = await encryptObj(Sync.key, { ts: m.ts, t: m.t, fx: m.fx, task: m.task, rp: m.rp || null, del: m.del });
       await dbPut(`${this.base()}/m/${m.id}`, { f: m.f, u: m._u, d });
       m.status = 'sent';
       if (!m.del) this.notifyPartner(m);
@@ -182,7 +198,7 @@ const Chat = {
   retry(id) { const m = this.msgs[id]; if (!m) return; m.status = 'sending'; this.bump(); ChatUI.onState(); this.write(m); },
   unsend(id) {
     const m = this.msgs[id]; if (!m || m.f !== L.auth.uid) return;
-    Object.assign(m, { del: true, t: '', task: null, fx: null, _u: Date.now(), status: 'sending' });
+    Object.assign(m, { del: true, t: '', task: null, fx: null, rp: null, _u: Date.now(), status: 'sending' });
     this.bump(); this.saveSoon(); ChatUI.onState(); this.write(m);
   },
   async react(id, r) {

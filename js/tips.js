@@ -25,6 +25,7 @@ const TIPS = [
   { c: 'gestures', e: '👈', t: 'Swipe left to pin or delete', d: 'A short swipe shows Pin and Delete; a long swipe deletes straight away.', demo: 'swipeL' },
   { c: 'gestures', e: '👆', t: 'Long-press for quick actions', d: 'Move to Today, Tomorrow or the weekend, set priority or person, move list, duplicate or start a focus timer.', demo: 'press' },
   { c: 'gestures', e: '⬅️', t: 'Swipe right to go back', d: 'Drag to the right from the left edge, or anywhere that isn’t a task, to slide back to the chat. On a computer, use ‹ or Esc.', demo: 'edge' },
+  { c: 'gestures', e: '↩️', t: 'Swipe a message to reply', d: 'In the chat, drag a message to the right and let go. Your reply quotes it. Tap the quote to jump back to the original.' },
   { c: 'gestures', e: '⬇️', t: 'Drag sheets down to close', d: 'Task details, Settings and other cards close when you pull them down.', demo: 'sheetdown' },
   // Organize
   { c: 'organize', e: '☀️', t: 'Today, sorted for you', d: 'Today splits into Overdue, Morning, Afternoon and Tonight. Upcoming groups tasks by day, then by month.' },
@@ -41,6 +42,8 @@ const TIPS = [
   { c: 'together', e: '🎁', t: 'The Secret list', d: 'Anything in a Secret list stays on your phone and never syncs. Perfect for planning surprises.' },
   { c: 'together', e: '🔥', t: 'Streaks & progress', d: 'The top of To-dos shows your streak and how much you’ve done together this week.' },
   // Messages
+  { c: 'messages', e: '😂', t: 'React to a message', d: 'Press and hold a message, then pick ❤️ 😂 😮 🥹 🔥 or 👍. Double-tap sends a ❤️ straight away.' },
+  { c: 'messages', e: '💞', t: 'Say it together', d: 'When you both say “love you” within a few minutes, you two meet in the middle of the screen. Try it.' },
   { c: 'messages', e: '💬', t: 'Message your partner', d: 'Your chat is Home. Under their name you’ll see <b>online</b>, <b>typing…</b> or when they were last seen. Everything is end-to-end encrypted.', act: ['chat', 'Open chat'] },
   { c: 'messages', e: '🤍', t: 'Hearts, not ticks', d: 'Under your last message: an outline ♡ means sent, a filled ♥ means they’ve seen it.' },
   { c: 'messages', e: '🖼️', t: 'Tap a photo', d: 'Tap either picture at the top to see it big. On yours you can change or remove it — only you can change your own.' },
