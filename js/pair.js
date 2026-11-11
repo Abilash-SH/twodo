@@ -90,7 +90,7 @@ const Pair = {
   onAccepted(from, r) {
     dbPatch('', { [`requests/${L.auth.uid}/${from}`]: null }).catch(() => {});
     if (!L.pair || L.pair.uid !== from) return;
-    L.pair.status = 'paired'; save();
+    L.pair.status = 'paired'; save(); Chat.start();
     island({ e: '💞', text: `${r.name} accepted your request!`, sub: 'Your lists now sync together' });
     haptic('success'); confetti(); updateSyncUI(); if (Inbox.onChange) Inbox.onChange();
   },
@@ -105,7 +105,7 @@ const Pair = {
       [`users/${me}/private/sk`]: await encryptObj(wrap, { id: space.id, k: b64(space.raw) }),
     });
     await KeyStore.set({ space });
-    Sync.close();
+    Sync.close(); Chat.clearLocal();
     if (D.people && D.people[partnerKey()]) { D.people[partnerKey()] = { ...D.people[partnerKey()], uid: null }; commit(D.people, { silent: true }); }
     resetSyncFlags();
     L.pair = null; L.sync = { space: space.id }; save();

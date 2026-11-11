@@ -27,7 +27,7 @@ function composerCtx() {
 function updateComposerCtx() {
   if (!Cmp.el) return;
   const v = topView();
-  Cmp.el.classList.toggle('hide', !v || v._spec.type === 'search' || !L.onboarded);
+  Cmp.el.classList.toggle('hide', !v || v._spec.type === 'search' || v._spec.type === 'chat' || !L.onboarded);
   const c = composerCtx();
   Cmp.ctx.innerHTML = `${esc(c.label)} ${ic('chevD', 'xs')}`;
 }

@@ -308,6 +308,7 @@ function onAction(name, el) {
     }
     case 'dismissInstall': L.tips.install = 1; save(); scheduleRender(); return;
     case 'invite': return openInviteSheet();
+    case 'chat': return ChatUI.open();
     case 'dismissPair': L.tips.pair = 1; save(); scheduleRender(); return;
     case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; scheduleRender(); } return;
   }

@@ -2,7 +2,6 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "usernames": {
       "$name": {
         ".read": "auth != null",
@@ -10,7 +9,6 @@
         ".validate": "$name.matches(/^[a-z0-9_.]{3,20}$/) && newData.isString()"
       }
     },
-
     "users": {
       "$uid": {
         "public": {
@@ -24,7 +22,6 @@
         }
       }
     },
-
     "spaces": {
       "$space": {
         ".read": "auth != null && data.child('members').child(auth.uid).exists()",
@@ -44,10 +41,33 @@
           "$rec": {
             ".validate": "newData.hasChildren(['u', 'd']) && newData.child('u').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 200000"
           }
+        },
+        "c": {
+          "m": {
+            "$msg": {
+              ".write": "auth != null && root.child('spaces').child($space).child('members').child(auth.uid).exists() && (!data.exists() || data.child('f').val() === auth.uid) && (!newData.exists() || newData.child('f').val() === auth.uid)",
+              ".validate": "newData.hasChildren(['f', 'u', 'd']) && newData.child('u').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 30000"
+            }
+          },
+          "e": {
+            "x": {
+              "$uid": {
+                ".write": "auth != null && auth.uid === $uid && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
+                ".validate": "newData.hasChildren(['u', 'd']) && newData.child('d').isString()"
+              }
+            },
+            "rx": {
+              "$msg": {
+                "$uid": {
+                  ".write": "auth != null && auth.uid === $uid && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
+                  ".validate": "newData.hasChildren(['u', 'd']) && newData.child('d').isString()"
+                }
+              }
+            }
+          }
         }
       }
     },
-
     "requests": {
       "$to": {
         ".read": "auth != null && auth.uid === $to",
@@ -57,7 +77,6 @@
         }
       }
     },
-
     "rem": {
       "$space": {
         ".read": "auth != null && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
@@ -67,12 +86,13 @@
         }
       }
     },
-
     "push": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
-        "$sub": { ".validate": "newData.hasChildren(['endpoint', 'keys'])" }
+        "$sub": {
+          ".validate": "newData.hasChildren(['endpoint', 'keys'])"
+        }
       }
     }
   }

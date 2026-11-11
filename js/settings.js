@@ -122,7 +122,7 @@ async function settingsAction(x, sh) {
     case 'import': $('#importFile').click(); return;
     case 'reset':
       if (!(await confirmDialog({ title: 'Erase everything?', message: 'This removes all tasks and settings from this phone. Synced data stays in your shared space.', ok: 'Erase', destructive: true }))) return;
-      Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {}); localStorage.removeItem(KD); localStorage.removeItem(KL); location.reload(); return;
+      Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {}); localStorage.removeItem('twodo:chat'); localStorage.removeItem(KD); localStorage.removeItem(KL); location.reload(); return;
   }
 }
 

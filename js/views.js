@@ -12,6 +12,7 @@ const viewPrefs = key => (L.view[key] = L.view[key] || {});
 function viewTitle(spec) {
   if (spec.type === 'home') return 'Twodo';
   if (spec.type === 'search') return 'Search';
+  if (spec.type === 'chat') return firstWord(ptName());
   if (spec.type === 'list') { const l = D.lists[spec.id]; return l ? l.name : 'List'; }
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
   return SMART[spec.key].title;
@@ -40,6 +41,7 @@ function renderNow() {
 function makeView(spec) {
   const v = document.createElement('section');
   v.className = 'view'; v._spec = spec;
+  if (spec.type === 'chat') { ChatUI.build(v); return v; }
   v.innerHTML = `<header class="nav"><div class="nav-side l"></div><div class="nav-title"></div><div class="nav-side r"></div></header><div class="vbody"></div>`;
   v.addEventListener('scroll', () => {
     v.firstElementChild.classList.toggle('scrolled', v.scrollTop > (spec.type === 'home' ? 64 : 34));
@@ -99,6 +101,7 @@ function openSearch() {
 
 /* ---------- View rendering ---------- */
 function renderView(v) {
+  if (v._spec.type === 'chat') return ChatUI.render(v);
   const spec = v._spec, nav = v.firstElementChild, body = v.lastElementChild;
   const idx = Nav.stack.indexOf(v);
   const [left, title, right] = nav.children;
@@ -107,7 +110,9 @@ function renderView(v) {
   const prevSpec = idx > 0 ? Nav.stack[idx - 1]._spec : null;
   left.innerHTML = prevSpec ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${esc(prevSpec.type === 'home' ? 'Lists' : viewTitle(prevSpec))}</span></button>` : '';
   if (spec.type === 'home') {
-    right.innerHTML = `<button class="duo" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}${avatar(partnerKey())}<i class="sync-dot ${Sync.state}"></i></button>`;
+    right.innerHTML = (cloudReady() && Auth.user() ? `<button class="nav-btn chat-btn" data-a="chat" type="button" aria-label="Messages">${ic('chat')}<span class="chat-badge" hidden></span></button>` : '') +
+      `<button class="duo" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}${avatar(partnerKey())}<i class="sync-dot ${Sync.state}"></i></button>`;
+    if (typeof Chat !== 'undefined') Chat.updateBadge();
     body.innerHTML = homeHTML();
     const bar = body.querySelector('.ring .bar');
     if (bar) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.strokeDashoffset = 113.1 * (1 - lastRingP); }));

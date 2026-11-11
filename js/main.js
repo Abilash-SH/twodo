@@ -89,6 +89,7 @@ function boot() {
   if (!Sync.es) startCloud();
   if (L.focus && L.focus.running) { ensureFocusTick(); showLive(); }
   checkReminders();
+  if (location.hash === '#chat') { history.replaceState({ d: 1 }, '', location.pathname + location.search); setTimeout(() => ChatUI.open(), 900); }
 }
 
 function onViewport() {
@@ -155,6 +156,7 @@ function init() {
 
   if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
     navigator.serviceWorker.register('sw.js').catch(err => console.warn('sw', err));
+    navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.open === 'chat' && Auth.user()) ChatUI.open(); });
   }
 }
 

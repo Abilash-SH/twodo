@@ -101,6 +101,7 @@ function switchingAccount() {
   if (L.lastUid && L.lastUid !== L.auth.uid) {
     D = { tasks: {}, lists: {}, people: null };
     L.view = {}; L.remSig = {}; L.focus = null; L.notified = {}; L.pair = null; L.me = 'a';
+    localStorage.removeItem('twodo:chat');
     ensureBasics();
   }
   L.lastUid = L.auth.uid; L.lastEmail = L.auth.email;

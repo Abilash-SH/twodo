@@ -1,9 +1,9 @@
 /* Twodo service worker: offline app shell + encrypted push reminders. Bump VERSION when you deploy changes. */
-const VERSION = 'twodo-v2.2.0';
+const VERSION = 'twodo-v3.0.0';
 const SHELL = [
-  './', 'index.html', 'styles.css', 'manifest.webmanifest', 'config.js',
+  './', 'index.html', 'styles.css', 'chat.css', 'manifest.webmanifest', 'config.js',
   'js/util.js', 'js/store.js', 'js/parse.js', 'js/keys.js', 'js/cloud.js', 'js/sync.js', 'js/push.js', 'js/pair.js',
-  'js/ui.js', 'js/views.js', 'js/actions.js', 'js/sheets.js', 'js/settings.js', 'js/account.js', 'js/gate.js', 'js/focus.js', 'js/composer.js', 'js/main.js',
+  'js/ui.js', 'js/views.js', 'js/actions.js', 'js/sheets.js', 'js/settings.js', 'js/account.js', 'js/gate.js', 'js/chat.js', 'js/effects.js', 'js/chatui.js', 'js/focus.js', 'js/composer.js', 'js/main.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
@@ -46,16 +46,18 @@ self.addEventListener('push', e => {
   e.waitUntil((async () => {
     let msg = {}; try { msg = e.data ? e.data.json() : {}; } catch (err) { /* ignore */ }
     let r = null; try { r = await decryptReminder(msg); } catch (err) { /* wrong key → generic text */ }
-    await self.registration.showNotification(r ? `⏰ ${r.t}` : '⏰ Twodo reminder', {
-      body: r ? r.b : 'You have a task due.', tag: 'rem-' + (msg.id || Date.now()),
-      icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: './' },
+    const chat = (r && r.k === 'chat') || String(msg.id || '').startsWith('chat_');
+    await self.registration.showNotification(r ? (chat ? r.t : `⏰ ${r.t}`) : chat ? '💬 New message' : '⏰ Twodo reminder', {
+      body: r ? r.b : chat ? 'Open Twodo to read it.' : 'You have a task due.', tag: chat ? 'chat' : 'rem-' + (msg.id || Date.now()),
+      icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: chat ? './#chat' : './' },
     });
   })());
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-    for (const c of list) if ('focus' in c) return c.focus();
-    return self.clients.openWindow('./');
+    for (const c of list) if ('focus' in c) { if (url.includes('#chat')) c.postMessage({ open: 'chat' }); return c.focus(); }
+    return self.clients.openWindow(url);
   }));
 });

@@ -75,7 +75,19 @@ Reminders arrive within roughly **5–15 minutes** of the due time, because GitH
 
 ---
 
-## 5. Using it
+## 5. Messages 💬
+Tap the chat bubble at the top of Home to message your partner, iMessage-style:
+- Blue and grey bubbles with tails, grouped by time; **Delivered** / **Read** receipts; a typing indicator; and big emoji when you send just one to three.
+- **Hold the send arrow** for *Send with effect*. **Bubble effects:** Slam, Loud, Gentle, Invisible Ink. **Screen effects:** Echo, Spotlight, Balloons, Confetti, Love, Lasers, Fireworks, Celebration.
+- Some phrases trigger effects automatically: “happy birthday” → balloons, “congrats” → confetti, “happy new year” → fireworks, “pew pew” → lasers, “love you” → hearts.
+- **Double-tap** a message to ❤️ it. **Long-press** for tapbacks (❤️ 👍 👎 😂 ‼️ ❓), Copy, **Make it a task**, or **Undo Send** (within 15 minutes).
+- **＋** shares one of your tasks as a card your partner can tick off right from the chat. The ❤️ button sends a heart with the Love effect.
+
+Messages are encrypted with the same key as your tasks. The database rules only let the author edit or unsend a message, so neither of you can fake a message from the other. Only the latest 300 messages are downloaded; older ones stay on the phone that has them. If push reminders are set up, an unread message also triggers a push within about 5–15 minutes.
+
+**Already set up before Messages existed?** Republish [`firebase.rules.json`](firebase.rules.json) in Firebase (Realtime Database → Rules) once.
+
+## 6. Using it
 - **Type naturally** in the bottom box: `Dinner @us fri 8pm !!` · `Milk #groceries` · `Gym every mon 7am` · `Call mom tomorrow 6pm`. Tap a chip to ignore a guess. Paste several lines to add several tasks.
 - **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
 - **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
@@ -96,6 +108,8 @@ js/sync.js     encrypted real-time sync + request inbox
 js/pair.js     partner requests, accept/decline, unpair
 js/push.js     push subscription + encrypted reminder index
 js/account.js  Together settings + account sheets
+js/gate.js     sign-in screen
+js/chat.js · js/chatui.js · js/effects.js · chat.css   Messages
 js/*.js        the rest of the app (views, gestures, parser, focus timer…)
 PROMPT.md      the original prompt
 ```

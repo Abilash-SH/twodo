@@ -29,8 +29,10 @@ const Sync = {
       this.space = sp.id; this.key = await spaceKeyFromRaw(sp.raw);
     } catch (e) { return this.set('error', e.message); }
     this.connect();
+    if (typeof Chat !== 'undefined') Chat.start();
   },
   close() {
+    if (typeof Chat !== 'undefined') Chat.stop();
     if (this.es) { this.es.close(); this.es = null; }
     clearTimeout(this.retryT); this.ready = false;
   },
@@ -94,7 +96,7 @@ const Sync = {
     const local = this.getRec(k);
     if (local && this.isPrivate(local)) return; // never overwrite something that's private on this phone
     obj._s = 1;
-    if (k === 'people') { D.people = obj; fixIdentity(); applyTheme(); }
+    if (k === 'people') { D.people = obj; fixIdentity(); applyTheme(); if (typeof Chat !== 'undefined') Chat.ensure(); }
     else if (obj.kind === 'task') { this.noteTask(local, obj); D.tasks[obj.id] = obj; }
     else if (obj.kind === 'list') D.lists[obj.id] = obj;
     else return;

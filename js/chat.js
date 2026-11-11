@@ -1,0 +1,205 @@
+/* Twodo · Messages (data layer)
+   /spaces/{space}/c/m/{id}            = { f: authorUid, u: updatedAt, d: AES-GCM ciphertext }   (only the author can edit/unsend)
+   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at } }                           (typing + read receipts)
+   /spaces/{space}/c/e/rx/{msg}/{uid}  = { u, d: { r } }                                          (tapback reactions)
+   Everything is encrypted with the space key; Firebase sees only who wrote and when. */
+'use strict';
+
+const CHAT_KEY = 'twodo:chat';
+const TAPBACKS = ['❤️', '👍', '👎', '😂', '‼️', '❓'];
+
+const Chat = {
+  space: null, msgs: {}, rx: {}, played: {}, read: 0, ver: 0, loaded: false,
+  esM: null, esE: null, eTree: {}, dcache: new Map(), chainM: Promise.resolve(), chainE: Promise.resolve(),
+  typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0, lastPxD: null, typingT: null,
+
+  partnerUid() { const p = D.people && D.people[partnerKey()]; return (p && p.uid) || (L.pair && L.pair.uid) || null; },
+  ready() { return Sync.enabled() && !!Sync.key && !!Sync.space && !!(L.pair && L.pair.status === 'paired') && !!this.partnerUid(); },
+  base() { return `spaces/${Sync.space}/c`; },
+  bump() { this.ver++; },
+
+  /* ---------- local cache (last 600 messages) ---------- */
+  load() {
+    let j = null; try { j = JSON.parse(localStorage.getItem(CHAT_KEY) || 'null'); } catch (e) { /* ignore */ }
+    const ok = j && j.space === Sync.space;
+    this.msgs = ok ? j.msgs || {} : {}; this.rx = ok ? j.rx || {} : {}; this.played = ok ? j.played || {} : {}; this.read = ok ? j.read || 0 : 0;
+    for (const m of Object.values(this.msgs)) if (m.status === 'sending') m.status = 'failed';
+    this.space = Sync.space; this.loaded = false; this.bump();
+  },
+  saveSoon() {
+    clearTimeout(this.saveT);
+    this.saveT = setTimeout(() => {
+      const ids = Object.keys(this.msgs).sort().slice(-600), msgs = {};
+      ids.forEach(id => { msgs[id] = this.msgs[id]; }); this.msgs = msgs;
+      try { localStorage.setItem(CHAT_KEY, JSON.stringify({ space: this.space, msgs, rx: this.rx, played: this.played, read: this.read })); } catch (e) { /* full */ }
+    }, 300);
+  },
+  clearLocal() { this.stop(); this.msgs = {}; this.rx = {}; this.played = {}; this.read = 0; localStorage.removeItem(CHAT_KEY); this.bump(); this.updateBadge(); },
+
+  /* ---------- streams ---------- */
+  ensure() { if (!this.esM && this.ready()) this.start(); },
+  start() {
+    this.stop();
+    if (!this.ready()) { this.updateBadge(); return; }
+    if (this.space !== Sync.space) this.load();
+    this.connectM(); this.connectE(); this.updateBadge();
+    for (const m of Object.values(this.msgs)) if (m.status === 'failed' && m.f === L.auth.uid) this.retry(m.id);
+  },
+  stop() { [this.esM, this.esE].forEach(es => es && es.close()); this.esM = this.esE = null; clearTimeout(this.retryM); clearTimeout(this.retryE); },
+  async stream(path, query, onMsg, retryKey) {
+    let url;
+    try { url = await streamUrl(path) + (query || ''); } catch (e) { this[retryKey] = setTimeout(() => this.ensure(), 20000); return null; }
+    const es = new EventSource(url);
+    const h = type => e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } onMsg(type, m); };
+    es.addEventListener('put', h('put')); es.addEventListener('patch', h('patch'));
+    es.addEventListener('auth_revoked', () => { es.close(); L.auth.exp = 0; this.start(); });
+    es.addEventListener('cancel', () => es.close());
+    es.onerror = () => { if (es.readyState === 2) { clearTimeout(this[retryKey]); this[retryKey] = setTimeout(() => this.start(), 15000); } };
+    return es;
+  },
+  async connectM() {
+    this.esM = await this.stream(this.base() + '/m', '&orderBy=' + encodeURIComponent('"$key"') + '&limitToLast=300',
+      (type, m) => { this.chainM = this.chainM.then(() => this.onM(type, m)).catch(err => console.warn('chat', err)); }, 'retryM');
+  },
+  async connectE() {
+    this.esE = await this.stream(this.base() + '/e', '',
+      (type, m) => { this.chainE = this.chainE.then(() => this.onE(type, m)).catch(err => console.warn('chat', err)); }, 'retryE');
+  },
+
+  async onM(type, { path, data }) {
+    const parts = path.split('/').filter(Boolean);
+    let entries;
+    if (!parts.length) entries = Object.entries(data || {});
+    else if (parts.length === 1) entries = [[parts[0], data]];
+    else entries = [[parts[0], await dbGet(`${this.base()}/m/${encodeURIComponent(parts[0])}`)]];
+    const fresh = [];
+    for (const [id, v] of entries) {
+      if (!v || !v.d || !v.f) continue; // null = fell out of the 300-message window: keep the local copy
+      const prev = this.msgs[id];
+      if (prev && prev._u === v.u) continue;
+      let o; try { o = await decryptObj(Sync.key, v.d); } catch (e) { continue; }
+      this.msgs[id] = { id, f: v.f, ts: o.ts || v.u, t: o.t || '', fx: o.fx || null, task: o.task || null, del: !!o.del, _u: v.u, status: 'sent' };
+      if (!prev) fresh.push(this.msgs[id]);
+    }
+    const initial = !this.loaded; this.loaded = true;
+    this.bump(); this.saveSoon();
+    if (typeof ChatUI !== 'undefined') ChatUI.onMessages(fresh, initial);
+    this.updateBadge();
+  },
+
+  mirror(type, path, data) {
+    const set = (parts, v) => {
+      let n = this.eTree;
+      for (const k of parts.slice(0, -1)) { if (!n[k] || typeof n[k] !== 'object') n[k] = {}; n = n[k]; }
+      const last = parts[parts.length - 1];
+      if (v === null) delete n[last]; else n[last] = v;
+    };
+    const parts = path.split('/').filter(Boolean);
+    if (!parts.length && type === 'put') { this.eTree = data || {}; return; }
+    if (type === 'put') return set(parts, data);
+    for (const [k, v] of Object.entries(data || {})) set([...parts, ...k.split('/').filter(Boolean)], v);
+  },
+  async dec(v) {
+    if (!v || !v.d) return null;
+    if (this.dcache.has(v.d)) return this.dcache.get(v.d);
+    try { const o = await decryptObj(Sync.key, v.d); this.dcache.set(v.d, o); return o; } catch (e) { return null; }
+  },
+  async onE(type, { path, data }) {
+    this.mirror(type, path, data);
+    const pu = this.partnerUid(), pv = this.eTree.x && this.eTree.x[pu];
+    if (pv && pv.d !== this.lastPxD) {
+      this.lastPxD = pv.d;
+      const px = await this.dec(pv);
+      if (px) {
+        const fresh = Math.abs(Date.now() - (px.at || 0)) < 15000; // ignore stale "typing" from long ago
+        this.partnerTypingUntil = px.typing && fresh ? Date.now() + 6500 : 0;
+        if ((px.read || 0) !== this.partnerRead) { this.partnerRead = px.read || 0; this.partnerReadAt = px.at || Date.now(); }
+        clearTimeout(this.typingT);
+        if (this.partnerTypingUntil) this.typingT = setTimeout(() => { this.partnerTypingUntil = 0; this.bump(); ChatUI.onState(); }, 6600);
+      }
+    }
+    const before = this.rx, rx = {};
+    for (const [mid, byUid] of Object.entries(this.eTree.rx || {})) {
+      for (const [uid, v] of Object.entries(byUid || {})) { const o = await this.dec(v); if (o && o.r) (rx[mid] = rx[mid] || {})[uid] = o.r; }
+    }
+    if (this.loadedE) for (const [mid, by] of Object.entries(rx)) {
+      const r = by[pu], m = this.msgs[mid];
+      if (r && (!before[mid] || before[mid][pu] !== r) && m && m.f === L.auth.uid && typeof ChatUI !== 'undefined') ChatUI.onPartnerReaction(m, r);
+    }
+    this.loadedE = true;
+    this.rx = rx; this.bump(); this.saveSoon();
+    if (typeof ChatUI !== 'undefined') ChatUI.onState();
+  },
+  partnerTyping() { return this.partnerTypingUntil > Date.now(); },
+
+  /* ---------- actions ---------- */
+  newId() { return Date.now().toString(36).padStart(9, '0') + Math.random().toString(36).slice(2, 7); },
+  send({ t = '', fx = null, task = null }) {
+    const id = this.newId(), ts = Date.now();
+    const m = { id, f: L.auth.uid, ts, t, fx, task, del: false, _u: ts, status: 'sending' };
+    this.msgs[id] = m; this.bump(); this.saveSoon();
+    if (this.typingOn) this.setTyping(false);
+    this.write(m);
+    return m;
+  },
+  async write(m) {
+    try {
+      const d = await encryptObj(Sync.key, { ts: m.ts, t: m.t, fx: m.fx, task: m.task, del: m.del });
+      await dbPut(`${this.base()}/m/${m.id}`, { f: m.f, u: m._u, d });
+      m.status = 'sent';
+      if (!m.del) this.notifyPartner(m);
+    } catch (e) { m.status = 'failed'; }
+    this.bump(); this.saveSoon(); ChatUI.onState();
+  },
+  retry(id) { const m = this.msgs[id]; if (!m) return; m.status = 'sending'; this.bump(); ChatUI.onState(); this.write(m); },
+  unsend(id) {
+    const m = this.msgs[id]; if (!m || m.f !== L.auth.uid) return;
+    Object.assign(m, { del: true, t: '', task: null, fx: null, _u: Date.now(), status: 'sending' });
+    this.bump(); this.saveSoon(); ChatUI.onState(); this.write(m);
+  },
+  async react(id, r) {
+    const me = L.auth.uid, cur = (this.rx[id] || {})[me], next = cur === r ? null : r;
+    this.rx[id] = this.rx[id] || {};
+    if (next) this.rx[id][me] = next; else delete this.rx[id][me];
+    this.bump(); ChatUI.onState();
+    try { await dbPut(`${this.base()}/e/rx/${id}/${me}`, next ? { u: Date.now(), d: await encryptObj(Sync.key, { r: next }) } : null); } catch (e) { /* retried on next change */ }
+  },
+  setTyping(on) {
+    const now = Date.now();
+    if (on && this.typingOn && now - this.typingSentAt < 2500) return;
+    if (!on && !this.typingOn) return;
+    this.typingOn = on; this.typingSentAt = on ? now : 0;
+    this.writeX();
+  },
+  async writeX() {
+    if (!this.ready()) return;
+    try { await dbPut(`${this.base()}/e/x/${L.auth.uid}`, { u: Date.now(), d: await encryptObj(Sync.key, { typing: this.typingOn ? 1 : 0, read: this.read, at: Date.now() }) }); } catch (e) { /* ignore */ }
+  },
+  lastPartnerTs() { const me = L.auth && L.auth.uid; let t = 0; for (const m of Object.values(this.msgs)) if (m.f !== me && m.ts > t) t = m.ts; return t; },
+  markRead() {
+    const last = this.lastPartnerTs(); if (!last || last <= this.read) return;
+    this.read = last; this.bump(); this.saveSoon(); this.writeX(); this.updateBadge();
+    const pu = this.partnerUid(); // cancel a pending "new message" push, we've seen it
+    if (pu && CFG.vapidPublicKey) dbPatch(`rem/${Sync.space}`, { ['chat_' + pu]: null }).catch(() => {});
+  },
+  unread() { const me = L.auth && L.auth.uid; return Object.values(this.msgs).filter(m => m.f !== me && !m.del && m.ts > this.read).length; },
+  updateBadge() {
+    const n = this.ready() ? this.unread() : 0;
+    $$('.chat-badge').forEach(b => { b.textContent = n > 9 ? '9+' : String(n); b.hidden = !n; });
+    try { if (navigator.setAppBadge) { if (n) navigator.setAppBadge(n); else navigator.clearAppBadge(); } } catch (e) { /* unsupported */ }
+  },
+  // If push reminders are set up, the GitHub Action also nudges your partner about unread messages (~5 min).
+  notifyPartner(m) {
+    const pu = this.partnerUid(); if (!pu || !CFG.vapidPublicKey) return;
+    const b = m.task ? `Shared a task: ${m.task.title}` : (m.t || '').slice(0, 140);
+    encryptObj(Sync.key, { k: 'chat', t: `💬 ${firstWord(myName())}`, b })
+      .then(d => dbPatch(`rem/${Sync.space}`, { ['chat_' + L.auth.uid]: { at: Date.now(), to: { [pu]: true }, d, sent: 0 } }))
+      .catch(() => {});
+  },
+};
+
+addEventListener('online', () => { if (Chat.ready()) Chat.start(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (Chat.typingOn) Chat.setTyping(false); return; }
+  if (Chat.ready() && (!Chat.esM || Chat.esM.readyState === 2 || !Chat.esE || Chat.esE.readyState === 2)) Chat.start();
+});
