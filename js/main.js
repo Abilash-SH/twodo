@@ -126,12 +126,16 @@ function init() {
   else boot();
 
   addEventListener('popstate', e => {
+    if (Nav.ignorePops > 0) { Nav.ignorePops--; return; } // we already animated this one
     if (Sheet.ignorePop) { Sheet.ignorePop = false; return; }
     if (Sheet.cur) { closeSheet({ history: false }); return; }
     closeMenu();
     const d = (e.state && e.state.d) || 1;
     if (Split.on) { if (d < 2) { history.pushState({ d: 2 }, ''); popView(); } return; }
-    while (Nav.stack.length > Math.max(1, d)) doPop();
+    if (d > Nav.stack.length) { history.replaceState({ d: Nav.stack.length }, ''); return; } // no "forward"
+    // the iPhone's own edge swipe already animated the page away: switch without a second animation
+    const instant = !!e.hasUAVisualTransition || performance.now() - Nav.edgeCancelAt < 2500;
+    while (Nav.stack.length > Math.max(1, d)) doPop({ instant });
   });
 
   document.addEventListener('keydown', e => {

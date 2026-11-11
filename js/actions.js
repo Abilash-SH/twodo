@@ -210,12 +210,13 @@ function moveEdge(e) {
   G.prev.style.transform = `translateX(${-28 * (1 - p)}%)`;
   shade.style.opacity = String(0.12 * (1 - p));
 }
-function endEdge() {
+function endEdge(cancelled = false) {
   if (!G.active) return;
   stackEl.classList.remove('dragging'); Nav.dragging = false;
-  const go = G.dx > G.w * 0.33 || G.vx > 0.45;
+  const go = !cancelled && (G.dx > G.w * 0.33 || G.vx > 0.45);
+  // clear the finger offsets and pop in the same frame, so the page keeps sliding from where it was let go
   G.top.style.transform = ''; G.prev.style.transform = '';
-  if (go) { suppressClickUntil = performance.now() + 400; shade.style.opacity = '0'; popView(); }
+  if (go) { suppressClickUntil = performance.now() + 400; popView(); }
   else shade.style.opacity = '.12';
   if (renderDeferred) scheduleRender();
 }
@@ -259,7 +260,11 @@ function initGestures() {
   const up = e => {
     if (!G || e.pointerId !== G.pid) return;
     const g = G; G = null;
-    if (g.kind === 'edge') { G = g; endEdge(); G = null; return; }
+    if (g.kind === 'edge') {
+      // cancelled = the system took the gesture over (e.g. the iPhone's own back swipe): never pop here as well
+      if (e.type === 'pointercancel') Nav.edgeCancelAt = performance.now();
+      G = g; endEdge(e.type === 'pointercancel'); G = null; return;
+    }
     clearTimeout(g.lp);
     if (g.mode === 'swipe') { suppressClickUntil = performance.now() + 350; endSwipe(g, e.type === 'pointercancel'); }
     if (g.mode === 'lp') Menu.armAt = performance.now() + 150;

@@ -1,7 +1,7 @@
 /* Twodo · navigation stack and screen rendering */
 'use strict';
 
-const Nav = { stack: [], dragging: false };
+const Nav = { stack: [], dragging: false, ignorePops: 0, edgeCancelAt: -1e9 };
 const Pending = new Map(); // task id → timer while the check animation plays
 const Fresh = new Set();   // task ids that should animate in
 let stackEl, shade, lastRingP = 0;
@@ -76,12 +76,22 @@ function popView() {
     paneShow(back || { type: 'smart', key: 'today' }, { back: true }); return;
   }
   if (Nav.stack.length < 2) return;
-  if (history.state && history.state.d === Nav.stack.length && !history.state.s) history.back();
-  else doPop();
+  const syncHistory = history.state && history.state.d === Nav.stack.length && !history.state.s;
+  doPop();
+  if (syncHistory) { Nav.ignorePops++; history.back(); } // keep history in step without animating twice
 }
-function doPop() {
+function doPop({ instant = false } = {}) {
   if (Nav.stack.length < (Split.on ? 3 : 2)) return;
   const v = Nav.stack.pop(), prev = topView();
+  if (instant) { // the phone already showed its own back animation: just switch, don't animate again
+    v.remove();
+    prev.style.transition = 'none'; prev.classList.remove('under'); prev.style.transform = '';
+    shade.style.transition = 'none';
+    if (Nav.stack.length > 1) { stackEl.insertBefore(shade, topView()); shade.style.opacity = '.12'; } else shade.style.opacity = '0';
+    void prev.offsetWidth; prev.style.transition = ''; shade.style.transition = '';
+    renderView(prev); updateComposerCtx();
+    return;
+  }
   v.classList.add('offright');
   prev.classList.remove('under');
   shade.style.opacity = '0';
