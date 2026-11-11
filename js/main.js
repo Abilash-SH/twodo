@@ -111,6 +111,7 @@ function init() {
   shade = document.createElement('div'); shade.className = 'shade';
   Island.el = $('#isl');
   initMenu(); initComposer(); initGestures(); initFocus(); initImport();
+  Drawer.init(); Bubble.init(); splitCheck();
   onViewport();
   if (window.visualViewport) { visualViewport.addEventListener('resize', onViewport); visualViewport.addEventListener('scroll', onViewport); }
   addEventListener('resize', onViewport);
@@ -126,7 +127,9 @@ function init() {
   else boot();
 
   addEventListener('popstate', e => {
-    if (Nav.ignorePops > 0) { Nav.ignorePops--; return; } // we already animated this one
+    if (Nav.ignorePops > 0) { Nav.ignorePops--; const f = Nav.afterPop; Nav.afterPop = null; if (f) f(); return; } // we already animated this one
+    if (Drawer.open) Drawer.close();
+    if (ChatUI.shown()) { ChatUI.close(); }
     if (Sheet.ignorePop) { Sheet.ignorePop = false; return; }
     if (Sheet.cur) { closeSheet({ history: false }); return; }
     closeMenu();
@@ -143,6 +146,9 @@ function init() {
     if (e.key === 'Escape') {
       if ($('.alert-wrap')) return;
       if (Menu.open) return closeMenu();
+      if ($('.fxp')) return;
+      if (ChatUI.shown()) return ChatUI.close();
+      if (Drawer.open) return Drawer.close();
       if ($('#focus').classList.contains('on')) return closeFocus();
       if (Sheet.cur) return closeSheet();
       if (typing) return e.target.blur();

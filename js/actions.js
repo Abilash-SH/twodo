@@ -197,6 +197,24 @@ function endSwipe(g, cancelled) {
   settleRow(row, 0); if (openRow === row) openRow = null;
 }
 
+/* ---------- Swipe in from the left edge on Home → the ☰ menu follows your finger ---------- */
+function moveDrawer(e) {
+  const dx = Math.max(0, e.clientX - G.x0);
+  if (!G.active && dx > 6) {
+    G.active = true; Drawer.el.innerHTML = Drawer.html();
+    Drawer.el.classList.add('dragging', 'peek'); Drawer.bg.classList.add('dragging', 'on');
+  }
+  if (!G.active) return;
+  const now = performance.now();
+  G.vx = (e.clientX - G.lastX) / Math.max(1, now - G.lastT); G.lastX = e.clientX; G.lastT = now; G.dx = dx;
+  Drawer.setP(dx / Drawer.el.offsetWidth);
+}
+function endDrawer(g, cancelled) {
+  if (!g.active) return;
+  Drawer.el.classList.remove('dragging', 'peek'); Drawer.bg.classList.remove('dragging');
+  if (!cancelled && (g.dx > Drawer.el.offsetWidth * 0.3 || g.vx > 0.4)) Drawer.show(); else Drawer.close();
+}
+
 /* ---------- Edge swipe back ---------- */
 function moveEdge(e) {
   const dx = Math.max(0, e.clientX - G.x0);
@@ -225,7 +243,11 @@ function initGestures() {
   stackEl.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const sx = e.clientX - stackEl.getBoundingClientRect().left;
-    if (!Split.on && Nav.stack.length > 1 && sx < 24 && e.pointerType !== 'mouse') {
+    if (!Split.on && Nav.stack.length === 1 && sx < 22 && e.pointerType !== 'mouse' && !Drawer.open) {
+      G = { kind: 'drawer', pid: e.pointerId, x0: e.clientX, dx: 0, active: false, vx: 0, lastX: e.clientX, lastT: performance.now() };
+      return;
+    }
+    if (Nav.stack.length > 1 && sx < 24 && e.pointerType !== 'mouse') {
       G = { kind: 'edge', pid: e.pointerId, x0: e.clientX, top: topView(), prev: Nav.stack[Nav.stack.length - 2], w: stackEl.offsetWidth, dx: 0, active: false, vx: 0, lastX: e.clientX, lastT: performance.now() };
       return;
     }
@@ -242,6 +264,7 @@ function initGestures() {
   addEventListener('pointermove', e => {
     if (!G || e.pointerId !== G.pid) return;
     if (G.kind === 'edge') return moveEdge(e);
+    if (G.kind === 'drawer') return moveDrawer(e);
     if (G.mode === 'lp' || G.mode === 'scroll') return;
     const dx = e.clientX - G.x0, dy = e.clientY - G.y0;
     if (!G.mode) {
@@ -260,6 +283,7 @@ function initGestures() {
   const up = e => {
     if (!G || e.pointerId !== G.pid) return;
     const g = G; G = null;
+    if (g.kind === 'drawer') { endDrawer(g, e.type === 'pointercancel'); return; }
     if (g.kind === 'edge') {
       // cancelled = the system took the gesture over (e.g. the iPhone's own back swipe): never pop here as well
       if (e.type === 'pointercancel') Nav.edgeCancelAt = performance.now();
@@ -317,6 +341,8 @@ function onAction(name, el) {
     case 'dismissPair': L.tips.pair = 1; save(); scheduleRender(); return;
     case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; scheduleRender(); } return;
     case 'tips': return openTips();
+    case 'menu': return Drawer.show();
+    case 'idea': Cmp.ta.value = el.dataset.v; updateComposer(); Cmp.ta.focus(); return;
     case 'tipcat': return pickTipCat(el.closest('.view'), el.dataset.v);
     case 'tipact': return el.dataset.v === 'invite' ? openInviteSheet() : el.dataset.v === 'chat' ? ChatUI.open() : openSettings();
   }

@@ -10,6 +10,10 @@ function applyTheme() {
   root.dataset.theme = dark ? 'dark' : 'light';
   const acc = s.accent === 'me' ? person(L.me).color : s.accent;
   root.style.setProperty('--accent', `var(--c-${acc || 'blue'})`);
+  for (const k of ['a', 'b']) { // profile photos, kept once as CSS variables
+    const ph = D.people && D.people[k] && D.people[k].photo;
+    if (ph) root.style.setProperty('--ph-' + k, `url("${ph}")`); else root.style.removeProperty('--ph-' + k);
+  }
   const meta = $('meta[name="theme-color"]');
   if (meta) meta.content = document.body.classList.contains('launching') ? '#F6528C' : dark ? '#000000' : '#F2F2F7';
 }

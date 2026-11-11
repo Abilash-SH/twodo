@@ -56,7 +56,7 @@ const partnerKey = () => (L.me === 'a' ? 'b' : 'a');
 const person = k => (D.people && D.people[k]) || { name: k === 'a' ? 'Me' : 'Partner', color: k === 'a' ? 'blue' : 'pink' };
 const myName = () => person(L.me).name;
 const ptName = () => person(partnerKey()).name;
-const avatar = (k, cls = '') => `<span class="av ${cls}" style="--c:var(--c-${person(k).color})" title="${esc(person(k).name)}">${esc(initial(person(k).name))}</span>`;
+const avatar = (k, cls = '') => { const p = person(k); return `<span class="av ${cls}${p.photo ? ' ph' : ''}" style="--c:var(--c-${p.color})${p.photo ? `;background-image:var(--ph-${k})` : ''}" title="${esc(p.name)}">${p.photo ? '' : esc(initial(p.name))}</span>`; };
 const assigneeBadge = a => !a ? '' : a === 'both' ? `<span class="av-pair" title="Both of you">${avatar('a')}${avatar('b')}</span>` : avatar(a);
 const whoName = k => !k ? 'someone' : k === L.me ? 'you' : person(k).name;
 function setPeople(a, b) {

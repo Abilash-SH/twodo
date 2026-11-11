@@ -4,7 +4,7 @@
 function personCardHTML(k) {
   const p = person(k);
   return `<div class="person" data-k="${k}">${k === L.me ? '<span class="tag-me">This phone</span>' : ''}
-    <span class="av" style="--c:var(--c-${p.color})">${esc(initial(p.name))}</span>
+    <button class="pc-photo" data-ph="${k}" type="button" aria-label="Change ${esc(p.name)}’s photo">${avatar(k)}<span class="pc-cam">${ic('camera')}</span></button>
     <input value="${esc(p.name)}" data-pn="${k}" maxlength="24" aria-label="Name">
     <div class="colors sm">${PALETTE.slice(0, 10).map(c => `<button type="button" data-pc="${c}" style="--c:var(--c-${c})" class="${c === p.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div></div>`;
 }
@@ -60,9 +60,10 @@ function openSettings() {
         const k = e.target.dataset.pn; if (!k) return;
         const name = e.target.value.trim(); if (!name) return;
         D.people[k] = { ...person(k), name }; commit(D.people);
-        e.target.closest('.person').querySelector('.av').textContent = initial(name);
+        const av = e.target.closest('.person').querySelector('.av'); if (!person(k).photo) av.textContent = initial(name);
       });
       couple.addEventListener('click', e => {
+        const ph = e.target.closest('[data-ph]'); if (ph) return photoMenu(ph.dataset.ph, ph);
         const b = e.target.closest('[data-pc]'); if (!b) return;
         const k = b.closest('.person').dataset.k;
         D.people[k] = { ...person(k), color: b.dataset.pc }; commit(D.people);
@@ -107,6 +108,51 @@ SegHandlers.me = v => {
   L.me = v; save(); applyTheme(); scheduleRender();
   const c = $('#couple'); if (c) c.innerHTML = personCardHTML('a') + personCardHTML('b');
 };
+
+/* ---------- Profile photos: cropped square on this phone, synced end-to-end encrypted like everything else ---------- */
+function photoMenu(k, btn) {
+  if (!person(k).photo) return pickPhoto(k);
+  showMenu({
+    rect: btn.getBoundingClientRect(),
+    html: `<button class="mi" data-m="pick" type="button">Choose New Photo${ic('camera')}</button><button class="mi red" data-m="remove" type="button">Remove Photo${ic('trash')}</button>`,
+    onPick: m => (m === 'pick' ? pickPhoto(k) : setPhoto(k, null)),
+  });
+}
+function pickPhoto(k) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.style.cssText = 'position:fixed;left:-999px;top:0;opacity:0';
+  document.body.append(inp);
+  inp.addEventListener('change', async () => {
+    const f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
+    try { setPhoto(k, await squarePhoto(f, 200)); }
+    catch (e) { island({ e: '⚠️', text: 'That photo couldn’t be used', sub: 'Try another one' }); }
+  });
+  inp.click();
+}
+function squarePhoto(file, size) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      try {
+        const s = Math.min(img.naturalWidth, img.naturalHeight); if (!s) throw new Error('empty');
+        const c = document.createElement('canvas'); c.width = c.height = size;
+        const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+        x.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+        res(c.toDataURL('image/jpeg', 0.82));
+      } catch (e) { rej(e); } finally { URL.revokeObjectURL(url); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); };
+    img.src = url;
+  });
+}
+function setPhoto(k, photo) {
+  const p = { ...person(k) };
+  if (photo) p.photo = photo; else delete p.photo;
+  D.people[k] = p; commit(D.people);
+  applyTheme(); scheduleRender(); haptic('success');
+  const c = $('#couple'); if (c) c.innerHTML = personCardHTML('a') + personCardHTML('b');
+  island({ e: photo ? '📸' : '🗑️', text: photo ? 'Photo updated' : 'Photo removed', sub: photo && cloudReady() && L.pair && L.pair.status === 'paired' ? `${firstWord(k === L.me ? ptName() : myName())} will see it too` : '', ms: 1800 });
+}
 
 async function settingsAction(x, sh) {
   switch (x) {

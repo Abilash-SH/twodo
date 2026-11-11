@@ -9,6 +9,7 @@ const TIP_CATS = [
 const kb = s => `<kbd>${s}</kbd>`;
 const TIPS = [
   // Basics
+  { c: 'basics', e: '🏠', t: 'Your Home screen', d: 'Home shows today’s reminders and the chat box. Everything else is in the <b>☰ menu</b>: tap it, or swipe in from the left edge.' },
   { c: 'basics', e: '➕', t: 'Add a task by typing', d: 'Type in the box at the bottom and tap ↑. On Home it goes to your Inbox; inside a list it goes into that list.' },
   { c: 'basics', e: '📥', t: 'Choose where it goes', d: 'Tap the list name inside the box (like <b>📥 Inbox ⌄</b>) to pick another list, or just type <b>#groceries</b>.' },
   { c: 'basics', e: '📋', t: 'Paste a whole list', d: 'Paste several lines and Twodo adds one task per line. Perfect for groceries.' },
@@ -30,19 +31,20 @@ const TIPS = [
   { c: 'organize', e: '👥', t: 'Filter by person', d: () => `Every list has an <b>All · ${esc(shortName(myName()))} · ${esc(shortName(ptName()))} · Us</b> switch at the top.` },
   { c: 'organize', e: '⋯', t: 'Sort, show completed, share', d: 'The ⋯ button sorts a list and shows or clears completed tasks. On your own lists it also edits the list or shares it as text.' },
   { c: 'organize', e: '🔁', t: 'Repeating tasks', d: 'Type <b>daily</b>, <b>weekdays</b> or <b>every mon</b>. When you finish one, the next appears automatically.' },
-  { c: 'organize', e: '🔎', t: 'Search everything', d: 'Use the Search bar on Home to find titles, notes, subtasks and #tags.' },
+  { c: 'organize', e: '🔎', t: 'Search everything', d: 'Open the ☰ menu and tap Search to find titles, notes, subtasks and #tags. On a computer, press ⌘K.' },
   { c: 'organize', e: '📌', t: 'Pin what matters', d: 'Pinned tasks stay at the top of every list and in the Pinned card on Home.' },
   // Together
   { c: 'together', e: '💌', t: 'Add your partner like a friend', d: 'Tap <b>＋ Add partner</b>, search their @username and tap Add. They accept and your lists sync.', act: ['invite', 'Add partner'] },
   { c: 'together', e: '🔢', t: 'Check the safety code', d: 'When you send or accept a request, both phones show the same 8-digit code. If they match, nobody tampered with your connection.' },
   { c: 'together', e: '🫶', t: 'Share tasks with @', d: '<b>@us</b> puts a task in Together for both of you; <b>@name</b> gives it to them. You’ll get a nudge when they finish it.' },
   { c: 'together', e: '🎁', t: 'The Secret list', d: 'Anything in a Secret list stays on your phone and never syncs. Perfect for planning surprises.' },
-  { c: 'together', e: '🔥', t: 'Streaks & progress', d: 'Home shows your streak, today’s ring, how much you’ve done together this week and what they have left today.' },
+  { c: 'together', e: '🔥', t: 'Streaks & progress', d: 'The top of the ☰ menu shows your streak and how much you’ve done together this week.' },
   // Messages
-  { c: 'messages', e: '💬', t: 'Message your partner', d: 'Tap 💬 at the top of Home. A red badge means unread messages. Everything is end-to-end encrypted.', act: ['chat', 'Open Messages'] },
+  { c: 'messages', e: '💬', t: 'Message your partner', d: 'Tap the floating 💬 button. Drag it anywhere, like AssistiveTouch: it tucks into the nearest side. A red badge means unread messages. Everything is end-to-end encrypted.', act: ['chat', 'Open Messages'] },
   { c: 'messages', e: '💥', t: 'Send with effect', d: 'Hold the ↑ arrow. Bubble: Slam, Loud, Gentle, Invisible Ink. Screen: Echo, Spotlight, Balloons, Confetti, Love, Lasers, Fireworks, Celebration.', demo: 'slam' },
   { c: 'messages', e: '🎈', t: 'Automatic effects', d: '“Happy birthday” → balloons · “Congrats” → confetti · “Happy new year” → fireworks · “Pew pew” → lasers · “Love you” → hearts.' },
   { c: 'messages', e: '❤️', t: 'Double-tap to love it', d: 'Double-tap any message for a ❤️. Long-press for 👍 👎 😂 ‼️ ❓, Copy, <b>Make it a task</b> or <b>Undo Send</b> (15 minutes).', demo: 'heart' },
+  { c: 'messages', e: '⬇️', t: 'Close the chat', d: 'Tap ⌄, tap outside the card, or pull the top of the chat down.' },
   { c: 'messages', e: '📎', t: 'Share a task in chat', d: 'Tap <b>＋</b> next to the message box to send a task card they can tick off right in the chat.' },
   { c: 'messages', e: '🫥', t: 'Invisible ink', d: 'Messages sent with Invisible Ink stay hidden until tapped.' },
   // Focus & reminders
@@ -52,9 +54,9 @@ const TIPS = [
   { c: 'focus', e: '🎉', t: 'Clear the day', d: 'Finish everything due today for a little celebration.' },
   // App & privacy
   { c: 'app', e: '📲', t: 'Add to Home Screen', d: 'In Safari: Share → <b>Add to Home Screen</b>. You get full screen, push reminders and a faster launch. Always open Twodo from that icon.' },
-  { c: 'app', e: '🖥️', t: 'Big screen, two panes', d: 'On an iPad in landscape or on a computer, your lists stay on the left and whatever you open shows on the right.' },
+  { c: 'app', e: '🖥️', t: 'Big screen, two panes', d: 'On an iPad in landscape or on a computer, the ☰ menu stays open on the left and whatever you open shows on the right.' },
   { c: 'app', e: '✈️', t: 'Works offline', d: 'Keep going without signal. Everything syncs as soon as you’re back online.' },
-  { c: 'app', e: '🎨', t: 'Make it yours', d: 'Settings → theme, accent colour, haptics, sounds and celebrations.', act: ['settings', 'Open Settings'] },
+  { c: 'app', e: '🎨', t: 'Make it yours', d: 'Settings → a photo for each of you (tap a picture), theme, accent colour, haptics, sounds and celebrations.', act: ['settings', 'Open Settings'] },
   { c: 'app', e: '🔐', t: 'Private by design', d: 'Tasks and messages are encrypted on your phones before they’re saved. Your password never leaves your phone.' },
   { c: 'app', e: '💾', t: 'Back up', d: 'Settings → <b>Export backup</b> saves everything to a file you can import later.' },
   // Keyboard

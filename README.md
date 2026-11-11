@@ -92,7 +92,8 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 - **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
 - **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
-- **Any screen:** phones (portrait or landscape), iPads and computers. On an iPad in landscape or a computer, your lists stay on the left and the open list or chat on the right.
+- **Home** is just a greeting, today's reminders and the chat box. Everything else is in the **☰ menu** (or swipe in from the left edge). Messages live behind the floating 💬 button, which you can drag anywhere.
+- **Any screen:** phones (portrait or landscape), iPads and computers. On an iPad in landscape or a computer, the menu stays open on the left.
 - **💡 Tips & tricks:** every tip, with little animated demos, lives on Home (below My Lists) and in Settings.
 
 ## Updating
@@ -114,6 +115,7 @@ js/account.js  Together settings + account sheets
 js/gate.js     sign-in screen
 js/chat.js · js/chatui.js · js/effects.js · chat.css   Messages
 js/tips.js     the Tips & tricks screen
+js/menu.js     the ☰ menu
 js/*.js        the rest of the app (views, gestures, parser, focus timer…)
 PROMPT.md      the original prompt
 ```

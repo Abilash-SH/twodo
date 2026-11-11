@@ -4,7 +4,7 @@
 const Nav = { stack: [], dragging: false, ignorePops: 0, edgeCancelAt: -1e9 };
 const Pending = new Map(); // task id → timer while the check animation plays
 const Fresh = new Set();   // task ids that should animate in
-let stackEl, shade, lastRingP = 0;
+let stackEl, shade;
 
 const topView = () => Nav.stack[Nav.stack.length - 1];
 const specKey = s => s.type === 'list' ? 'l:' + s.id : s.type === 'smart' ? 's:' + s.key : s.type;
@@ -12,7 +12,6 @@ const viewPrefs = key => (L.view[key] = L.view[key] || {});
 function viewTitle(spec) {
   if (spec.type === 'home') return 'Twodo';
   if (spec.type === 'search') return 'Search';
-  if (spec.type === 'chat') return firstWord(ptName());
   if (spec.type === 'tips') return 'Tips';
   if (spec.type === 'list') { const l = D.lists[spec.id]; return l ? l.name : 'List'; }
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
@@ -36,21 +35,22 @@ function renderNow() {
   Nav.stack.forEach(renderView);
   Fresh.clear();
   updateComposerCtx();
+  if (typeof Drawer !== 'undefined') Drawer.render();
+  if (typeof Bubble !== 'undefined') Bubble.sync();
+  if (typeof ChatUI !== 'undefined' && ChatUI.shown()) ChatUI.render(ChatUI.view);
 }
 
 /* ---------- Stack ---------- */
 function makeView(spec) {
   const v = document.createElement('section');
   v.className = 'view'; v._spec = spec;
-  if (spec.type === 'chat') { ChatUI.build(v); return v; }
   v.innerHTML = `<header class="nav"><div class="nav-side l"></div><div class="nav-title"></div><div class="nav-side r"></div></header><div class="vbody"></div>`;
   v.addEventListener('scroll', () => {
     v.firstElementChild.classList.toggle('scrolled', v.scrollTop > (spec.type === 'home' ? 64 : 34));
   }, { passive: true });
   return v;
 }
-function pushView(spec) {
-  if (Split.on && Nav.stack.length) return paneShow(spec);
+function pushView(spec, { replace = false } = {}) {
   closeMenu();
   const prev = topView();
   const v = makeView(spec);
@@ -65,23 +65,20 @@ function pushView(spec) {
   v.classList.remove('offright');
   if (prev) prev.classList.add('under');
   shade.style.opacity = '.12';
-  history.pushState({ d: Nav.stack.length }, '');
+  if (replace) history.replaceState({ d: Nav.stack.length }, ''); else history.pushState({ d: Nav.stack.length }, '');
   updateComposerCtx();
+  if (typeof Drawer !== 'undefined') Drawer.render();
   haptic('light');
   return v;
 }
 function popView() {
-  if (Split.on) { // the right side goes back to what it showed before (Today if nothing)
-    let back; while ((back = Split.back.pop()) && back.type === 'list' && (!D.lists[back.id] || D.lists[back.id].deleted)) { /* skip deleted lists */ }
-    paneShow(back || { type: 'smart', key: 'today' }, { back: true }); return;
-  }
   if (Nav.stack.length < 2) return;
   const syncHistory = history.state && history.state.d === Nav.stack.length && !history.state.s;
   doPop();
   if (syncHistory) { Nav.ignorePops++; history.back(); } // keep history in step without animating twice
 }
 function doPop({ instant = false } = {}) {
-  if (Nav.stack.length < (Split.on ? 3 : 2)) return;
+  if (Nav.stack.length < 2) return;
   const v = Nav.stack.pop(), prev = topView();
   if (instant) { // the phone already showed its own back animation: just switch, don't animate again
     v.remove();
@@ -89,7 +86,7 @@ function doPop({ instant = false } = {}) {
     shade.style.transition = 'none';
     if (Nav.stack.length > 1) { stackEl.insertBefore(shade, topView()); shade.style.opacity = '.12'; } else shade.style.opacity = '0';
     void prev.offsetWidth; prev.style.transition = ''; shade.style.transition = '';
-    renderView(prev); updateComposerCtx();
+    renderView(prev); updateComposerCtx(); if (typeof Drawer !== 'undefined') Drawer.render();
     return;
   }
   v.classList.add('offright');
@@ -106,49 +103,37 @@ function doPop({ instant = false } = {}) {
   }, 560);
   renderView(prev);
   updateComposerCtx();
+  if (typeof Drawer !== 'undefined') Drawer.render();
 }
-/* ---------- Split view (iPad landscape, laptops, desktops): lists on the left, the open one on the right ---------- */
-const Split = { mq: matchMedia('(min-width: 960px)'), on: false, back: [] };
-function paneShow(spec, { back = false, quiet = false } = {}) {
-  closeMenu();
-  const cur = Nav.stack[1];
-  if (cur && specKey(cur._spec) === specKey(spec)) return cur;
-  if (cur && !back && !quiet) { Split.back.push(cur._spec); if (Split.back.length > 12) Split.back.shift(); }
-  const v = makeView(spec);
-  v.classList.add('pushed');
-  Nav.stack = [Nav.stack[0], v];
-  renderView(v);
-  stackEl.appendChild(v);
-  if (cur) cur.remove();
-  if (!quiet && !reducedMotion.matches) v.animate([{ opacity: 0, transform: `translateX(${back ? -14 : 14}px)` }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
-  updateComposerCtx(); scheduleRender();
-  return v;
-}
+/* ---------- Big screens (iPad landscape, computers): the ☰ menu stays open on the left ---------- */
+const Split = { mq: matchMedia('(min-width: 960px)'), on: false };
 function splitCheck() {
-  const on = Split.mq.matches && !!stackEl && Nav.stack.length > 0;
-  if (on === Split.on) { if (on && Nav.stack.length === 1) paneShow({ type: 'smart', key: 'today' }, { quiet: true }); return; }
+  const on = Split.mq.matches;
+  if (on === Split.on) return;
   Split.on = on;
   document.body.classList.toggle('split', on);
-  if (on) {
-    // keep only the view on top for the right side, or open Today
-    const keep = Nav.stack.length > 1 ? topView() : null;
-    Nav.stack.slice(1).forEach(v => { if (v !== keep) v.remove(); });
-    Nav.stack = keep ? [Nav.stack[0], keep] : [Nav.stack[0]];
-    Nav.stack[0].classList.remove('under'); Nav.stack[0].style.transform = '';
-    if (keep) keep.classList.remove('under', 'offright');
-    shade.remove(); Split.back = [];
-    if (!keep) paneShow({ type: 'smart', key: 'today' }, { quiet: true });
-    history.replaceState({ d: 2 }, '');
-  } else {
-    // one column again: rebuild the back history so swiping back works
-    history.replaceState({ d: 1 }, '');
-    for (let i = 2; i <= Nav.stack.length; i++) history.pushState({ d: i }, '');
-    if (Nav.stack.length > 1) { Nav.stack[0].classList.add('under'); stackEl.insertBefore(shade, topView()); shade.style.opacity = '.12'; }
-  }
-  renderNow();
+  if (typeof Drawer !== 'undefined') { if (on) Drawer.close(); Drawer.render(); }
+  if (stackEl) renderNow();
 }
 Split.mq.addEventListener?.('change', splitCheck);
-const paneKey = () => (Split.on && Nav.stack[1] ? specKey(Nav.stack[1]._spec) : '');
+
+// Go somewhere from the menu: replace whatever is open (Back always leads Home)
+function navTo(spec) {
+  closeMenu();
+  const N = Nav.stack.length;
+  if (spec.type === 'home') {
+    if (N < 2) { topView().scrollTo({ top: 0, behavior: 'smooth' }); return; }
+    while (Nav.stack.length > 2) doPop({ instant: true });
+    doPop(); Nav.ignorePops++; history.go(-(N - 1)); return;
+  }
+  if (N > 1 && specKey(topView()._spec) === specKey(spec)) return;
+  if (N === 1) return pushView(spec);
+  if (N === 2) { doPop({ instant: true }); return pushView(spec, { replace: true }); }
+  while (Nav.stack.length > 1) doPop({ instant: true });
+  Nav.ignorePops++; Nav.afterPop = () => pushView(spec, { replace: true });
+  history.go(-(N - 2));
+}
+const greeting = (h = new Date().getHours()) => h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 16 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
 
 function openSmart(key) { pushView({ type: 'smart', key }); }
 function openList(id) { Cmp.listPick = null; pushView({ type: 'list', id }); }
@@ -160,21 +145,18 @@ function openSearch() {
 
 /* ---------- View rendering ---------- */
 function renderView(v) {
-  if (v._spec.type === 'chat') return ChatUI.render(v);
   const spec = v._spec, nav = v.firstElementChild, body = v.lastElementChild;
   const idx = Nav.stack.indexOf(v);
   const [left, title, right] = nav.children;
   title.textContent = viewTitle(spec);
   if (spec.type === 'search') return renderSearch(v);
   const prevSpec = idx > 0 ? Nav.stack[idx - 1]._spec : null;
-  left.innerHTML = prevSpec && !(Split.on && idx === 1) ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${esc(prevSpec.type === 'home' ? 'Lists' : viewTitle(prevSpec))}</span></button>` : '';
+  left.innerHTML = prevSpec ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${esc(prevSpec.type === 'home' ? 'Home' : viewTitle(prevSpec))}</span></button>` : '';
   if (spec.type === 'home') {
-    right.innerHTML = (cloudReady() && Auth.user() ? `<button class="nav-btn chat-btn${paneKey() === 'chat' ? ' picked' : ''}" data-a="chat" type="button" aria-label="Messages">${ic('chat')}<span class="chat-badge" hidden></span></button>` : '') +
-      `<button class="duo" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}${avatar(partnerKey())}<i class="sync-dot ${Sync.state}"></i></button>`;
-    if (typeof Chat !== 'undefined') Chat.updateBadge();
+    left.innerHTML = `<button class="nav-btn menu-btn" data-a="menu" type="button" aria-label="Menu">${ic('menu')}<span class="chat-badge dot" hidden></span></button>`;
+    right.innerHTML = `<button class="duo" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}${avatar(partnerKey())}<i class="sync-dot ${Sync.state}"></i></button>`;
     body.innerHTML = homeHTML();
-    const bar = body.querySelector('.ring .bar');
-    if (bar) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.strokeDashoffset = 113.1 * (1 - lastRingP); }));
+    if (typeof Chat !== 'undefined') Chat.updateBadge();
     return;
   }
   if (spec.type === 'tips') { right.innerHTML = ''; if (!v._tips) { v._tips = 1; renderTips(v); } return; }
@@ -182,50 +164,23 @@ function renderView(v) {
   renderTaskView(v);
 }
 
+// Home: a greeting, today's reminders and the chat box below. Everything else lives in the ☰ menu.
 function homeHTML() {
-  const t0 = todayStr(), all = liveTasks(), now = new Date(), h = now.getHours();
-  const greet = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
-  const cnt = k => all.filter(SMART[k].match).length;
-  const rem = cnt('today'), doneT = all.filter(doneToday).length, total = rem + doneT;
-  const p = total ? doneT / total : 0, prevP = lastRingP; lastRingP = p;
-  const streak = calcStreak();
-  const together = all.filter(x => x.done && x.doneAt > Date.now() - 7 * 864e5).length;
-  const ptLeft = all.filter(x => SMART.today.match(x) && x.assignee === partnerKey()).length;
-  const heroT = total === 0 ? 'Nothing due today ☀️' : rem === 0 ? 'All done for today 🎉' : `${rem} left today`;
-  const bits = [];
-  if (streak) bits.push(`🔥 ${streak}-day streak`);
-  bits.push(`💞 ${together} done together this week`);
-  if (ptLeft) bits.push(`${esc(firstWord(ptName()))} has ${ptLeft} today`);
-  const sel = paneKey();
-  const card = (k, iconHTML, n) => `<button class="card${sel === 's:' + k ? ' picked' : ''}" data-a="smart" data-k="${k}" type="button">
-      <span class="ic" style="--c:var(--c-${SMART[k].color})">${iconHTML}</span><span class="n">${n}</span><span class="l">${SMART[k].title}</span></button>`;
+  const now = new Date(), all = liveTasks();
+  const today = all.filter(SMART.today.match), doneT = all.filter(doneToday).length;
+  const sub = [now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })];
+  sub.push(today.length ? `${today.length} left today` : doneT ? 'All done for today 🎉' : 'Nothing due today');
   const reqs = typeof Inbox !== 'undefined' ? Inbox.incoming() : [];
   const unpaired = Auth.user() && L.auth.username && !(L.pair && L.pair.status) && !reqs.length && !L.tips.pair;
   const banner = (unpaired ? `<div class="banner"><span style="font-size:26px">💌</span><div><b>Add ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}</b><span style="display:block;color:var(--label2);font-size:14px">You’re <b style="display:inline">@${esc(L.auth.username)}</b></span><button class="btn-s" data-a="invite" type="button">＋ Add partner</button></div><button class="x" data-a="dismissPair" aria-label="Dismiss" type="button">${ic('x', 'sm')}</button></div>` : '') + (reqs.length ? `<button class="banner" data-a="invite" type="button" style="border:0;width:calc(100% - 32px);text-align:left;color:inherit"><span style="font-size:26px">💌</span><div><b>${esc(reqs[0][1].name)} sent you a partner request</b><span>Tap to accept or decline</span></div></button>` : '') + installBannerHTML();
-  const listRows = lists().map(l => {
-    const n = all.filter(t => !t.done && listOf(t).id === l.id).length;
-    return `<button class="cell tap${sel === 'l:' + l.id ? ' picked' : ''}" data-a="list" data-id="${esc(l.id)}" type="button"><span class="list-ic" style="--c:var(--c-${l.color})">${esc(l.emoji)}</span>
-      <span class="grow">${esc(l.name)}</span>${l.private ? ic('lock', 'lock') : ''}<span class="val">${n || ''}</span>${ic('chevR', 'chev')}</button>`;
-  }).join('');
-  return `
-    <div class="hello"><div class="date">${esc(now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }))}</div>
-      <h1>${greet}, ${esc(firstWord(myName()))}</h1></div>
-    <div class="hero"><div class="ring"><svg viewBox="0 0 44 44"><circle class="trk" cx="22" cy="22" r="18"/><circle class="bar" cx="22" cy="22" r="18" style="stroke-dashoffset:${113.1 * (1 - prevP)}"/></svg><b>${total ? `${doneT}/${total}` : '✓'}</b></div>
-      <div class="hero-t"><div class="h1">${heroT}</div><div class="h2">${bits.join(' · ')}</div></div></div>
-    ${banner}
-    <button class="searchbar" data-a="search" type="button">${ic('search')}<span>Search</span><kbd>⌘K</kbd></button>
-    <div class="grid">
-      ${card('today', `<span class="daynum">${now.getDate()}</span>`, cnt('today'))}
-      ${card('upcoming', ic('cal'), cnt('upcoming'))}
-      ${card('us', ic('heart'), cnt('us'))}
-      ${card('pinned', ic('pin'), cnt('pinned'))}
-      ${card('all', ic('tray'), cnt('all'))}
-      ${card('done', ic('check'), cnt('done'))}
-    </div>
-    <div class="sec-title"><h2>My Lists</h2></div>
-    <div class="group">${listRows}<button class="cell accent tap" data-a="addlist" type="button"><span class="list-ic" style="--c:var(--accent)">${ic('plus', 'sm')}</span><span class="grow">Add List</span></button></div>
-    <div class="group tips-cell"><button class="cell tap${sel === 'tips' ? ' picked' : ''}" data-a="tips" type="button"><span class="list-ic" style="--c:var(--c-yellow)">💡</span><span class="grow">Tips &amp; tricks</span><span class="val">${TIPS.length}</span>${ic('chevR', 'chev')}</button></div>
-    <div class="foot">Twodo · made for ${esc(firstWord(person('a').name))} & ${esc(firstWord(person('b').name))} 💞</div>`;
+  const groups = buildGroups({ type: 'smart', key: 'today' }, today, 'smart').filter(g => g.items.length);
+  const ideas = [['📞', 'Call mom tomorrow 6pm'], ['🍝', 'Dinner fri 8pm @us'], ['🛒', 'Milk and eggs #groceries'], ['💊', 'Vitamins every day 9am']];
+  const list = groups.length ? groups.map(g => groupHTML(g, { showList: true, hideToday: true })).join('')
+    : `<div class="hm-empty"><span class="e">${doneT ? '🎉' : '☀️'}</span><h3>${doneT ? 'All done for today' : 'Nothing due today'}</h3>
+        <p>Tell me what to remember in the box below — I’ll work out the when.</p>
+        <div class="hm-ideas">${ideas.map(([e, t]) => `<button type="button" data-a="idea" data-v="${esc(t)}">${e} ${esc(t)}</button>`).join('')}</div></div>`;
+  return `<div class="hm"><h1 class="hm-hi">${greeting(now.getHours())}, ${esc(firstWord(myName()))}</h1><p class="hm-sub">${esc(sub.join(' · '))}</p></div>
+    ${banner}${list}${doneT && groups.length ? `<div class="hm-done">${ic('check', 'xs')} ${doneT} done today</div>` : ''}`;
 }
 
 let installEvt = null;
