@@ -16,72 +16,72 @@ function chatTime(ts) {
     : d.toLocaleDateString([], { month: 'short', day: 'numeric', ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: 'numeric' }) });
   return `<b>${esc(day)}</b> ${esc(t)}`;
 }
+// Soft, warm two-note chimes (no files): rising when you send, gently falling when a message arrives.
 function chatSound(kind) {
   if (!L.settings.sounds) return;
-  if (kind !== 'send') return blip('pop');
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const t = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = 'sine'; o.frequency.setValueAtTime(360, t); o.frequency.exponentialRampToValueAtTime(1350, t + 0.14);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
-    o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + 0.2);
-  } catch (e) { /* ignore */ }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const ctx = audioCtx, t0 = ctx.currentTime + 0.01;
+    const out = ctx.createGain(); out.gain.value = kind === 'send' ? 0.05 : 0.06;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+    out.connect(lp).connect(ctx.destination);
+    const note = (f, at, dur) => {
+      for (const [mult, amp, type] of [[1, 1, 'sine'], [2, 0.18, 'sine'], [1, 0.12, 'triangle']]) {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = type; o.frequency.value = f * mult;
+        g.gain.setValueAtTime(0.0001, t0 + at);
+        g.gain.exponentialRampToValueAtTime(amp, t0 + at + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + dur);
+        o.connect(g).connect(out); o.start(t0 + at); o.stop(t0 + at + dur + 0.05);
+      }
+    };
+    if (kind === 'send') { note(784, 0, 0.22); note(1175, 0.06, 0.32); }      // G5 → D6
+    else { note(1047, 0, 0.5); note(784, 0.11, 0.62); }                        // C6 → G5
+  } catch (e) { /* no audio */ }
 }
+// iPhones only allow sound after a tap: wake the audio once on the first touch
+addEventListener('pointerdown', () => { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); } catch (e) { /* ignore */ } }, { once: true, capture: true });
 
 const ChatUI = {
-  view: null, pop: null, lastVer: -1, animUntil: 0, drawR: 0, lp: null, lastTap: { id: null, t: 0 }, nearBottom: true,
+  view: null, lastVer: -1, animUntil: 0, drawR: 0, lp: null, lastTap: { id: null, t: 0 }, nearBottom: true,
 
-  // Messages open as a floating glass card, out of the floating 💬 button
-  shown() { return !!(this.pop && this.pop.classList.contains('on')); },
-  isOpen() { return this.shown() && !document.hidden; },
-  makePop() {
-    const o = document.createElement('div'); o.id = 'chatpop';
-    o.innerHTML = '<div class="cp-bg"></div><div class="cp-frame"><div class="cp-card"></div></div>';
-    document.body.append(o); this.pop = o;
-    o.querySelector('.cp-bg').addEventListener('click', () => this.close());
-    const card = o.querySelector('.cp-card'); this.build(card);
-    return o;
-  },
+  home() { const v = Nav.stack[0]; return v && v.classList.contains('chatview') ? v : null; },
+  shown() { const h = this.home(); return !!h && topView() === h; },
+  // actually on screen: Home is on top and nothing covers it
+  isOpen() { return this.shown() && !document.hidden && !Sheet.cur && !(typeof Drawer !== 'undefined' && Drawer.open); },
   open() {
     if (!cloudReady()) return island({ e: '💬', text: 'Messages need accounts turned on', sub: 'See README → accounts & sync' });
     if (!Auth.user()) return openSettings();
     if (!(L.pair && L.pair.status === 'paired')) { island({ e: '💌', text: 'Add your partner to start chatting', ms: 2500 }); return openInviteSheet(); }
     if (typeof Drawer !== 'undefined') Drawer.close();
-    closeMenu(); if (Island.mode === 'toast') hideIsland();
-    if (!this.pop) this.makePop();
-    const card = this.pop.querySelector('.cp-card'), frame = this.pop.querySelector('.cp-frame');
-    this.render(card);
-    if (!this.shown()) {
-      // grow out of the floating button
-      const b = Bubble.el && Bubble.el.getBoundingClientRect(), f = frame.getBoundingClientRect();
-      if (b && b.width) card.style.transformOrigin = `${b.left + b.width / 2 - f.left}px ${b.top + b.height / 2 - f.top}px`;
-      this.pop.classList.add('on'); document.body.classList.add('chatting');
-      haptic('light');
-    }
+    if (Sheet.cur) closeSheet();
+    if (!this.shown()) navTo({ type: 'home' });
     Chat.ensure();
-    this.draw({ toBottom: true });
-    Chat.markRead(); this.playPending();
+    setTimeout(() => { this.draw({ toBottom: true }); Chat.markRead(); }, 60);
   },
-  close() {
-    if (!this.shown()) return;
-    const card = this.pop.querySelector('.cp-card');
-    if (card.contains(document.activeElement)) document.activeElement.blur();
-    Chat.setTyping(false);
-    card.style.transform = '';
-    this.pop.classList.remove('on'); document.body.classList.remove('chatting');
-    closeMenu();
-  },
+  close() { /* the chat is Home: nothing to close */ },
 
   /* ---------- markup ---------- */
   build(v) {
     v.classList.add('chatview');
     v.innerHTML = `
       <div class="chatbody"><div class="chatlist"></div><div class="c-typing"></div></div>
-      <header class="nav chat-nav"><div class="nav-side l"><button class="nav-btn cp-x" type="button" aria-label="Close">${ic('chevD')}</button></div>
-        <div class="chat-who"><span class="av-slot"></span><span class="nm"></span><span class="c-sub">End-to-end encrypted</span></div><div class="nav-side r"></div></header>
+      <header class="chat-nav">
+        <button class="nav-btn ch-side" data-a="menu" type="button" aria-label="Menu">${ic('menu')}</button>
+        <div class="lovebar">
+          <button class="lb-av pt" data-pv="pt" type="button" aria-label="View photo"><span class="av-slot"></span><i class="pres"></i></button>
+          <span class="lb-link" aria-hidden="true"><svg viewBox="0 0 100 34" preserveAspectRatio="none"><defs><linearGradient id="lbLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs><path class="lb-line" d="M3 27 Q50 -4 97 27"/></svg>
+            <svg class="lb-heart" viewBox="0 0 24 24"><defs><linearGradient id="lbHeart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="lb-s1"/><stop offset="1" class="lb-s2"/></linearGradient></defs>
+              <path d="M12 20.3s-7.6-4.6-9.4-9.3C1.4 7.6 3.7 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.7 3.3 4.5 6.7-1.8 4.7-9.4 9.3-9.4 9.3z" fill="url(#lbHeart)"/></svg></span>
+          <button class="lb-av me" data-pv="me" type="button" aria-label="View your photo"><span class="av-slot"></span></button>
+        </div>
+        <button class="nav-btn ch-side todo-btn" data-a="todos" type="button" aria-label="To-dos">${ic('todo')}<span class="todo-n" hidden></span></button>
+        <div class="lb-name"></div><div class="c-sub"></div>
+      </header>
       <button class="c-jump" type="button" hidden>${ic('chevD', 'xs')} New message</button>
       <div class="chatbar">
-        <button class="cb-plus" type="button" aria-label="Share a task">${ic('plus')}</button>
+        <button class="cb-plus" type="button" aria-label="Share a to-do">${ic('plus')}</button>
         <div class="cb-pill"><textarea class="cb-in" rows="1" placeholder="Message" aria-label="Message" enterkeyhint="${isTouch ? 'enter' : 'send'}"></textarea>
           <button class="cb-heart" type="button" aria-label="Send a heart">❤️</button>
           <button class="cb-send" type="button" aria-label="Send. Hold for effects">${ic('arrowUp')}</button></div>
@@ -90,11 +90,21 @@ const ChatUI = {
   },
   render(v) {
     this.view = v;
-    const p = person(partnerKey());
-    v.querySelector('.av-slot').innerHTML = avatar(partnerKey());
-    v.querySelector('.nm').textContent = p.name;
+    const pk = partnerKey(), paired = !!(L.pair && L.pair.status === 'paired');
+    v.classList.toggle('nopair', !paired);
+    const sig = [paired, L.pair && L.pair.status, typeof Inbox !== 'undefined' ? Inbox.incoming().length : 0, ptName()].join('|');
+    if (sig !== this.pairSig) { this.pairSig = sig; this.lastVer = -1; }
+    Chat.ensure();
+    const slots = v.querySelectorAll('.av-slot');
+    const a = paired ? avatar(pk) : `<span class="av lb-ghost">${ic('plus')}</span>`, b = avatar(L.me);
+    if (slots[0].innerHTML !== a) slots[0].innerHTML = a;
+    if (slots[1].innerHTML !== b) slots[1].innerHTML = b;
+    v.querySelector('.lb-name').textContent = paired ? person(pk).name : 'Your partner';
+    const n = liveTasks().filter(SMART.today.match).length, badge = v.querySelector('.todo-n');
+    badge.hidden = !n; badge.textContent = n > 9 ? '9+' : String(n);
     this.subLine();
     if (this.lastVer !== Chat.ver || v.querySelector('.tcard')) this.queueDraw();
+    if (this.isOpen()) Chat.markRead();
     Chat.updateBadge();
   },
   // A row is its class list (grouping, which changes as messages arrive) plus its content; keeping them apart lets
@@ -120,19 +130,26 @@ const ChatUI = {
       <div class="tc-b"><button class="tc-chk" data-taskchk="${esc(tk.id)}" type="button" aria-label="Complete task">${ic('check')}</button>
         <div><div class="tc-t">${esc(title)}</div>${due ? `<div class="tc-m">${ic('cal', 'xs')} ${esc(due)}</div>` : ''}</div></div></div>`;
   },
+  // ♡ sent · ♥ seen (filled) · faint while sending
   statusParts(m) {
-    if (m.status === 'failed') return { cls: 'c-status fail', h: 'Not Delivered' };
-    if (m.status === 'sending') return { cls: 'c-status', h: Date.now() - m.ts < 900 ? '&nbsp;' : 'Sending…' }; // no flicker on a fast send
-    if (Chat.partnerRead >= m.ts) return { cls: 'c-status', h: `<b>Read</b> ${esc(new Date(Chat.partnerReadAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}` };
-    return { cls: 'c-status', h: 'Delivered' };
+    if (m.status === 'failed') return { cls: 'c-status fail', h: 'Not delivered' };
+    const heart = `<svg class="hs" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3s-7.6-4.6-9.4-9.3C1.4 7.6 3.7 4.3 7.1 4.3c2 0 3.6 1.1 4.9 2.8 1.3-1.7 2.9-2.8 4.9-2.8 3.4 0 5.7 3.3 4.5 6.7-1.8 4.7-9.4 9.3-9.4 9.3z"/></svg>`;
+    if (m.status === 'sending') return { cls: 'c-status sending', h: heart };
+    if (Chat.partnerRead >= m.ts) return { cls: 'c-status seen', h: heart + '<span class="sr">Seen</span>' };
+    return { cls: 'c-status sent', h: heart + '<span class="sr">Sent</span>' };
   },
   // Everything the list shows, in order, as keyed items: [{ k, cls, h, id? }]
   items() {
     const me = L.auth.uid, ms = Object.values(Chat.msgs).sort((a, b) => (a.id < b.id ? -1 : 1));
+    if (!(L.pair && L.pair.status === 'paired')) {
+      const inc = typeof Inbox !== 'undefined' ? Inbox.incoming() : [], sent = L.pair && L.pair.status === 'sent';
+      return [{ k: 'pair' + inc.length + (sent ? 's' : ''), cls: 'c-empty', h: inc.length
+        ? `<span class="c-e">💌</span><h3>${esc(inc[0][1].name)} wants to connect</h3><p>Accept to start your chat and share to-dos.</p><button class="c-cta" data-a="invite" type="button">See request</button>`
+        : sent ? `<span class="c-e">⏳</span><h3>Waiting for ${esc(firstWord(L.pair.name))}</h3><p>As soon as ${esc(firstWord(L.pair.name))} accepts, your chat starts right here.</p>`
+        : `<span class="c-e">💞</span><h3>Add your partner</h3><p>Connect with their username to chat and share to-dos.</p><button class="c-cta" data-a="invite" type="button">Add partner</button>` }];
+    }
     if (!ms.length) {
-      const pn = firstWord(ptName());
-      return [{ k: 'empty', cls: 'c-empty', h: `${avatar(partnerKey(), 'big')}
-        <h3>${esc(ptName())}</h3><p>Messages are end-to-end encrypted.<br>Only you and ${esc(pn)} can read them.</p>
+      return [{ k: 'empty', cls: 'c-empty', h: `<span class="c-e">👋</span><h3>Say hi to ${esc(firstWord(ptName()))}</h3><p>Your messages and shared to-dos live here.</p>
         <div class="c-quick">${['👋 Hi!', '❤️', 'Miss you 🥺', 'What’s for dinner?'].map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join('')}</div>` }];
     }
     const out = []; let prev = null;
@@ -238,18 +255,21 @@ const ChatUI = {
       Chat.markRead(); if (initial) this.playPending();
     } else if (!initial && incoming.length) {
       const m = incoming[incoming.length - 1];
-      Bubble.ping();
       island({ e: '💬', text: `${firstWord(ptName())}: ${m.task ? '📋 ' + m.task.title : m.t}`, sub: m.fx ? `Sent with ${(FX.bubble.concat(FX.screen).find(f => f[0] === m.fx) || [, 'an effect'])[1]}` : '', btn: 'Reply', onBtn: () => this.open(), ms: 4500 });
-      blip('pop'); haptic('light');
+      chatSound('recv'); haptic('light');
     }
   },
   subLine() {
     const el = this.view && this.view.querySelector('.c-sub'); if (!el) return;
-    const t = Chat.partnerTyping();
-    el.textContent = t ? 'typing…' : '🔒 End-to-end encrypted'; el.classList.toggle('typing', t);
+    const paired = !!(L.pair && L.pair.status === 'paired');
+    const t = paired && Chat.partnerTyping(), on = paired && Chat.partnerOnline();
+    el.textContent = !paired ? 'Not connected yet' : t ? 'typing…' : on ? 'online' : Chat.lastSeenText();
+    el.classList.toggle('typing', t); el.classList.toggle('online', on && !t);
+    this.view.querySelector('.lovebar').classList.toggle('live', on);
   },
   onState() {
     if (!this.isOpen()) return;
+    Chat.markRead();
     this.subLine();
     this.drawTyping();
     if (this.lastVer !== Chat.ver) this.queueDraw();
@@ -282,21 +302,12 @@ const ChatUI = {
   bind(v) {
     const body = v.querySelector('.chatbody'), list = v.querySelector('.chatlist'), input = v.querySelector('.cb-in');
     const send = v.querySelector('.cb-send'), heart = v.querySelector('.cb-heart'), plus = v.querySelector('.cb-plus'), jump = v.querySelector('.c-jump');
-    v.querySelector('.cp-x').addEventListener('click', () => this.close());
-    const head = v.querySelector('.chat-nav');
-    let hd = null;
-    head.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; hd = { y0: e.clientY, id: e.pointerId, dy: 0, t: performance.now() }; try { head.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
-    head.addEventListener('pointermove', e => {
-      if (!hd || e.pointerId !== hd.id) return;
-      hd.dy = Math.max(0, e.clientY - hd.y0);
-      if (hd.dy > 4) { v.style.transition = 'none'; v.style.transform = `translateY(${hd.dy}px) scale(${1 - Math.min(hd.dy, 400) / 4000})`; }
+    v.querySelector('.lovebar').addEventListener('click', e => {
+      const b = e.target.closest('[data-pv]');
+      if (b && b.dataset.pv === 'pt' && !(L.pair && L.pair.status === 'paired')) return openInviteSheet();
+      if (b) return viewPhoto(b.dataset.pv === 'me' ? L.me : partnerKey(), b.querySelector('.av'));
+      if (e.target.closest('.lb-link')) { haptic('light'); const h = v.querySelector('.lb-heart'); h.classList.remove('beat'); void h.getBoundingClientRect(); h.classList.add('beat'); }
     });
-    const hEnd = e => {
-      if (!hd || e.pointerId !== hd.id) return;
-      const d = hd; hd = null; v.style.transition = '';
-      if (d.dy > 110 || d.dy / Math.max(1, performance.now() - d.t) > 0.6) this.close(); else v.style.transform = '';
-    };
-    head.addEventListener('pointerup', hEnd); head.addEventListener('pointercancel', hEnd);
     [send, heart, plus].forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
     input.addEventListener('input', () => { this.autosize(input); Chat.setTyping(!!input.value.trim()); });
     input.addEventListener('blur', () => Chat.setTyping(false));
@@ -314,7 +325,7 @@ const ChatUI = {
     body.addEventListener('scroll', () => {
       const near = body.scrollHeight - body.scrollTop - body.clientHeight < 140;
       if (near) { jump.hidden = true; if (document.activeElement !== input || true) Chat.markRead(); }
-      v.querySelector('.chat-nav').classList.toggle('scrolled', true);
+      v.querySelector('.chat-nav').classList.toggle('scrolled', body.scrollTop > 2);
     }, { passive: true });
     if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (this.isOpen() && this.nearBottom) body.scrollTop = body.scrollHeight; });
     body.addEventListener('scroll', () => { this.nearBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 140; }, { passive: true });
@@ -424,69 +435,4 @@ const ChatUI = {
       else playScreenFx(sel, { from: this.center(prev), text, mine: true });
     });
   },
-};
-
-/* ---------- The floating 💬 button (like AssistiveTouch): drag it anywhere, it tucks into the nearest side ---------- */
-const Bubble = {
-  el: null, idleT: null, drag: null,
-  init() {
-    const b = document.createElement('button');
-    b.id = 'fab'; b.type = 'button'; b.setAttribute('aria-label', 'Messages'); b.hidden = true;
-    b.innerHTML = '<span class="fab-face"></span><span class="chat-badge" hidden></span>';
-    document.body.append(b); this.el = b;
-    b.addEventListener('pointerdown', e => {
-      if (e.button) return;
-      this.wake();
-      const r = b.getBoundingClientRect();
-      this.drag = { id: e.pointerId, x0: e.clientX, y0: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top, moved: false };
-      try { b.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
-    });
-    b.addEventListener('pointermove', e => {
-      const d = this.drag; if (!d || e.pointerId !== d.id) return;
-      if (!d.moved && Math.hypot(e.clientX - d.x0, e.clientY - d.y0) < 7) return;
-      if (!d.moved) { d.moved = true; b.classList.add('dragging'); }
-      this.moveTo(e.clientX - d.ox, e.clientY - d.oy);
-    });
-    const end = e => {
-      const d = this.drag; if (!d || e.pointerId !== d.id) return;
-      this.drag = null; b.classList.remove('dragging');
-      if (d.moved) { this.snap(); haptic('light'); } else if (e.type === 'pointerup') ChatUI.open();
-      this.sleepSoon();
-    };
-    b.addEventListener('pointerup', end); b.addEventListener('pointercancel', end);
-    b.addEventListener('contextmenu', e => e.preventDefault());
-    b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ChatUI.open(); } });
-    addEventListener('resize', () => this.place());
-    if (window.visualViewport) visualViewport.addEventListener('resize', () => this.place());
-    this.sync(); this.place(); this.sleepSoon();
-  },
-  bounds() {
-    const ins = safeInsets(), s = 56, m = 10, vw = innerWidth, vh = window.visualViewport ? visualViewport.height : innerHeight;
-    const left = (Split.on ? $('#app').getBoundingClientRect().left : 0);
-    return { x0: Math.max(left, 0) + ins.left + m, x1: vw - ins.right - s - m, y0: ins.top + 64, y1: vh - ins.bottom - s - 118, s };
-  },
-  moveTo(x, y) { this.el.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`; this.cur = { x, y }; },
-  place() {
-    if (!this.el) return;
-    const B = this.bounds(), f = L.fab || { side: 'r', y: 0.58 };
-    this.moveTo(f.side === 'l' ? B.x0 : B.x1, clamp(B.y0 + f.y * (B.y1 - B.y0), B.y0, Math.max(B.y0, B.y1)));
-  },
-  snap() {
-    const B = this.bounds(), c = this.cur || { x: B.x1, y: B.y0 };
-    const side = c.x + B.s / 2 < (B.x0 + B.x1 + B.s) / 2 ? 'l' : 'r';
-    const y = clamp(c.y, B.y0, Math.max(B.y0, B.y1));
-    L.fab = { side, y: B.y1 > B.y0 ? (y - B.y0) / (B.y1 - B.y0) : 0 }; save();
-    this.moveTo(side === 'l' ? B.x0 : B.x1, y);
-  },
-  wake() { clearTimeout(this.idleT); this.el.classList.remove('idle'); },
-  sleepSoon() { clearTimeout(this.idleT); this.idleT = setTimeout(() => { if (!this.el.querySelector('.chat-badge:not([hidden])')) this.el.classList.add('idle'); }, 3500); },
-  sync() {
-    if (!this.el) return;
-    const show = cloudReady() && !!Auth.user() && !!L.onboarded && !$('#ob');
-    this.el.hidden = !show;
-    const pk = partnerKey(), face = person(pk).photo ? avatar(pk) : ic('chat');
-    const f = this.el.querySelector('.fab-face');
-    if (f.innerHTML !== face) f.innerHTML = face;
-  },
-  ping() { if (!this.el) return; this.wake(); this.el.classList.remove('ping'); void this.el.offsetWidth; this.el.classList.add('ping'); this.sleepSoon(); },
 };

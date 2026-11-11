@@ -36,17 +36,18 @@ function renderNow() {
   Fresh.clear();
   updateComposerCtx();
   if (typeof Drawer !== 'undefined') Drawer.render();
-  if (typeof Bubble !== 'undefined') Bubble.sync();
-  if (typeof ChatUI !== 'undefined' && ChatUI.shown()) ChatUI.render(ChatUI.view);
 }
 
 /* ---------- Stack ---------- */
+const VIEW_SHELL = `<header class="nav"><div class="nav-side l"></div><div class="nav-title"></div><div class="nav-side r"></div></header><div class="vbody"></div>`;
+// Home is your chat once you're signed in; without accounts it shows today's to-dos instead.
+const homeIsChat = () => typeof ChatUI !== 'undefined' && cloudReady() && !!Auth.user();
 function makeView(spec) {
   const v = document.createElement('section');
   v.className = 'view'; v._spec = spec;
-  v.innerHTML = `<header class="nav"><div class="nav-side l"></div><div class="nav-title"></div><div class="nav-side r"></div></header><div class="vbody"></div>`;
+  v.innerHTML = VIEW_SHELL;
   v.addEventListener('scroll', () => {
-    v.firstElementChild.classList.toggle('scrolled', v.scrollTop > (spec.type === 'home' ? 64 : 34));
+    if (!v.classList.contains('chatview')) v.firstElementChild.classList.toggle('scrolled', v.scrollTop > 34);
   }, { passive: true });
   return v;
 }
@@ -133,7 +134,6 @@ function navTo(spec) {
   Nav.ignorePops++; Nav.afterPop = () => pushView(spec, { replace: true });
   history.go(-(N - 2));
 }
-const greeting = (h = new Date().getHours()) => h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 16 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
 
 function openSmart(key) { pushView({ type: 'smart', key }); }
 function openList(id) { Cmp.listPick = null; pushView({ type: 'list', id }); }
@@ -145,42 +145,43 @@ function openSearch() {
 
 /* ---------- View rendering ---------- */
 function renderView(v) {
-  const spec = v._spec, nav = v.firstElementChild, body = v.lastElementChild;
+  const spec = v._spec;
+  if (spec.type === 'home' && homeIsChat()) {
+    if (!v.classList.contains('chatview')) ChatUI.build(v);
+    return ChatUI.render(v);
+  }
+  if (v.classList.contains('chatview')) { v.classList.remove('chatview', 'nopair'); v.innerHTML = VIEW_SHELL; }
+  const nav = v.firstElementChild, body = v.lastElementChild;
   const idx = Nav.stack.indexOf(v);
   const [left, title, right] = nav.children;
   title.textContent = viewTitle(spec);
   if (spec.type === 'search') return renderSearch(v);
   const prevSpec = idx > 0 ? Nav.stack[idx - 1]._spec : null;
-  left.innerHTML = prevSpec ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${esc(prevSpec.type === 'home' ? 'Home' : viewTitle(prevSpec))}</span></button>` : '';
+  const backTo = !prevSpec ? '' : prevSpec.type !== 'home' ? esc(viewTitle(prevSpec)) : homeIsChat() ? 'Chat<span class="chat-badge" hidden></span>' : 'Home';
+  left.innerHTML = prevSpec ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${backTo}</span></button>` : '';
   if (spec.type === 'home') {
-    left.innerHTML = `<button class="nav-btn menu-btn" data-a="menu" type="button" aria-label="Menu">${ic('menu')}<span class="chat-badge dot" hidden></span></button>`;
-    right.innerHTML = `<button class="duo" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}${avatar(partnerKey())}<i class="sync-dot ${Sync.state}"></i></button>`;
+    left.innerHTML = `<button class="nav-btn menu-btn" data-a="menu" type="button" aria-label="Menu">${ic('menu')}</button>`;
+    right.innerHTML = `<button class="nav-btn" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}</button>`;
     body.innerHTML = homeHTML();
-    if (typeof Chat !== 'undefined') Chat.updateBadge();
     return;
   }
+  if (typeof Chat !== 'undefined') Chat.updateBadge();
   if (spec.type === 'tips') { right.innerHTML = ''; if (!v._tips) { v._tips = 1; renderTips(v); } return; }
   right.innerHTML = `<button class="nav-btn" data-a="viewmenu" type="button" aria-label="More options">${ic('more')}</button>`;
   renderTaskView(v);
 }
 
-// Home: a greeting, today's reminders and the chat box below. Everything else lives in the ☰ menu.
+// Home without accounts: today's to-dos (with accounts, Home is the chat — see chatui.js)
 function homeHTML() {
-  const now = new Date(), all = liveTasks();
-  const today = all.filter(SMART.today.match), doneT = all.filter(doneToday).length;
-  const sub = [now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })];
-  sub.push(today.length ? `${today.length} left today` : doneT ? 'All done for today 🎉' : 'Nothing due today');
-  const reqs = typeof Inbox !== 'undefined' ? Inbox.incoming() : [];
-  const unpaired = Auth.user() && L.auth.username && !(L.pair && L.pair.status) && !reqs.length && !L.tips.pair;
-  const banner = (unpaired ? `<div class="banner"><span style="font-size:26px">💌</span><div><b>Add ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}</b><span style="display:block;color:var(--label2);font-size:14px">You’re <b style="display:inline">@${esc(L.auth.username)}</b></span><button class="btn-s" data-a="invite" type="button">＋ Add partner</button></div><button class="x" data-a="dismissPair" aria-label="Dismiss" type="button">${ic('x', 'sm')}</button></div>` : '') + (reqs.length ? `<button class="banner" data-a="invite" type="button" style="border:0;width:calc(100% - 32px);text-align:left;color:inherit"><span style="font-size:26px">💌</span><div><b>${esc(reqs[0][1].name)} sent you a partner request</b><span>Tap to accept or decline</span></div></button>` : '') + installBannerHTML();
+  const all = liveTasks(), today = all.filter(SMART.today.match), doneT = all.filter(doneToday).length;
   const groups = buildGroups({ type: 'smart', key: 'today' }, today, 'smart').filter(g => g.items.length);
   const ideas = [['📞', 'Call mom tomorrow 6pm'], ['🍝', 'Dinner fri 8pm @us'], ['🛒', 'Milk and eggs #groceries'], ['💊', 'Vitamins every day 9am']];
   const list = groups.length ? groups.map(g => groupHTML(g, { showList: true, hideToday: true })).join('')
     : `<div class="hm-empty"><span class="e">${doneT ? '🎉' : '☀️'}</span><h3>${doneT ? 'All done for today' : 'Nothing due today'}</h3>
-        <p>Tell me what to remember in the box below — I’ll work out the when.</p>
+        <p>Type what to remember in the box below — Twodo works out the when.</p>
         <div class="hm-ideas">${ideas.map(([e, t]) => `<button type="button" data-a="idea" data-v="${esc(t)}">${e} ${esc(t)}</button>`).join('')}</div></div>`;
-  return `<div class="hm"><h1 class="hm-hi">${greeting(now.getHours())}, ${esc(firstWord(myName()))}</h1><p class="hm-sub">${esc(sub.join(' · '))}</p></div>
-    ${banner}${list}${doneT && groups.length ? `<div class="hm-done">${ic('check', 'xs')} ${doneT} done today</div>` : ''}`;
+  return `<h1 class="large-title">Today</h1><div class="subtitle">${esc(new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
+    ${installBannerHTML()}${list}${doneT && groups.length ? `<div class="hm-done">${ic('check', 'xs')} ${doneT} done today</div>` : ''}`;
 }
 
 let installEvt = null;

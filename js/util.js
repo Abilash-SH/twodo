@@ -33,6 +33,7 @@ const PRIO_NAME = ['None', 'Low', 'Medium', 'High'];
 /* ---------- Icons (hand-drawn, SF Symbols-ish) ---------- */
 const ICONS = {
   chevL: '<path d="M15 5l-7 7 7 7"/>',
+  todo: '<rect x="4" y="4" width="16" height="16" rx="5.5"/><path d="M8.6 12.3l2.3 2.3 4.6-4.9"/>',
   chevR: '<path d="M9 5l7 7-7 7"/>',
   chevD: '<path d="M5 9l7 7 7-7"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',

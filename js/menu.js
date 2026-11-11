@@ -1,4 +1,4 @@
-/* Twodo · the ☰ menu: every list, Messages, Search, Tips and Settings.
+/* Twodo · the ☰ menu: your chat (Home), every to-do list, Search, Tips and Settings.
    Slides in from the left on phones (tap ☰ or swipe in from the left edge on Home); stays open on big screens. */
 'use strict';
 
@@ -61,6 +61,7 @@ const Drawer = {
     document.body.classList.remove('drawer-open');
     this.el.style.transform = ''; this.bg.style.opacity = '';
     this.el.classList.remove('on'); this.bg.classList.remove('on');
+    if (typeof ChatUI !== 'undefined') setTimeout(() => ChatUI.onState(), 300); // the chat underneath is visible again
   },
   render() {
     if (!this.el || !(this.open || Split.on)) return;
@@ -90,7 +91,7 @@ const Drawer = {
     const row = (key, m, v, icon, label, right = '') => `<button class="dr-row${cur === key ? ' on' : ''}" data-m="${m}" data-v="${esc(v || '')}" type="button">${icon}<span class="grow">${label}</span>${right}</button>`;
     const sic = (k, inner) => `<span class="dr-ic" style="--c:var(--c-${SMART[k].color})">${inner}</span>`;
     const n = x => x ? `<span class="val">${x}</span>` : '';
-    const chat = cloudReady() && Auth.user();
+    const chat = homeIsChat();
     return `
       <div class="dr-head">
         <button class="dr-me" data-m="settings" type="button"><span class="dr-avs">${avatar(L.me)}${avatar(partnerKey())}</span>
@@ -99,10 +100,10 @@ const Drawer = {
       </div>
       <button class="dr-search" data-m="search" type="button">${ic('search')}<span>Search</span></button>
       <div class="dr-sec">
-        ${row('home', 'home', '', `<span class="dr-ic" style="--c:var(--accent)">${ic('home')}</span>`, 'Home')}
-        ${chat ? row('chat', 'chat', '', `<span class="dr-ic" style="--c:var(--c-green)">${ic('chat')}</span>`, 'Messages', '<span class="chat-badge" hidden></span>') : ''}
+        ${chat ? row('home', 'home', '', `<span class="dr-ic" style="--c:var(--c-pink)">${ic('chat')}</span>`, esc(L.pair && L.pair.status === 'paired' ? firstWord(ptName()) : 'Chat'), '<span class="chat-badge" hidden></span>')
+          : row('home', 'home', '', `<span class="dr-ic" style="--c:var(--accent)">${ic('home')}</span>`, 'Home')}
       </div>
-      <div class="dr-h">Lists</div>
+      <div class="dr-h">To-dos</div>
       <div class="dr-sec">
         ${row('s:today', 'smart', 'today', sic('today', `<span class="daynum">${new Date().getDate()}</span>`), 'Today', n(cnt('today')))}
         ${row('s:upcoming', 'smart', 'upcoming', sic('upcoming', ic('cal')), 'Upcoming', n(cnt('upcoming')))}

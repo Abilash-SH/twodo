@@ -342,6 +342,7 @@ function onAction(name, el) {
     case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; scheduleRender(); } return;
     case 'tips': return openTips();
     case 'menu': return Drawer.show();
+    case 'todos': return navTo({ type: 'smart', key: 'today' });
     case 'idea': Cmp.ta.value = el.dataset.v; updateComposer(); Cmp.ta.focus(); return;
     case 'tipcat': return pickTipCat(el.closest('.view'), el.dataset.v);
     case 'tipact': return el.dataset.v === 'invite' ? openInviteSheet() : el.dataset.v === 'chat' ? ChatUI.open() : openSettings();

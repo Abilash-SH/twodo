@@ -5,9 +5,8 @@ function startGate(first = 'welcome') {
   $('#ob') && $('#ob').remove();
   Cmp.el.classList.add('hide');
   const ob = document.createElement('div'); ob.id = 'ob'; document.body.append(ob);
-  if (typeof Bubble !== 'undefined') Bubble.sync();
-  if (typeof ChatUI !== 'undefined') ChatUI.close();
   if (typeof Drawer !== 'undefined') Drawer.close();
+  if (typeof PhotoView !== 'undefined' && PhotoView.close) PhotoView.close();
   const st = { name: '', color: 'blue', partner: '', email: (L.auth && L.auth.email) || L.lastEmail || '' };
   let cur = null;
   const colors = () => `<div class="colors sm" data-ck="me">${PALETTE.slice(0, 10).map(c => `<button type="button" data-c="${c}" style="--c:var(--c-${c})" class="${c === st.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div>`;
@@ -38,10 +37,10 @@ function startGate(first = 'welcome') {
       <div class="err" id="gErr"></div><div class="spacer"></div><button class="btn" data-g="username" type="button">Continue</button>`,
     ready: () => `<h1>You’re in, ${esc(firstWord(myName()))} 💞</h1><p class="lead">A few things that make Twodo feel like magic:</p>
       <ul class="tips">
-        <li><span class="e">💌</span><div>Pair with ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}<small>Tap “Add partner” on Home (or in Settings) and search their @username.</small></div></li>
-        <li><span class="e">⌨️</span><div>Just type naturally<small>“Movie night fri 8pm @us !!” sets the date, time, person and priority.</small></div></li>
+        <li><span class="e">💌</span><div>Pair with ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}<small>Tap “Add partner” on Home and search their @username.</small></div></li>
+        <li><span class="e">✓</span><div>To-dos, one tap away<small>Tap ✓ at the top and just type: “Movie night fri 8pm @us !!”.</small></div></li>
         <li><span class="e">👉</span><div>Swipe right to complete<small>Swipe left to pin or delete. Long-press for more.</small></div></li>
-        <li><span class="e">💬</span><div>Message each other<small>Tap the floating 💬 button. Hold ↑ to send with an effect.</small></div></li>
+        <li><span class="e">💬</span><div>Home is your chat<small>See when they’re online. A filled ♥ means they’ve seen your message.</small></div></li>
       </ul><div class="spacer"></div><button class="btn" data-g="done" type="button">Start using Twodo</button>
       <button class="btn ghost" data-g="tips" type="button">💡 Show me all the tips</button>`,
   };
@@ -57,7 +56,7 @@ function startGate(first = 'welcome') {
   }
   function enter(msg) {
     L.onboarded = true; save();
-    ob.classList.add('out'); setTimeout(() => { ob.remove(); if (typeof Bubble !== 'undefined') Bubble.sync(); }, 600);
+    ob.classList.add('out'); setTimeout(() => ob.remove(), 600);
     boot(); if (msg) setTimeout(() => island(msg), 500);
   }
   const err = t => { const e = cur.querySelector('#gErr'); if (e) e.textContent = t || ''; if (t) haptic('warn'); };

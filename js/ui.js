@@ -8,14 +8,18 @@ function applyTheme() {
   const dark = s.theme === 'dark' || (s.theme === 'auto' && darkMQ.matches);
   const root = document.documentElement;
   root.dataset.theme = dark ? 'dark' : 'light';
-  const acc = s.accent === 'me' ? person(L.me).color : s.accent;
-  root.style.setProperty('--accent', `var(--c-${acc || 'blue'})`);
+  // one colour per person: yours is the app's accent and your bubbles, your partner's tints theirs
+  const mc = person(L.me).color || 'blue', pc = person(partnerKey()).color || 'pink';
+  root.style.setProperty('--accent', `var(--c-${mc})`);
+  root.style.setProperty('--me-c', `var(--c-${mc})`);
+  root.style.setProperty('--pt-c', `var(--c-${pc})`);
+  root.style.setProperty('--me-ink', ['yellow', 'mint', 'green', 'orange'].includes(mc) ? '#16151A' : '#fff');
   for (const k of ['a', 'b']) { // profile photos, kept once as CSS variables
     const ph = D.people && D.people[k] && D.people[k].photo;
     if (ph) root.style.setProperty('--ph-' + k, `url("${ph}")`); else root.style.removeProperty('--ph-' + k);
   }
   const meta = $('meta[name="theme-color"]');
-  if (meta) meta.content = document.body.classList.contains('launching') ? '#F6528C' : dark ? '#000000' : '#F2F2F7';
+  if (meta) meta.content = document.body.classList.contains('launching') ? '#F6528C' : dark ? '#0D0C10' : '#FAF8FB';
 }
 darkMQ.addEventListener?.('change', applyTheme);
 
@@ -118,6 +122,7 @@ function closeSheet({ history: h = true, keepApp = false } = {}) {
   setTimeout(() => { S.sh.remove(); S.bd.remove(); }, 560);
   if (S.onClose) S.onClose();
   if (h && history.state && history.state.s) { Sheet.ignorePop = true; history.back(); }
+  if (typeof ChatUI !== 'undefined') setTimeout(() => ChatUI.onState(), 350); // the chat underneath is visible again
 }
 function bindSheetDrag(S) {
   const { sh } = S, head = sh.querySelector('.sheet-head'), body = sh.querySelector('.sheet-body');

@@ -1,6 +1,6 @@
 /* Twodo · Messages (data layer)
    /spaces/{space}/c/m/{id}            = { f: authorUid, u: updatedAt, d: AES-GCM ciphertext }   (only the author can edit/unsend)
-   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at } }                           (typing + read receipts)
+   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at, on } }                       (typing, read receipts, online)
    /spaces/{space}/c/e/rx/{msg}/{uid}  = { u, d: { r } }                                          (tapback reactions)
    Everything is encrypted with the space key; Firebase sees only who wrote and when. */
 'use strict';
@@ -12,6 +12,7 @@ const Chat = {
   space: null, msgs: {}, rx: {}, played: {}, read: 0, ver: 0, loaded: false,
   liveM: null, liveE: null, eTree: {}, dcache: new Map(), chainM: Promise.resolve(), chainE: Promise.resolve(),
   typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0, lastPxD: null, typingT: null,
+  presence: null, xAt: 0, // partner presence: { on, at (their clock), beat (when we last heard it) }
 
   partnerUid() { const p = D.people && D.people[partnerKey()]; return (p && p.uid) || (L.pair && L.pair.uid) || null; },
   ready() { return Sync.enabled() && !!Sync.key && !!Sync.space && !!(L.pair && L.pair.status === 'paired') && !!this.partnerUid(); },
@@ -48,6 +49,7 @@ const Chat = {
       on: (type, m) => { this.chainE = this.chainE.then(() => this.onE(type, m)).catch(err => console.warn('chat', err)); } });
     this.updateBadge();
     for (const m of Object.values(this.msgs)) if (m.status === 'failed' && m.f === L.auth.uid) this.retry(m.id);
+    this.xPending = true; // say we're here once we know what we've already read (a new phone starts at 0)
   },
   stop() { Live.close(this.liveM); Live.close(this.liveE); this.liveM = this.liveE = null; },
   // On a reconnect only fetch what can have changed: anything newer than each person's latest message we already
@@ -110,6 +112,9 @@ const Chat = {
       this.lastPxD = pv.d;
       const px = await this.dec(pv);
       if (px) {
+        // a heartbeat we hear live is "now" by our own clock; one from the first snapshot can be old, so trust its time
+        const snap = type === 'put' && path.split('/').filter(Boolean).length === 0;
+        if ('on' in px) this.presence = { on: !!px.on, at: px.at || 0, beat: snap ? (px.at || 0) : Date.now() };
         const fresh = Math.abs(Date.now() - (px.at || 0)) < 15000; // ignore stale "typing" from long ago
         this.partnerTypingUntil = px.typing && fresh ? Date.now() + 6500 : 0;
         if ((px.read || 0) !== this.partnerRead) { this.partnerRead = px.read || 0; this.partnerReadAt = px.at || Date.now(); }
@@ -117,6 +122,13 @@ const Chat = {
         if (this.partnerTypingUntil) this.typingT = setTimeout(() => { this.partnerTypingUntil = 0; this.bump(); ChatUI.onState(); }, 6600);
       }
     }
+    const mv = this.eTree.x && this.eTree.x[L.auth.uid];
+    if (mv && mv.d !== this.lastMxD) {
+      this.lastMxD = mv.d;
+      const mx = await this.dec(mv);
+      if (mx && (mx.read || 0) > this.read) { this.read = mx.read; this.saveSoon(); this.updateBadge(); }
+    }
+    if (this.xPending) { this.xPending = false; this.writeX(); }
     const before = this.rx, rx = {};
     for (const [mid, byUid] of Object.entries(this.eTree.rx || {})) {
       for (const [uid, v] of Object.entries(byUid || {})) { const o = await this.dec(v); if (o && o.r) (rx[mid] = rx[mid] || {})[uid] = o.r; }
@@ -130,6 +142,21 @@ const Chat = {
     if (typeof ChatUI !== 'undefined') ChatUI.onState();
   },
   partnerTyping() { return this.partnerTypingUntil > Date.now(); },
+  // Online = their app is open on screen (a heartbeat every 45 s); otherwise "last seen" is when it last was.
+  partnerOnline() { const p = this.presence; return !!p && p.on && Date.now() - p.beat < 100e3; },
+  lastSeenText() {
+    const p = this.presence; if (!p || !p.at) return '';
+    const t = Math.min(p.at, Date.now()), ago = Date.now() - t;
+    if (ago < 60e3) return 'last seen just now';
+    if (ago < 3600e3) return `last seen ${Math.floor(ago / 60e3)} min ago`;
+    const dt = new Date(t), time = dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const sod = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const days = Math.round((sod(new Date()) - sod(dt)) / 864e5);
+    if (days === 0) return `last seen today at ${time}`;
+    if (days === 1) return `last seen yesterday at ${time}`;
+    if (days < 7) return `last seen ${dt.toLocaleDateString([], { weekday: 'long' })} at ${time}`;
+    return `last seen ${dt.toLocaleDateString([], { day: 'numeric', month: 'short' })}`;
+  },
 
   /* ---------- actions ---------- */
   newId() { return Date.now().toString(36).padStart(9, '0') + Math.random().toString(36).slice(2, 7); },
@@ -170,10 +197,16 @@ const Chat = {
     this.typingOn = on; this.typingSentAt = on ? now : 0;
     this.writeX();
   },
-  async writeX() {
+  async writeX(o = {}) {
     if (!this.ready()) return;
-    try { await dbPut(`${this.base()}/e/x/${L.auth.uid}`, { u: Date.now(), d: await encryptObj(Sync.key, { typing: this.typingOn ? 1 : 0, read: this.read, at: Date.now() }) }); } catch (e) { /* ignore */ }
+    this.xAt = Date.now();
+    const on = o.off || document.hidden ? 0 : 1;
+    try {
+      const d = await encryptObj(Sync.key, { typing: this.typingOn ? 1 : 0, read: this.read, at: Date.now(), on });
+      await dbPut(`${this.base()}/e/x/${L.auth.uid}`, { u: Date.now(), d }, o.off ? { keepalive: true } : undefined);
+    } catch (e) { /* ignore */ }
   },
+  beat() { if (this.ready() && !document.hidden && Date.now() - this.xAt > 40e3) this.writeX(); },
   lastPartnerTs() { const me = L.auth && L.auth.uid; let t = 0; for (const m of Object.values(this.msgs)) if (m.f !== me && m.ts > t) t = m.ts; return t; },
   markRead() {
     const last = this.lastPartnerTs(); if (!last || last <= this.read) return;
@@ -200,6 +233,8 @@ const Chat = {
 // (Live keeps the two message streams connected.) Failed sends are retried when the connection comes back.
 addEventListener('online', () => { if (Chat.ready()) for (const m of Object.values(Chat.msgs)) if (m.status === 'failed' && m.f === L.auth.uid) Chat.retry(m.id); });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { if (Chat.typingOn) Chat.setTyping(false); return; }
-  Chat.ensure();
+  if (document.hidden) { Chat.typingOn = false; Chat.writeX({ off: true }); return; }
+  Chat.ensure(); Chat.writeX();
 });
+addEventListener('pagehide', () => Chat.writeX({ off: true }));
+setInterval(() => { Chat.beat(); if (typeof ChatUI !== 'undefined' && ChatUI.shown()) ChatUI.subLine(); }, 15000);

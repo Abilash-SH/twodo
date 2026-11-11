@@ -76,8 +76,10 @@ Reminders arrive within roughly **5–15 minutes** of the due time, because GitH
 ---
 
 ## 5. Messages 💬
-Tap the chat bubble at the top of Home to message your partner, iMessage-style:
-- Blue and grey bubbles with tails, grouped by time; **Delivered** / **Read** receipts; a typing indicator; and big emoji when you send just one to three.
+Once you're signed in, **Home is your chat**: your partner's photo on the left, yours on the right, joined by a little heart line that comes alive when you're both online.
+- Under their name: **online**, **typing…** or **last seen …** (an encrypted heartbeat every ~45 s while the app is open, so it's accurate to about a minute).
+- Your bubbles wear your colour, theirs wear theirs. Under your last message, an outline **♡** means sent and a filled **♥** means seen. Big emoji when you send just one to three.
+- Tap either photo to see it big; only your own can be changed (Settings shows only your profile).
 - **Hold the send arrow** for *Send with effect*. **Bubble effects:** Slam, Loud, Gentle, Invisible Ink. **Screen effects:** Echo, Spotlight, Balloons, Confetti, Love, Lasers, Fireworks, Celebration.
 - Some phrases trigger effects automatically: “happy birthday” → balloons, “congrats” → confetti, “happy new year” → fireworks, “pew pew” → lasers, “love you” → hearts.
 - **Double-tap** a message to ❤️ it. **Long-press** for tapbacks (❤️ 👍 👎 😂 ‼️ ❓), Copy, **Make it a task**, or **Undo Send** (within 15 minutes).
@@ -92,9 +94,9 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 - **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
 - **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
-- **Home** is just a greeting, today's reminders and the chat box. Everything else is in the **☰ menu** (or swipe in from the left edge). Messages live behind the floating 💬 button, which you can drag anywhere.
+- **Home** is your chat. Tap **✓** (top right) for your to-dos; everything else is in the **☰ menu** (or swipe in from the left edge). Without accounts, Home shows today's to-dos instead.
 - **Any screen:** phones (portrait or landscape), iPads and computers. On an iPad in landscape or a computer, the menu stays open on the left.
-- **💡 Tips & tricks:** every tip, with little animated demos, lives on Home (below My Lists) and in Settings.
+- **💡 Tips & tricks:** every tip, with little animated demos, lives in the ☰ menu and in Settings.
 
 ## Updating
 After changing files, bump `VERSION` in `sw.js` so phones fetch the new version.

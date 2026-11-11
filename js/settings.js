@@ -1,12 +1,14 @@
 /* Twodo · settings, couple sync setup, backup */
 'use strict';
 
-function personCardHTML(k) {
-  const p = person(k);
-  return `<div class="person" data-k="${k}">${k === L.me ? '<span class="tag-me">This phone</span>' : ''}
-    <button class="pc-photo" data-ph="${k}" type="button" aria-label="Change ${esc(p.name)}’s photo">${avatar(k)}<span class="pc-cam">${ic('camera')}</span></button>
-    <input value="${esc(p.name)}" data-pn="${k}" maxlength="24" aria-label="Name">
-    <div class="colors sm">${PALETTE.slice(0, 10).map(c => `<button type="button" data-pc="${c}" style="--c:var(--c-${c})" class="${c === p.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div></div>`;
+// Your profile: only you can change your photo, name and colour. Your colour is the app's accent and your bubbles.
+function profileHTML() {
+  const k = L.me, p = person(k), u = Auth.user();
+  return `<button class="pc-photo" data-ph="${k}" type="button" aria-label="Your photo">${avatar(k)}<span class="pc-cam">${ic('camera')}</span></button>
+    <input class="me-name" value="${esc(p.name)}" data-pn="${k}" maxlength="24" aria-label="Your name" autocomplete="off">
+    ${u && u.username ? `<div class="me-handle">@${esc(u.username)}</div>` : ''}
+    <div class="colors me-colors" role="radiogroup" aria-label="Your colour">${PALETTE.slice(0, 10).map(c => `<button type="button" data-pc="${c}" style="--c:var(--c-${c})" class="${c === p.color ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div>
+    <p class="me-hint">Your colour shows on your messages and across the app.</p>`;
 }
 
 function openSettings() {
@@ -15,7 +17,7 @@ function openSettings() {
   const sw = (key, label, c, i) => `<div class="cell">${sq(c, i)}<span class="grow">${label}</span><input type="checkbox" class="switch" data-set="${key}" ${s[key] ? 'checked' : ''} aria-label="${label}"></div>`;
   const notifyNote = isIOS && !standalone() ? 'On iPhone, reminders need Twodo added to your Home Screen first.' : 'Reminders pop up while Twodo is open or recently used. For alerts that always fire, use “Add to Calendar” on a task.';
   const body = `
-    <div class="couple" id="couple">${personCardHTML('a')}${personCardHTML('b')}</div>
+    <div class="me-prof" id="meProf">${profileHTML()}</div>
     ${Auth.user() ? '' : `<div class="group"><div class="cell">${sq('gray', 'phone')}<span class="grow">I am</span>${segHTML('me', [['a', esc(shortName(person('a').name))], ['b', esc(shortName(person('b').name))]], L.me)}</div></div>`}
 
     <div class="sec-h sub">Together</div>
@@ -24,9 +26,6 @@ function openSettings() {
     <div class="sec-h sub">Appearance</div>
     <div class="group">
       <div class="cell">${sq('indigo', 'sun')}<span class="grow">Theme</span>${segHTML('theme', [['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']], s.theme)}</div>
-      <div class="cell noico" style="flex-direction:column;align-items:stretch;gap:0"><span style="padding-top:6px">Accent colour</span>
-        <div class="colors accents" id="accents" style="padding:12px 0 8px"><button type="button" data-ac="me" style="--c:var(--c-${person(L.me).color});background:conic-gradient(var(--c-${person(L.me).color}) 0 50%, var(--c-${person(partnerKey()).color}) 0)" class="${s.accent === 'me' ? 'on' : ''}" aria-label="My colour"></button>${
-          PALETTE.slice(0, 8).map(c => `<button type="button" data-ac="${c}" style="--c:var(--c-${c})" class="${s.accent === c ? 'on' : ''}" aria-label="${c}"></button>`).join('')}</div></div>
     </div>
 
     <div class="sec-h sub">Feel</div>
@@ -55,26 +54,21 @@ function openSettings() {
   openSheet({
     title: 'Settings', body, tall: true,
     onMount: sh => {
-      const couple = sh.querySelector('#couple');
-      couple.addEventListener('input', e => {
-        const k = e.target.dataset.pn; if (!k) return;
+      const prof = sh.querySelector('#meProf');
+      prof.addEventListener('input', e => {
+        if (e.target.dataset.pn !== L.me) return;
         const name = e.target.value.trim(); if (!name) return;
-        D.people[k] = { ...person(k), name }; commit(D.people);
-        const av = e.target.closest('.person').querySelector('.av'); if (!person(k).photo) av.textContent = initial(name);
+        D.people[L.me] = { ...person(L.me), name }; commit(D.people);
+        const av = prof.querySelector('.av'); if (!person(L.me).photo) av.textContent = initial(name);
       });
-      couple.addEventListener('click', e => {
-        const ph = e.target.closest('[data-ph]'); if (ph) return photoMenu(ph.dataset.ph, ph);
+      prof.addEventListener('click', e => {
+        const ph = e.target.closest('[data-ph]'); if (ph) return person(L.me).photo ? viewPhoto(L.me, ph.querySelector('.av')) : pickPhoto(L.me);
         const b = e.target.closest('[data-pc]'); if (!b) return;
-        const k = b.closest('.person').dataset.k;
-        D.people[k] = { ...person(k), color: b.dataset.pc }; commit(D.people);
+        D.people[L.me] = { ...person(L.me), color: b.dataset.pc }; commit(D.people);
+        L.settings.accent = 'me'; save();
         b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-        b.closest('.person').querySelector('.av').style.setProperty('--c', `var(--c-${b.dataset.pc})`);
-        applyTheme(); haptic('light');
-      });
-      sh.querySelector('#accents').addEventListener('click', e => {
-        const b = e.target.closest('[data-ac]'); if (!b) return;
-        L.settings.accent = b.dataset.ac; save(); applyTheme(); haptic('light');
-        $$('#accents button', sh).forEach(x => x.classList.toggle('on', x === b));
+        prof.querySelector('.av').style.setProperty('--c', `var(--c-${b.dataset.pc})`);
+        applyTheme(); scheduleRender(); haptic('light');
       });
       sh.querySelectorAll('[data-set]').forEach(inp => inp.addEventListener('change', async () => {
         const key = inp.dataset.set;
@@ -106,17 +100,64 @@ SegHandlers.theme = v => { L.settings.theme = v; save(); applyTheme(); };
 SegHandlers.dmy = v => { L.settings.dmy = v === 'dmy'; save(); };
 SegHandlers.me = v => {
   L.me = v; save(); applyTheme(); scheduleRender();
-  const c = $('#couple'); if (c) c.innerHTML = personCardHTML('a') + personCardHTML('b');
+  const c = $('#meProf'); if (c) c.innerHTML = profileHTML();
 };
 
-/* ---------- Profile photos: cropped square on this phone, synced end-to-end encrypted like everything else ---------- */
-function photoMenu(k, btn) {
-  if (!person(k).photo) return pickPhoto(k);
-  showMenu({
-    rect: btn.getBoundingClientRect(),
-    html: `<button class="mi" data-m="pick" type="button">Choose New Photo${ic('camera')}</button><button class="mi red" data-m="remove" type="button">Remove Photo${ic('trash')}</button>`,
-    onPick: m => (m === 'pick' ? pickPhoto(k) : setPhoto(k, null)),
+/* ---------- Profile photos: cropped square on this phone, synced end-to-end encrypted like everything else.
+   Tap any picture to see it big; only your own can be changed. ---------- */
+const PhotoView = { close: null };
+function viewPhoto(k, fromEl) {
+  if (PhotoView.close) return;
+  const mine = k === L.me, p = person(k), paired = !!(L.pair && L.pair.status === 'paired');
+  if (!mine && !paired && cloudReady()) return;
+  const el = document.createElement('div'); el.className = 'pv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', p.name);
+  el.innerHTML = `<div class="pv-bg"></div><button class="pv-x" type="button" aria-label="Close">${ic('x')}</button>
+    <div class="pv-main"><div class="pv-img">${avatar(k)}</div><div class="pv-name">${esc(p.name)}</div>
+      ${mine ? `<div class="pv-acts"><button class="pv-b" data-pvx="pick" type="button">${ic('camera')}<span>${p.photo ? 'Change' : 'Add photo'}</span></button>${p.photo ? `<button class="pv-b red" data-pvx="remove" type="button">${ic('trash')}<span>Remove</span></button>` : ''}</div>` : ''}</div>`;
+  document.body.append(el);
+  const img = el.querySelector('.pv-img');
+  const fromT = () => {
+    if (!fromEl || !fromEl.isConnected) return 'scale(.6)';
+    const a = fromEl.getBoundingClientRect(), b = img.getBoundingClientRect();
+    return `translate(${a.left + a.width / 2 - (b.left + b.width / 2)}px, ${a.top + a.height / 2 - (b.top + b.height / 2)}px) scale(${a.width / b.width})`;
+  };
+  const ease = 'cubic-bezier(.32,.72,0,1)';
+  if (!reducedMotion.matches) img.animate([{ transform: fromT() }, { transform: 'none' }], { duration: 480, easing: ease });
+  requestAnimationFrame(() => el.classList.add('on'));
+  haptic('light');
+  let closing = false;
+  const close = (after) => {
+    if (closing) return; closing = true; PhotoView.close = null;
+    el.classList.remove('on');
+    const cur = getComputedStyle(img).transform;
+    const anim = reducedMotion.matches ? null : img.animate([{ transform: cur === 'none' ? 'none' : cur }, { transform: fromT() }], { duration: 380, easing: ease, fill: 'forwards' });
+    const done = () => { el.remove(); if (after) after(); };
+    if (anim) anim.onfinish = done; else setTimeout(done, 200);
+    return true;
+  };
+  PhotoView.close = () => close();
+  el.addEventListener('click', e => {
+    const x = e.target.closest('[data-pvx]');
+    if (x) return close(() => (x.dataset.pvx === 'pick' ? pickPhoto(k) : setPhoto(k, null)));
+    if (!e.target.closest('.pv-acts, .pv-img')) close();
   });
+  // drag down to dismiss
+  let d = null;
+  el.addEventListener('pointerdown', e => { if (!e.target.closest('button')) d = { y0: e.clientY, id: e.pointerId, dy: 0 }; });
+  el.addEventListener('pointermove', e => {
+    if (!d || e.pointerId !== d.id) return;
+    d.dy = Math.max(0, e.clientY - d.y0);
+    img.style.transform = `translateY(${d.dy}px) scale(${1 - Math.min(d.dy, 300) / 1200})`;
+    el.querySelector('.pv-bg').style.opacity = String(1 - Math.min(d.dy, 300) / 400);
+  });
+  const end = e => {
+    if (!d || e.pointerId !== d.id) return;
+    const dy = d.dy; d = null;
+    if (dy > 90) { img.style.transform = ''; close(); return; }
+    img.style.transition = 'transform .35s cubic-bezier(.34,1.56,.64,1)'; img.style.transform = ''; el.querySelector('.pv-bg').style.opacity = '';
+    setTimeout(() => { img.style.transition = ''; }, 360);
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
 }
 function pickPhoto(k) {
   const inp = document.createElement('input');
@@ -124,7 +165,7 @@ function pickPhoto(k) {
   document.body.append(inp);
   inp.addEventListener('change', async () => {
     const f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
-    try { setPhoto(k, await squarePhoto(f, 200)); }
+    try { setPhoto(k, await squarePhoto(f, 360)); }
     catch (e) { island({ e: '⚠️', text: 'That photo couldn’t be used', sub: 'Try another one' }); }
   });
   inp.click();
@@ -138,7 +179,9 @@ function squarePhoto(file, size) {
         const c = document.createElement('canvas'); c.width = c.height = size;
         const x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
         x.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
-        res(c.toDataURL('image/jpeg', 0.82));
+        let q = 0.84, url = c.toDataURL('image/jpeg', q);
+        while (url.length > 42000 && q > 0.5) { q -= 0.08; url = c.toDataURL('image/jpeg', q); } // keep the synced record small
+        res(url);
       } catch (e) { rej(e); } finally { URL.revokeObjectURL(url); }
     };
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); };
@@ -150,7 +193,7 @@ function setPhoto(k, photo) {
   if (photo) p.photo = photo; else delete p.photo;
   D.people[k] = p; commit(D.people);
   applyTheme(); scheduleRender(); haptic('success');
-  const c = $('#couple'); if (c) c.innerHTML = personCardHTML('a') + personCardHTML('b');
+  const c = $('#meProf'); if (c) c.innerHTML = profileHTML();
   island({ e: photo ? '📸' : '🗑️', text: photo ? 'Photo updated' : 'Photo removed', sub: photo && cloudReady() && L.pair && L.pair.status === 'paired' ? `${firstWord(k === L.me ? ptName() : myName())} will see it too` : '', ms: 1800 });
 }
 

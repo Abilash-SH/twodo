@@ -63,16 +63,16 @@ const Auth = {
 // Writes go out as "simple" requests (POST + x-http-method-override, plain-text body): the browser then skips the
 // extra CORS preflight round trip it would otherwise make before every single write. Firebase documents the override.
 const Net = { override: (() => { try { return localStorage.getItem('twodo:noOverride') !== '1'; } catch (e) { return true; } })() };
-async function dbReq(path, { method = 'GET', body, retry = true } = {}) {
+async function dbReq(path, { method = 'GET', body, retry = true, keepalive = false } = {}) {
   const tok = await Auth.token();
   const fast = method !== 'GET' && Net.override;
   let res;
   try {
     res = await fetch(`${dbBase()}/${path}.json?auth=${encodeURIComponent(tok)}${fast ? '&x-http-method-override=' + method : ''}`, fast
-      ? { method: 'POST', cache: 'no-store', body: JSON.stringify(body === undefined ? null : body) }
-      : { method, cache: 'no-store', ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
+      ? { method: 'POST', cache: 'no-store', keepalive, body: JSON.stringify(body === undefined ? null : body) }
+      : { method, cache: 'no-store', keepalive, ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   } catch (e) { const err = new Error('You’re offline'); err.offline = true; throw err; }
-  if (res.status === 401 && retry) { L.auth.exp = 0; return dbReq(path, { method, body, retry: false }); }
+  if (res.status === 401 && retry) { L.auth.exp = 0; return dbReq(path, { method, body, keepalive, retry: false }); }
   if (!res.ok) { const err = new Error(res.status === 401 || res.status === 403 ? 'denied' : 'Database error ' + res.status); err.status = res.status; throw err; }
   const j = await res.json();
   if (fast && j && typeof j === 'object' && !Array.isArray(j) && Object.keys(j).length === 1 && typeof j.name === 'string' && j.name[0] === '-'
@@ -86,7 +86,7 @@ async function dbReq(path, { method = 'GET', body, retry = true } = {}) {
 }
 const dbGet = p => dbReq(p);
 const dbPatch = (p, b) => dbReq(p, { method: 'PATCH', body: b });
-const dbPut = (p, b) => dbReq(p, { method: 'PUT', body: b });
+const dbPut = (p, b, o) => dbReq(p, { method: 'PUT', body: b, ...(o || {}) });
 const streamUrl = async p => `${dbBase()}/${p}.json?auth=${encodeURIComponent(await Auth.token())}`;
 
 /* ---------- Account flows ---------- */
