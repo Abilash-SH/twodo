@@ -666,3 +666,15 @@ body.sheet-drag .sheet { transition: none; }
 .d-head.checked .d-tt { color: var(--label2); }
 .sub-add { color: var(--accent); }
 .sub-add .i { width: 20px; height: 20px; margin: 0 1px; }
+
+/* accounts */
+.spin { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cell small.val { font-size: 13px; }
+.cell .grow b { font-weight: 600; }
+.status.live i, .status i { flex: none; }
+button.banner { font: inherit; cursor: pointer; }
+button.banner span { display: block; color: var(--label2); font-size: 14px; }
+/* toasts never block taps on what's underneath (only their button is tappable) */
+.isl.toast { pointer-events: none; }
+.isl.toast .ib { pointer-events: auto; }

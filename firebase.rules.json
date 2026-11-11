@@ -2,15 +2,77 @@
   "rules": {
     ".read": false,
     ".write": false,
-    "twodo": {
+
+    "usernames": {
+      "$name": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()))",
+        ".validate": "$name.matches(/^[a-z0-9_.]{3,20}$/) && newData.isString()"
+      }
+    },
+
+    "users": {
+      "$uid": {
+        "public": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['name', 'pub'])"
+        },
+        "private": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid"
+        }
+      }
+    },
+
+    "spaces": {
       "$space": {
-        ".read": "$space.length === 40",
-        ".write": "$space.length === 40",
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        "members": {
+          "$m": {
+            ".write": "auth != null && auth.uid === $m && $space.matches(/^[0-9a-f]{40}$/) && (!newData.exists() || !data.parent().exists() || data.parent().parent().child('invites').child($m).exists())",
+            ".validate": "newData.val() === true"
+          }
+        },
+        "invites": {
+          "$inv": {
+            ".write": "auth != null && (data.parent().parent().child('members').child(auth.uid).exists() || (auth.uid === $inv && !newData.exists()))"
+          }
+        },
         "r": {
+          ".write": "auth != null && data.parent().child('members').child(auth.uid).exists()",
           "$rec": {
             ".validate": "newData.hasChildren(['u', 'd']) && newData.child('u').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 200000"
           }
         }
+      }
+    },
+
+    "requests": {
+      "$to": {
+        ".read": "auth != null && auth.uid === $to",
+        "$from": {
+          ".write": "auth != null && (auth.uid === $from || (auth.uid === $to && !newData.exists()))",
+          ".validate": "newData.hasChildren(['ts', 'username', 'name']) && (newData.child('type').val() === 'accepted' || newData.hasChildren(['pub', 'space', 'wk']))"
+        }
+      }
+    },
+
+    "rem": {
+      "$space": {
+        ".read": "auth != null && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
+        ".write": "auth != null && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
+        "$id": {
+          ".validate": "newData.hasChildren(['at', 'd', 'to']) && newData.child('at').isNumber() && newData.child('d').isString()"
+        }
+      }
+    },
+
+    "push": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        "$sub": { ".validate": "newData.hasChildren(['endpoint', 'keys'])" }
       }
     }
   }

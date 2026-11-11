@@ -133,7 +133,8 @@ function homeHTML() {
   if (ptLeft) bits.push(`${esc(firstWord(ptName()))} has ${ptLeft} today`);
   const card = (k, iconHTML, n) => `<button class="card" data-a="smart" data-k="${k}" type="button">
       <span class="ic" style="--c:var(--c-${SMART[k].color})">${iconHTML}</span><span class="n">${n}</span><span class="l">${SMART[k].title}</span></button>`;
-  const banner = installBannerHTML();
+  const reqs = typeof Inbox !== 'undefined' ? Inbox.incoming() : [];
+  const banner = (reqs.length ? `<button class="banner" data-a="settings" type="button" style="border:0;width:calc(100% - 32px);text-align:left;color:inherit"><span style="font-size:26px">💌</span><div><b>${esc(reqs[0][1].name)} wants to pair with you</b><span>Tap to review in Settings</span></div></button>` : '') + installBannerHTML();
   const listRows = lists().map(l => {
     const n = all.filter(t => !t.done && listOf(t).id === l.id).length;
     return `<button class="cell tap" data-a="list" data-id="${esc(l.id)}" type="button"><span class="list-ic" style="--c:var(--c-${l.color})">${esc(l.emoji)}</span>

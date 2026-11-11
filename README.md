@@ -1,120 +1,101 @@
 # Twodo 💞 a to-do list made for two
 
-A fast, beautiful, iPhone-style to-do app for you and your partner. It's a static site (plain HTML, CSS and JS; no build step), so it runs on **GitHub Pages** for free. It installs on your phone like a real app, works offline, and can sync between your two phones in real time with **end-to-end encryption**.
+A fast, iPhone-style to-do app for you and your partner. It's a static site (plain HTML/CSS/JS, no build step) hosted free on **GitHub Pages**. It installs like a real app, works offline, and, once you add accounts, syncs between your two phones with **end-to-end encryption**, partner requests by **@username**, and **push reminders**. Everything runs on free tiers.
+
+Live at **https://abilash-sh.github.io/twodo/**
 
 ---
 
-## 1. Put it on GitHub Pages (≈3 minutes)
+## 1. Install it on your phones
+- **iPhone:** open the link in **Safari** → **Share** → **Add to Home Screen**, then always open Twodo from that icon. iPhone keeps the Home Screen app's data separate from Safari's, and push reminders only work there.
+- **Android:** open it in Chrome → **Install**.
 
-1. Create a new repository on GitHub, e.g. `twodo`. It can be **public or private** (GitHub Pages on private repos needs a paid plan).
-2. Upload **everything in this folder**, keeping the folder structure (`js/`, `icons/` and so on). On a computer: unzip, then drag the files onto the repo page. Or use git:
-   ```bash
-   git init && git add . && git commit -m "Twodo"
-   git branch -M main
-   git remote add origin https://github.com/<you>/twodo.git
-   git push -u origin main
-   ```
-3. In the repo, go to **Settings → Pages → Build and deployment**, choose **Deploy from a branch**, then branch **main** and folder **/ (root)**, and click **Save**.
-4. After about a minute your app is live at `https://<you>.github.io/twodo/`.
-
-### Install it on your phones
-- **iPhone:** open the link in **Safari** → **Share** → **Add to Home Screen**. It opens full-screen with no browser bars. Reminders on iPhone only work from the Home Screen app.
-- **Android:** open it in Chrome → tap **Install** (or ⋮ → *Install app*).
-
-The first launch asks for both of your names and a colour each. Each phone takes on its owner's colour.
+The first launch asks for both your names and a colour each. Without the steps below, each phone keeps its own private list.
 
 ---
 
-## 2. Sync between your two phones (free, ≈5 minutes, optional)
+## 2. Turn on accounts & sync (free, ≈10 minutes, once)
 
-Without sync, each phone keeps its own list. To share lists, Twodo uses a free **Firebase Realtime Database** as a mailbox for encrypted data. No Firebase code or keys go in the repo; the only thing you paste into the app is the database URL.
+1. Go to <https://console.firebase.google.com> → **Create a project** (any name; Analytics can be off). The free **Spark** plan needs no card.
+2. **Authentication** (under *Security* or *Build*, depending on the console version) → **Get started** → **Sign-in method** → **Email/Password** → **Enable** → **Save**.
+3. **Realtime Database** → **Create database** → choose a location → **Start in locked mode**. Open the **Rules** tab, replace everything with [`firebase.rules.json`](firebase.rules.json), and click **Publish**.
+4. Copy two values:
+   - the **database URL** at the top of the Realtime Database *Data* tab, e.g. `https://twodo-xxxx-default-rtdb.firebaseio.com`
+   - the **Web API key** from ⚙️ **Project settings → General**. If it's missing, click **Add app → Web (</>)** to create one, then copy `apiKey`.
+5. In this GitHub repo, open [`config.js`](config.js) → ✏️ **Edit**, paste both values, and **Commit**. These values are public by design: they identify your project but don't grant access. Your login and the rules do that.
+6. Wait about a minute, then reopen Twodo on both phones (fully close and reopen the app; it may take two launches to pick up the update).
+7. On each phone: **Settings → Together → Create an account**, then pick a **username** (unique and case-insensitive, e.g. `@abilash`).
+8. One of you types the other's `@username` → **Invite**. The other gets a request (a banner on Home, or in Settings) → **Review**.
+9. **Compare the 8-digit safety code** on both screens. If it matches, tap **Accept**. You're paired 💞
 
-1. Go to <https://console.firebase.google.com> → **Create a project** (any name; you can turn Google Analytics off). The free **Spark** plan needs no credit card.
-2. In the left menu: **Build → Realtime Database → Create Database**. Pick a location, then choose **Start in locked mode**.
-3. Open the **Rules** tab, replace everything with the contents of [`firebase.rules.json`](firebase.rules.json), and click **Publish**.
-4. Copy the database URL at the top of the **Data** tab. It looks like `https://your-app-default-rtdb.firebaseio.com` (or `…firebasedatabase.app` in some regions).
-5. In Twodo: tap your avatars (top right) → **Sync with …** → paste the URL → **Create our shared space**.
-6. Tap **Invite …** and send the link to your partner **privately**, for example in your own chat. They open it on their phone, tap **Connect** and pick their name. Done 💞
+**Recommended hardening, once you both have accounts:** in Firebase **Authentication → Settings → User actions**, untick **Enable create (sign-up)** (if your console shows it). Then nobody else can create an account in your project. To add an account later, tick it again.
 
-From then on, changes appear on both phones within a second. You'll see a little island message when your partner finishes something or adds something for you.
+**New phone?** Open Twodo → Settings → Together → **Sign in**. Your encrypted lists, keys and pairing come back.
 
-### How private is it?
-- Everything is **encrypted on your phones** with AES-256-GCM before it's sent. Firebase only ever stores `{ timestamp, ciphertext }`, never task titles, names or notes.
-- The key and the database path both come from the 120-bit **pair code** in your invite link. Treat that link like a password: anyone who has it can join.
-- The rules block anyone from listing or browsing the database. Data can only be read at a path that is derived from your code.
-- **Secret lists** (🎁) never leave the phone they were made on. They're perfect for planning surprises. If you move a shared task into a secret list, it is withdrawn from your partner's phone.
-- Sync is "last change wins" per task. If you both edit the *same* task at the *same* moment, the later edit is kept.
+**Forgot your password?** Twodo can't reset it, because your password *is* your encryption key and nobody else has it. Delete the user in Firebase **Authentication → Users** and create the account again, then pair again. Tasks still on your phone are kept and re-uploaded.
 
 ---
 
-## 3. What it does
+## 3. Push reminders (free, ≈10 minutes, optional)
 
-**Feels like an iPhone app**
-- Large titles that collapse into a frosted nav bar, inset-grouped lists, spring animations, light/dark mode and accent colours
-- Push navigation with **swipe-from-left-edge to go back**
-- Bottom sheets that scale the page behind them; **drag down to dismiss**
-- **Swipe right** to complete; **swipe left** to pin or delete (a full swipe deletes)
-- **Long-press** a task for a blurred context menu: Today, Tomorrow, Weekend, Next Week, priority, person, move, duplicate, focus
-- A **Dynamic Island**-style toast with **Undo**, and a "Live Activity" while the focus timer runs
-- Haptics (Android, and iPhone on iOS 18+), soft sounds, and confetti when today's list is cleared
+Tasks with a date **and** a time can send a push notification to the phone of whoever the task is for (both of you for shared tasks). A free scheduled **GitHub Action** sends them. It only sees *when* each reminder is due; the title is encrypted and only your phones can read it.
 
-**A composer like Claude's chat box.** Type naturally and Twodo works out the details. Coloured chips show what it understood; tap a chip to ignore it.
+1. **Make the push keys.** In Twodo: Settings → Together → **Set up push reminders**. It generates a key pair on your phone.
+2. **Public key:** paste it into `config.js` as `vapidPublicKey` (commit), *and* keep it handy for step 4.
+3. **Service account:** Firebase ⚙️ **Project settings → Service accounts → Generate new private key**. This downloads a JSON file. It's easier to do steps 3–4 on a computer.
+4. In GitHub: repo **Settings → Secrets and variables → Actions → New repository secret**. Add four secrets:
+   | Name | Value |
+   |---|---|
+   | `FIREBASE_SERVICE_ACCOUNT` | the whole JSON file's contents |
+   | `FIREBASE_DB_URL` | your database URL |
+   | `VAPID_PUBLIC_KEY` | the public key from step 1 |
+   | `VAPID_PRIVATE_KEY` | the private key from step 1 (never put this in config.js) |
+5. Repo **Actions** tab → enable workflows if asked → **Send reminders** → **Run workflow** once to check it goes green.
+6. On each iPhone (Home Screen app): Settings → Together → turn on **Push reminders** → **Allow**.
 
-| You type | You get |
+Reminders arrive within roughly **5–15 minutes** of the due time, because GitHub runs scheduled jobs every 5 minutes at best and sometimes later. For alerts that must be on the dot, open the task and tap **Add to Calendar**. Note that GitHub pauses scheduled workflows in public repos after 60 days without a commit; if reminders stop, re-enable the workflow from the Actions tab.
+
+---
+
+## 4. Security model
+
+| Layer | Protection |
 |---|---|
-| `Call mom tomorrow 6pm` | due tomorrow at 6:00 PM |
-| `Movie night fri 8pm @us !!` | Friday 8 PM, for both of you, medium priority |
-| `Book flights @priya !!!` | assigned to your partner, high priority |
-| `Milk #groceries` | added to the Groceries list |
-| `Gym every mon 7am` | repeats weekly from Monday |
-| `Water plants daily` · `Standup weekdays 9:15am` | repeating tasks |
-| `Pay rent 1/12` · `dec 24` · `in 3 days` · `next week` · `this weekend` · `tonight` | dates |
-| several lines pasted | several tasks at once |
+| Your password | Never sent anywhere. PBKDF2-SHA256 (600,000 rounds) splits it into a **login secret** (sent to Firebase) and a **wrap key** (stays on the phone). Firebase can't derive one from the other. |
+| Your keys | Each account has an ECDH P-256 key pair. The private key is backed up only in encrypted form (wrapped with your wrap key). |
+| Your tasks | AES-256-GCM with a shared **space key**. The server only stores ciphertext + timestamps. GCM also detects tampering. |
+| Pairing | The space key travels to your partner wrapped with an ECDH + HKDF key. The **safety code** lets you confirm nobody swapped public keys in transit. |
+| Database access | Rules allow only the two members of a space to read or write it. Usernames are first-come and can't be stolen. Requests can only be read by their recipient. |
+| Secret lists | Never leave the phone they're on. |
+| Push | The sender (GitHub Action) relays still-encrypted titles. Web Push adds another layer of encryption to each phone. |
 
-The quick pills above the keyboard insert these for you. `@me`, `@us` and `@<name>` assign tasks, `!`, `!!` and `!!!` set priority, `#List` files a task into an existing list (otherwise it becomes a #tag), and `every …`, `daily` and `weekly` make it repeat.
+**What's still visible:** Firebase can see your email, username, display name and colour, and *when* records change or reminders are due. It can't see what your tasks say.
 
-**Organised**
-- Smart lists: **Today** (split into Overdue, Morning, Afternoon and Tonight), **Upcoming** (by day), **Together**, **Pinned**, **All** and **Completed**
-- Your own lists with an emoji and a colour, plus a **Secret** list
-- Filter any list by person: *All · You · Partner · Us*
-- Sort by smart order, due date, priority, date added or title
-- Task details: notes, date, time, repeat, priority, person, list, tags, subtasks, pin and who did what
-- Search across titles, notes, subtasks and #tags
-
-**Productive**
-- Focus timer (25/5 Pomodoro) per task, with 🍅 counts
-- Daily streak, a "done together this week" count, and how many tasks your partner has left today
-- Reminders while the app is open or recently used, plus **Add to Calendar** (.ics) for alerts that always fire
-- Desktop keyboard shortcuts: `N` or `/` to add, `⌘K` or `Ctrl+K` to search, `Esc` to go back or close
-- Works offline (PWA); changes made offline sync when you're back online
-- Backup export/import (JSON)
+**Your biggest levers:** turn on **two-factor authentication** on GitHub and on the Google account that owns Firebase (whoever controls the code or the project could ship a malicious version), keep a **passcode/Face ID** on your phones (the app stores its working copy on the device), and lock sign-ups once you're both set up.
 
 ---
 
-## 4. Good to know
-- **Reminders:** a static site has no server to send push notifications. So reminders fire when Twodo is open or was used recently. For alerts that must fire, open a task and tap **Add to Calendar**.
-- **Updating the app:** after you change any file, bump `VERSION` in `sw.js` so phones pick up the new version. It takes one or two app launches to appear.
-- **Free-tier limits:** Firebase Spark allows 100 simultaneous connections, 1 GB of storage and 10 GB of downloads a month. Two people's to-dos use a tiny fraction of that.
-- **Your data lives** in your browser's storage on each phone, plus the encrypted copy in your Firebase project if you turn on sync. Use **Export backup** now and then.
+## 5. Using it
+- **Type naturally** in the bottom box: `Dinner @us fri 8pm !!` · `Milk #groceries` · `Gym every mon 7am` · `Call mom tomorrow 6pm`. Tap a chip to ignore a guess. Paste several lines to add several tasks.
+- **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
+- **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
+- **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
+
+## Updating
+After changing files, bump `VERSION` in `sw.js` so phones fetch the new version.
 
 ## Files
 ```
-index.html            app shell
-styles.css            iOS-style design system and animations
-js/util.js            helpers, icons, haptics, sounds, confetti
-js/store.js           data model, persistence, smart lists, recurrence
-js/parse.js           natural-language parser
-js/sync.js            encrypted Firebase sync
-js/ui.js              theme, island, sheets, alerts, menus
-js/views.js           navigation stack and screens
-js/actions.js         task actions and touch gestures
-js/sheets.js          task details, list editor, calendar export
-js/settings.js        settings, pairing, backup
-js/focus.js           focus timer and reminders
-js/composer.js        the chat-style composer
-js/main.js            onboarding and boot
-sw.js                 offline support
-manifest.webmanifest  install metadata
-firebase.rules.json   database rules to paste into Firebase
-PROMPT.md             the prompt this app was built from
+config.js              your public Firebase settings (edit this)
+firebase.rules.json    database access rules (paste into Firebase)
+.github/workflows/reminders.yml  + .github/reminders/send.mjs   free push sender
+index.html · styles.css · sw.js · manifest.webmanifest · icons/
+js/keys.js     crypto: password KDF, ECDH pairing, safety code, key store
+js/cloud.js    Firebase Auth (REST), accounts, usernames
+js/sync.js     encrypted real-time sync + request inbox
+js/pair.js     partner requests, accept/decline, unpair
+js/push.js     push subscription + encrypted reminder index
+js/account.js  Together settings + account sheets
+js/*.js        the rest of the app (views, gestures, parser, focus timer…)
+PROMPT.md      the original prompt
 ```

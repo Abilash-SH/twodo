@@ -101,11 +101,11 @@ function initFocus() {
 SegHandlers.fmode = v => { setFocusMode(v); save(); renderFocus(); };
 
 /* ---------- Reminders ---------- */
-async function sysNotify(title, body) {
+async function sysNotify(title, body, tag) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return false;
   try {
     const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
-    if (reg) { await reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: title + body }); return true; }
+    if (reg) { await reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: tag || title + body }); return true; }
     new Notification(title, { body, icon: 'icons/icon-192.png' }); return true;
   } catch (e) { return false; }
 }
@@ -117,7 +117,7 @@ function checkReminders() {
     const at = new Date(`${t.due}T${t.time}`).getTime(), key = `${t.id}@${t.due}T${t.time}`;
     if (now >= at && now - at < 3 * 3600e3 && !L.notified[key]) {
       L.notified[key] = now;
-      sysNotify(`⏰ ${t.title}`, `Due ${fmtDue(t.due, t.time)}${t.assignee === 'both' ? ' · for both of you' : ''}`);
+      if (!Push.on()) sysNotify(`⏰ ${t.title}`, `Due ${fmtDue(t.due, t.time)}${t.assignee === 'both' ? ' · for both of you' : ''}`, 'rem-' + t.id); // push covers it otherwise
       if (!document.hidden) island({ e: '⏰', text: t.title, sub: `Due ${fmtTime(t.time)}`, ms: 5000 });
     }
   }

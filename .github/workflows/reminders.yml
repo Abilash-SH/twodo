@@ -1,0 +1,34 @@
+# Sends Twodo push reminders. Runs every 5 minutes for free on public repos.
+# It can see WHEN a reminder is due, but the title is encrypted and only your phones can read it.
+name: Send reminders
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/reminders
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Install
+        working-directory: .github/reminders
+        run: npm install --no-audit --no-fund --silent web-push@3
+      - name: Send due reminders
+        working-directory: .github/reminders
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_DB_URL: ${{ secrets.FIREBASE_DB_URL }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: node send.mjs
