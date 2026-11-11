@@ -174,25 +174,45 @@ function showMenu({ rect, preview = '', html, onPick, taskId = null, align = 'le
     if (p) p.style.transform = `translateY(${Menu.shift || 0}px) scale(1.02)`;
   });
 }
+// Notch / home-indicator insets in px (env() values resolved by the browser)
+function safeInsets() {
+  let el = safeInsets.el;
+  if (!el || !el.isConnected) {
+    el = safeInsets.el = document.createElement('div');
+    el.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;pointer-events:none;padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left)';
+    document.body.append(el);
+  }
+  const cs = getComputedStyle(el), n = v => parseFloat(v) || 0;
+  return { top: n(cs.paddingTop), right: n(cs.paddingRight), bottom: n(cs.paddingBottom), left: n(cs.paddingLeft) };
+}
+// Keep the lifted preview and its menu fully on screen together (like iOS): cap the menu, clip a very tall preview.
 function placeMenu(rect, withPreview, align) {
-  const m = Menu.el, list = m.querySelector('.mlist');
-  const vh = window.visualViewport ? visualViewport.height : innerHeight, vw = innerWidth;
-  const st = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-top-px')) || 0;
-  const mh = Math.min(list.offsetHeight, vh * 0.7), mw = list.offsetWidth, gap = 10, margin = 12;
+  const m = Menu.el, list = m.querySelector('.mlist'), prev = m.querySelector('.mprev');
+  const vh = window.visualViewport ? visualViewport.height : innerHeight, vw = innerWidth, ins = safeInsets();
+  const gap = 10, margin = 10, topMin = ins.top + margin, botMax = vh - (document.body.classList.contains('kb') ? 0 : ins.bottom) - margin, room = botMax - topMin;
+  list.style.maxHeight = 'none';
+  let mh = list.offsetHeight; const mw = list.offsetWidth;
   let top; Menu.shift = 0;
   if (withPreview) {
-    let pTop = rect.top;
-    const need = rect.height + gap + mh;
-    if (pTop + need > vh - margin) pTop = Math.max(st + margin, vh - margin - need);
+    let ph = rect.height;
+    if (ph + gap + mh > room) {
+      // too much for the screen: clip a tall preview (not below ~40% of the room), then let the menu scroll
+      ph = Math.min(ph, Math.max(Math.max(56, room * 0.4), room - gap - mh));
+      mh = Math.min(mh, room - gap - ph);
+      if (ph < rect.height) { prev.style.maxHeight = ph + 'px'; prev.classList.add('clip'); }
+    }
+    const pTop = Math.max(topMin, Math.min(rect.top, botMax - mh - gap - ph));
     Menu.shift = pTop - rect.top;
-    top = pTop + rect.height + gap;
-    if (top + mh > vh - margin) top = Math.max(st + margin, vh - margin - mh);
+    top = pTop + ph + gap;
   } else {
+    mh = Math.min(mh, room);
     top = rect.bottom + 6;
-    if (top + mh > vh - margin) top = Math.max(st + margin, rect.top - 6 - mh);
+    if (top + mh > botMax) top = rect.top - 6 - mh;
+    top = Math.max(topMin, Math.min(top, botMax - mh));
   }
-  let left = align === 'right' ? rect.right - mw : rect.left + (withPreview ? 0 : 0);
-  left = clamp(left, margin, vw - mw - margin);
+  list.style.maxHeight = mh + 'px';
+  let left = align === 'right' ? rect.right - mw : rect.left;
+  left = clamp(left, ins.left + margin, vw - ins.right - mw - margin);
   list.style.top = top + 'px'; list.style.left = left + 'px';
   list.style.transformOrigin = `${align === 'right' ? 'right' : 'left'} ${top < rect.top ? 'bottom' : 'top'}`;
 }

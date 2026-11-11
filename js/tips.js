@@ -52,6 +52,7 @@ const TIPS = [
   { c: 'focus', e: '🎉', t: 'Clear the day', d: 'Finish everything due today for a little celebration.' },
   // App & privacy
   { c: 'app', e: '📲', t: 'Add to Home Screen', d: 'In Safari: Share → <b>Add to Home Screen</b>. You get full screen, push reminders and a faster launch. Always open Twodo from that icon.' },
+  { c: 'app', e: '🖥️', t: 'Big screen, two panes', d: 'On an iPad in landscape or on a computer, your lists stay on the left and whatever you open shows on the right.' },
   { c: 'app', e: '✈️', t: 'Works offline', d: 'Keep going without signal. Everything syncs as soon as you’re back online.' },
   { c: 'app', e: '🎨', t: 'Make it yours', d: 'Settings → theme, accent colour, haptics, sounds and celebrations.', act: ['settings', 'Open Settings'] },
   { c: 'app', e: '🔐', t: 'Private by design', d: 'Tasks and messages are encrypted on your phones before they’re saved. Your password never leaves your phone.' },

@@ -79,7 +79,7 @@ const Pair = {
     L.pair = { status: 'paired', uid: req.uid, username: req.username, name: req.name };
     L.sync = { space: req.space }; save(); applyTheme();
     delete Inbox.items[req.uid];
-    await Sync.init(); scheduleRender();
+    await Sync.init(); Inbox.start(); scheduleRender();
   },
 
   async decline(req) {
@@ -90,7 +90,7 @@ const Pair = {
   onAccepted(from, r) {
     dbPatch('', { [`requests/${L.auth.uid}/${from}`]: null }).catch(() => {});
     if (!L.pair || L.pair.uid !== from) return;
-    L.pair.status = 'paired'; save(); Chat.start();
+    L.pair.status = 'paired'; save(); Chat.start(); setTimeout(() => Inbox.start(), 0);
     island({ e: '💞', text: `${r.name} accepted your request!`, sub: 'Your lists now sync together' });
     haptic('success'); confetti(); updateSyncUI(); if (Inbox.onChange) Inbox.onChange();
   },
@@ -109,6 +109,6 @@ const Pair = {
     if (D.people && D.people[partnerKey()]) { D.people[partnerKey()] = { ...D.people[partnerKey()], uid: null }; commit(D.people, { silent: true }); }
     resetSyncFlags();
     L.pair = null; L.sync = { space: space.id }; save();
-    await Sync.init(); scheduleRender();
+    await Sync.init(); Inbox.start(); scheduleRender();
   },
 };

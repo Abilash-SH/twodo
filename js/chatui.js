@@ -29,7 +29,7 @@ function chatSound(kind) {
 }
 
 const ChatUI = {
-  view: null, lastVer: -1, animUntil: 0, drawT: null, lp: null, lastTap: { id: null, t: 0 }, nearBottom: true,
+  view: null, lastVer: -1, animUntil: 0, drawR: 0, lp: null, lastTap: { id: null, t: 0 }, nearBottom: true,
 
   isOpen() { const v = topView(); return !!(v && v._spec.type === 'chat' && !document.hidden); },
   open() {
@@ -66,17 +66,19 @@ const ChatUI = {
     if (this.lastVer !== Chat.ver || v.querySelector('.tcard')) this.queueDraw();
     Chat.updateBadge();
   },
-  rowHTML(m, mine, start, end) {
+  // A row is its class list (grouping, which changes as messages arrive) plus its content; keeping them apart lets
+  // the list update a row's tail without rebuilding it, so running animations aren't cut short.
+  rowParts(m, mine, start, end) {
     const side = mine ? 'me' : 'them';
-    if (m.del) return `<div class="msg-row ${side} start end" data-id="${m.id}"><div class="unsent">${mine ? 'You' : esc(firstWord(ptName()))} unsent a message</div></div>`;
+    if (m.del) return { cls: `msg-row ${side} start end`, h: `<div class="unsent">${mine ? 'You' : esc(firstWord(ptName()))} unsent a message</div>` };
     let inner; const n = !m.task && m.fx !== 'ink' ? jumboCount(m.t) : 0;
     if (m.task) inner = this.cardHTML(m.task, mine);
     else if (n) inner = `<div class="jumbo n${n}">${esc(m.t)}</div>`;
     else inner = `<div class="bub ${side}${m.fx === 'ink' ? ' ink' : ''}">${linkify(esc(m.t))}</div>`;
     const rs = Object.entries(Chat.rx[m.id] || {});
-    const tb = rs.length ? `<div class="tb">${rs.map(([uid, e]) => `<span class="${uid === L.auth.uid ? 'mine' : ''}">${e}</span>`).join('')}</div>` : '';
+    const tb = rs.length ? `<div class="tapb">${rs.map(([uid, e]) => `<span class="${uid === L.auth.uid ? 'mine' : ''}">${e}</span>`).join('')}</div>` : '';
     const fail = m.status === 'failed' ? `<button class="c-fail" data-retry="${m.id}" type="button" aria-label="Retry sending">!</button>` : '';
-    return `<div class="msg-row ${side}${start ? ' start' : ''}${end ? ' end' : ''}${rs.length ? ' has-tb' : ''}" data-id="${m.id}">${fail}<div class="bwrap">${inner}${tb}</div></div>`;
+    return { cls: `msg-row ${side}${start ? ' start' : ''}${end ? ' end' : ''}${rs.length ? ' has-tb' : ''}`, h: `${fail}<div class="bwrap">${inner}${tb}</div>` };
   },
   cardHTML(tk, mine) {
     const t = D.tasks[tk.id], live = t && !t.deleted ? t : null, done = !!(live && live.done);
@@ -86,32 +88,51 @@ const ChatUI = {
       <div class="tc-b"><button class="tc-chk" data-taskchk="${esc(tk.id)}" type="button" aria-label="Complete task">${ic('check')}</button>
         <div><div class="tc-t">${esc(title)}</div>${due ? `<div class="tc-m">${ic('cal', 'xs')} ${esc(due)}</div>` : ''}</div></div></div>`;
   },
-  statusHTML(m) {
-    if (m.status === 'failed') return `<div class="c-status fail">Not Delivered</div>`;
-    if (m.status === 'sending') return `<div class="c-status">Sending…</div>`;
-    if (Chat.partnerRead >= m.ts) return `<div class="c-status"><b>Read</b> ${esc(new Date(Chat.partnerReadAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</div>`;
-    return `<div class="c-status">Delivered</div>`;
+  statusParts(m) {
+    if (m.status === 'failed') return { cls: 'c-status fail', h: 'Not Delivered' };
+    if (m.status === 'sending') return { cls: 'c-status', h: Date.now() - m.ts < 900 ? '&nbsp;' : 'Sending…' }; // no flicker on a fast send
+    if (Chat.partnerRead >= m.ts) return { cls: 'c-status', h: `<b>Read</b> ${esc(new Date(Chat.partnerReadAt || Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}` };
+    return { cls: 'c-status', h: 'Delivered' };
   },
-  listHTML() {
+  // Everything the list shows, in order, as keyed items: [{ k, cls, h, id? }]
+  items() {
     const me = L.auth.uid, ms = Object.values(Chat.msgs).sort((a, b) => (a.id < b.id ? -1 : 1));
     if (!ms.length) {
       const pn = firstWord(ptName());
-      return `<div class="c-empty"><span class="av big" style="--c:var(--c-${person(partnerKey()).color})">${esc(initial(ptName()))}</span>
+      return [{ k: 'empty', cls: 'c-empty', h: `<span class="av big" style="--c:var(--c-${person(partnerKey()).color})">${esc(initial(ptName()))}</span>
         <h3>${esc(ptName())}</h3><p>Messages are end-to-end encrypted.<br>Only you and ${esc(pn)} can read them.</p>
-        <div class="c-quick">${['👋 Hi!', '❤️', 'Miss you 🥺', 'What’s for dinner?'].map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>`;
+        <div class="c-quick">${['👋 Hi!', '❤️', 'Miss you 🥺', 'What’s for dinner?'].map(q => `<button type="button" data-quick="${esc(q)}">${esc(q)}</button>`).join('')}</div>` }];
     }
-    let h = '', prev = null;
+    const out = []; let prev = null;
     const lastMine = [...ms].reverse().find(m => m.f === me && !m.del), last = ms[ms.length - 1];
     ms.forEach((m, i) => {
       const next = ms[i + 1], brk = !prev || m.ts - prev.ts > 3600e3;
-      if (brk) h += `<div class="c-time">${chatTime(m.ts)}</div>`;
+      if (brk) out.push({ k: 't' + m.id, cls: 'c-time', h: chatTime(m.ts) });
       const start = brk || prev.f !== m.f || m.ts - prev.ts > 120e3 || prev.del || m.del;
       const end = !next || next.f !== m.f || next.ts - m.ts > 120e3 || next.del || m.del;
-      h += this.rowHTML(m, m.f === me, start, end);
-      if (m === lastMine && (m === last || m.status !== 'sent')) h += this.statusHTML(m);
+      out.push({ k: m.id, id: m.id, ...this.rowParts(m, m.f === me, start, end) });
+      if (m === lastMine && (m === last || m.status !== 'sent')) out.push({ k: 's' + m.id, ...this.statusParts(m) });
       prev = m;
     });
-    return h;
+    return out;
+  },
+  mk(it) { const el = document.createElement('div'); el._k = it.k; el._h = it.h; el.className = it.cls; el.innerHTML = it.h; if (it.id) el.dataset.id = it.id; return el; },
+  // Update the list in place: untouched rows stay (with their animations and ink), changed rows are swapped,
+  // new ones inserted. Returns the elements that were created.
+  reconcile(list, items) {
+    const old = new Map(), keep = new Set(), fresh = [];
+    for (const el of list.children) if (el._k) old.set(el._k, el);
+    let pos = list.firstElementChild;
+    for (const it of items) {
+      let el = old.get(it.k);
+      if (el && el._h !== it.h) { const n = this.mk(it); el.replaceWith(n); if (pos === el) pos = n; el = n; fresh.push(n); }
+      else if (!el) { el = this.mk(it); fresh.push(el); }
+      if (el.className !== it.cls) el.className = it.cls;
+      keep.add(el);
+      if (el === pos) pos = pos.nextElementSibling; else list.insertBefore(el, pos);
+    }
+    for (const el of [...list.children]) if (!keep.has(el)) el.remove();
+    return fresh;
   },
   typingHTML() {
     return Chat.partnerTyping() ? `<div class="msg-row them start end"><div class="bwrap"><div class="bub them typing"><i></i><i></i><i></i></div></div></div>` : '';
@@ -119,21 +140,19 @@ const ChatUI = {
 
   /* ---------- drawing ---------- */
   queueDraw() {
-    clearTimeout(this.drawT);
-    const wait = Math.max(30, this.animUntil - Date.now());
-    this.drawT = setTimeout(() => this.draw(), wait);
+    if (this.drawR) return;
+    this.drawR = requestAnimationFrame(() => { this.drawR = 0; this.draw(); });
   },
   draw(opts = {}) {
     const v = this.view; if (!v || !v.isConnected) return;
-    clearTimeout(this.drawT);
+    if (this.drawR) { cancelAnimationFrame(this.drawR); this.drawR = 0; }
     const body = v.querySelector('.chatbody'), list = v.querySelector('.chatlist');
     const near = body.scrollHeight - body.scrollTop - body.clientHeight < 140;
-    const keep = body.scrollTop;
-    list.innerHTML = this.listHTML();
+    const fresh = this.reconcile(list, this.items());
     this.drawTyping(false);
     this.lastVer = Chat.ver;
-    list.querySelectorAll('.bub.ink').forEach(b => Ink.attach(b));
-    if (opts.toBottom || opts.sentId || near) body.scrollTop = body.scrollHeight; else body.scrollTop = keep;
+    fresh.forEach(el => el.querySelectorAll('.bub.ink').forEach(b => Ink.attach(b)));
+    if (opts.toBottom || opts.sentId || near) body.scrollTop = body.scrollHeight;
     if (opts.sentId) this.animateSent(opts.sentId, opts.fromRect);
     for (const id of opts.newIds || []) this.animateIn(id);
     if ((opts.newIds || []).length && !near) v.querySelector('.c-jump').hidden = false;
@@ -214,6 +233,7 @@ const ChatUI = {
     Chat.played[m.id] = 1;
     if (!task) { input.value = ''; this.autosize(input); }
     this.draw({ sentId: m.id, fromRect: from });
+    setTimeout(() => { if (m.status === 'sending') this.queueDraw(); }, 950);
     chatSound('send'); haptic('light');
   },
   autosize(input) {

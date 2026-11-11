@@ -50,6 +50,7 @@ function makeView(spec) {
   return v;
 }
 function pushView(spec) {
+  if (Split.on && Nav.stack.length) return paneShow(spec);
   closeMenu();
   const prev = topView();
   const v = makeView(spec);
@@ -70,12 +71,16 @@ function pushView(spec) {
   return v;
 }
 function popView() {
+  if (Split.on) { // the right side goes back to what it showed before (Today if nothing)
+    let back; while ((back = Split.back.pop()) && back.type === 'list' && (!D.lists[back.id] || D.lists[back.id].deleted)) { /* skip deleted lists */ }
+    paneShow(back || { type: 'smart', key: 'today' }, { back: true }); return;
+  }
   if (Nav.stack.length < 2) return;
   if (history.state && history.state.d === Nav.stack.length && !history.state.s) history.back();
   else doPop();
 }
 function doPop() {
-  if (Nav.stack.length < 2) return;
+  if (Nav.stack.length < (Split.on ? 3 : 2)) return;
   const v = Nav.stack.pop(), prev = topView();
   v.classList.add('offright');
   prev.classList.remove('under');
@@ -92,6 +97,49 @@ function doPop() {
   renderView(prev);
   updateComposerCtx();
 }
+/* ---------- Split view (iPad landscape, laptops, desktops): lists on the left, the open one on the right ---------- */
+const Split = { mq: matchMedia('(min-width: 960px)'), on: false, back: [] };
+function paneShow(spec, { back = false, quiet = false } = {}) {
+  closeMenu();
+  const cur = Nav.stack[1];
+  if (cur && specKey(cur._spec) === specKey(spec)) return cur;
+  if (cur && !back && !quiet) { Split.back.push(cur._spec); if (Split.back.length > 12) Split.back.shift(); }
+  const v = makeView(spec);
+  v.classList.add('pushed');
+  Nav.stack = [Nav.stack[0], v];
+  renderView(v);
+  stackEl.appendChild(v);
+  if (cur) cur.remove();
+  if (!quiet && !reducedMotion.matches) v.animate([{ opacity: 0, transform: `translateX(${back ? -14 : 14}px)` }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  updateComposerCtx(); scheduleRender();
+  return v;
+}
+function splitCheck() {
+  const on = Split.mq.matches && !!stackEl && Nav.stack.length > 0;
+  if (on === Split.on) { if (on && Nav.stack.length === 1) paneShow({ type: 'smart', key: 'today' }, { quiet: true }); return; }
+  Split.on = on;
+  document.body.classList.toggle('split', on);
+  if (on) {
+    // keep only the view on top for the right side, or open Today
+    const keep = Nav.stack.length > 1 ? topView() : null;
+    Nav.stack.slice(1).forEach(v => { if (v !== keep) v.remove(); });
+    Nav.stack = keep ? [Nav.stack[0], keep] : [Nav.stack[0]];
+    Nav.stack[0].classList.remove('under'); Nav.stack[0].style.transform = '';
+    if (keep) keep.classList.remove('under', 'offright');
+    shade.remove(); Split.back = [];
+    if (!keep) paneShow({ type: 'smart', key: 'today' }, { quiet: true });
+    history.replaceState({ d: 2 }, '');
+  } else {
+    // one column again: rebuild the back history so swiping back works
+    history.replaceState({ d: 1 }, '');
+    for (let i = 2; i <= Nav.stack.length; i++) history.pushState({ d: i }, '');
+    if (Nav.stack.length > 1) { Nav.stack[0].classList.add('under'); stackEl.insertBefore(shade, topView()); shade.style.opacity = '.12'; }
+  }
+  renderNow();
+}
+Split.mq.addEventListener?.('change', splitCheck);
+const paneKey = () => (Split.on && Nav.stack[1] ? specKey(Nav.stack[1]._spec) : '');
+
 function openSmart(key) { pushView({ type: 'smart', key }); }
 function openList(id) { Cmp.listPick = null; pushView({ type: 'list', id }); }
 function openSearch() {
@@ -109,9 +157,9 @@ function renderView(v) {
   title.textContent = viewTitle(spec);
   if (spec.type === 'search') return renderSearch(v);
   const prevSpec = idx > 0 ? Nav.stack[idx - 1]._spec : null;
-  left.innerHTML = prevSpec ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${esc(prevSpec.type === 'home' ? 'Lists' : viewTitle(prevSpec))}</span></button>` : '';
+  left.innerHTML = prevSpec && !(Split.on && idx === 1) ? `<button class="nav-btn back" data-a="back" type="button">${ic('chevL')}<span>${esc(prevSpec.type === 'home' ? 'Lists' : viewTitle(prevSpec))}</span></button>` : '';
   if (spec.type === 'home') {
-    right.innerHTML = (cloudReady() && Auth.user() ? `<button class="nav-btn chat-btn" data-a="chat" type="button" aria-label="Messages">${ic('chat')}<span class="chat-badge" hidden></span></button>` : '') +
+    right.innerHTML = (cloudReady() && Auth.user() ? `<button class="nav-btn chat-btn${paneKey() === 'chat' ? ' picked' : ''}" data-a="chat" type="button" aria-label="Messages">${ic('chat')}<span class="chat-badge" hidden></span></button>` : '') +
       `<button class="duo" data-a="settings" type="button" aria-label="Settings">${avatar(L.me)}${avatar(partnerKey())}<i class="sync-dot ${Sync.state}"></i></button>`;
     if (typeof Chat !== 'undefined') Chat.updateBadge();
     body.innerHTML = homeHTML();
@@ -138,14 +186,15 @@ function homeHTML() {
   if (streak) bits.push(`🔥 ${streak}-day streak`);
   bits.push(`💞 ${together} done together this week`);
   if (ptLeft) bits.push(`${esc(firstWord(ptName()))} has ${ptLeft} today`);
-  const card = (k, iconHTML, n) => `<button class="card" data-a="smart" data-k="${k}" type="button">
+  const sel = paneKey();
+  const card = (k, iconHTML, n) => `<button class="card${sel === 's:' + k ? ' picked' : ''}" data-a="smart" data-k="${k}" type="button">
       <span class="ic" style="--c:var(--c-${SMART[k].color})">${iconHTML}</span><span class="n">${n}</span><span class="l">${SMART[k].title}</span></button>`;
   const reqs = typeof Inbox !== 'undefined' ? Inbox.incoming() : [];
   const unpaired = Auth.user() && L.auth.username && !(L.pair && L.pair.status) && !reqs.length && !L.tips.pair;
   const banner = (unpaired ? `<div class="banner"><span style="font-size:26px">💌</span><div><b>Add ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}</b><span style="display:block;color:var(--label2);font-size:14px">You’re <b style="display:inline">@${esc(L.auth.username)}</b></span><button class="btn-s" data-a="invite" type="button">＋ Add partner</button></div><button class="x" data-a="dismissPair" aria-label="Dismiss" type="button">${ic('x', 'sm')}</button></div>` : '') + (reqs.length ? `<button class="banner" data-a="invite" type="button" style="border:0;width:calc(100% - 32px);text-align:left;color:inherit"><span style="font-size:26px">💌</span><div><b>${esc(reqs[0][1].name)} sent you a partner request</b><span>Tap to accept or decline</span></div></button>` : '') + installBannerHTML();
   const listRows = lists().map(l => {
     const n = all.filter(t => !t.done && listOf(t).id === l.id).length;
-    return `<button class="cell tap" data-a="list" data-id="${esc(l.id)}" type="button"><span class="list-ic" style="--c:var(--c-${l.color})">${esc(l.emoji)}</span>
+    return `<button class="cell tap${sel === 'l:' + l.id ? ' picked' : ''}" data-a="list" data-id="${esc(l.id)}" type="button"><span class="list-ic" style="--c:var(--c-${l.color})">${esc(l.emoji)}</span>
       <span class="grow">${esc(l.name)}</span>${l.private ? ic('lock', 'lock') : ''}<span class="val">${n || ''}</span>${ic('chevR', 'chev')}</button>`;
   }).join('');
   return `
@@ -165,7 +214,7 @@ function homeHTML() {
     </div>
     <div class="sec-title"><h2>My Lists</h2></div>
     <div class="group">${listRows}<button class="cell accent tap" data-a="addlist" type="button"><span class="list-ic" style="--c:var(--accent)">${ic('plus', 'sm')}</span><span class="grow">Add List</span></button></div>
-    <div class="group tips-cell"><button class="cell tap" data-a="tips" type="button"><span class="list-ic" style="--c:var(--c-yellow)">💡</span><span class="grow">Tips &amp; tricks</span><span class="val">${TIPS.length}</span>${ic('chevR', 'chev')}</button></div>
+    <div class="group tips-cell"><button class="cell tap${sel === 'tips' ? ' picked' : ''}" data-a="tips" type="button"><span class="list-ic" style="--c:var(--c-yellow)">💡</span><span class="grow">Tips &amp; tricks</span><span class="val">${TIPS.length}</span>${ic('chevR', 'chev')}</button></div>
     <div class="foot">Twodo · made for ${esc(firstWord(person('a').name))} & ${esc(firstWord(person('b').name))} 💞</div>`;
 }
 

@@ -224,7 +224,7 @@ function initGestures() {
   stackEl.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const sx = e.clientX - stackEl.getBoundingClientRect().left;
-    if (Nav.stack.length > 1 && sx < 24 && e.pointerType !== 'mouse') {
+    if (!Split.on && Nav.stack.length > 1 && sx < 24 && e.pointerType !== 'mouse') {
       G = { kind: 'edge', pid: e.pointerId, x0: e.clientX, top: topView(), prev: Nav.stack[Nav.stack.length - 2], w: stackEl.offsetWidth, dx: 0, active: false, vx: 0, lastX: e.clientX, lastT: performance.now() };
       return;
     }

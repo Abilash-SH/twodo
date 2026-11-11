@@ -5,7 +5,7 @@
 'use strict';
 
 const Sync = {
-  state: 'off', msg: '', es: null, key: null, space: null,
+  state: 'off', msg: '', live: null, key: null, space: null,
   q: new Set(), timer: null, ready: false, chain: Promise.resolve(), retryT: null, notes: [], notesT: null,
 
   enabled() { return cloudReady() && !!Auth.user() && !!(L.sync && L.sync.space); },
@@ -33,32 +33,20 @@ const Sync = {
   },
   close() {
     if (typeof Chat !== 'undefined') Chat.stop();
-    if (this.es) { this.es.close(); this.es = null; }
+    Live.close(this.live); this.live = null;
     clearTimeout(this.retryT); this.ready = false;
   },
-  async connect() {
-    if (this.es) this.es.close();
+  connect() {
+    Live.close(this.live);
     this.ready = false;
-    if (!navigator.onLine) return this.set('error', 'Offline — will sync when you’re back');
-    let url;
-    try { url = await streamUrl(`spaces/${this.space}/r`); }
-    catch (e) { return this.set('error', L.auth && L.auth.expired ? 'Signed out — please sign in again' : e.message); }
-    const es = new EventSource(url);
-    this.es = es;
-    const handle = e => {
-      let msg; try { msg = JSON.parse(e.data); } catch (err) { return; }
-      this.chain = this.chain.then(() => this.onEvent(msg)).catch(err => console.warn('sync', err));
-    };
-    es.addEventListener('put', handle);
-    es.addEventListener('patch', handle);
-    es.addEventListener('auth_revoked', () => { es.close(); L.auth.exp = 0; this.connect(); }); // token expired → refresh
-    es.addEventListener('cancel', () => { es.close(); this.set('error', 'No access to this space any more'); });
-    es.onerror = () => {
-      if (es.readyState === 2) {
-        this.set('error', 'Can’t reach the database');
-        clearTimeout(this.retryT); this.retryT = setTimeout(() => this.connect(), 15000);
-      } else this.set('connecting');
-    };
+    if (!navigator.onLine) this.set('error', 'Offline — will sync when you’re back');
+    this.live = Live.open({
+      path: () => `spaces/${this.space}/r`,
+      on: (type, msg) => { this.chain = this.chain.then(() => this.onEvent(msg)).catch(err => console.warn('sync', err)); },
+      onDown: () => (L.auth && L.auth.expired ? this.set('error', 'Signed out — please sign in again')
+        : this.set(navigator.onLine ? 'connecting' : 'error', navigator.onLine ? '' : 'Offline — will sync when you’re back')),
+      onCancel: () => this.set('error', 'No access to this space any more'),
+    });
   },
 
   async onEvent({ path, data }) {
@@ -161,23 +149,18 @@ const Sync = {
 };
 
 /* Partner requests arrive at /requests/{myUid}/{theirUid}; "accepted" notes come back the same way. */
+// Streams only while a request can matter (not paired yet); once paired, a quick check on launch and return is enough,
+// which leaves one more connection free for messages.
 const Inbox = {
-  es: null, items: {}, retryT: null, loaded: false,
-  start() { this.stop(); if (cloudReady() && Auth.user()) this.connect(); },
-  stop() { if (this.es) this.es.close(); this.es = null; clearTimeout(this.retryT); this.items = {}; this.loaded = false; },
-  async connect() {
-    if (this.es) this.es.close();
-    let url;
-    try { url = await streamUrl(`requests/${L.auth.uid}`); } catch (e) { this.retryT = setTimeout(() => this.connect(), 30000); return; }
-    const es = new EventSource(url);
-    this.es = es;
-    const h = type => e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } this.onEvent(type, m); };
-    es.addEventListener('put', h('put'));
-    es.addEventListener('patch', h('patch'));
-    es.addEventListener('auth_revoked', () => { es.close(); L.auth.exp = 0; this.connect(); });
-    es.addEventListener('cancel', () => es.close());
-    es.onerror = () => { if (es.readyState === 2) { clearTimeout(this.retryT); this.retryT = setTimeout(() => this.connect(), 20000); } };
+  live: null, items: {}, loaded: false,
+  start() {
+    this.stop();
+    if (!cloudReady() || !Auth.user()) return;
+    if (L.pair && L.pair.status === 'paired') return this.poll();
+    this.live = Live.open({ path: () => `requests/${L.auth.uid}`, on: (type, m) => this.onEvent(type, m) });
   },
+  stop() { Live.close(this.live); this.live = null; this.items = {}; this.loaded = false; },
+  async poll() { try { this.onEvent('put', { path: '/', data: await dbGet(`requests/${L.auth.uid}`) }); } catch (e) { /* next time */ } },
   onEvent(type, { path, data }) {
     const before = new Set(this.incoming().map(([k]) => k));
     const parts = path.split('/').filter(Boolean);
@@ -195,11 +178,11 @@ const Inbox = {
   incoming() { return Object.entries(this.items).filter(([, r]) => r && r.space && r.wk && r.type !== 'accepted'); },
 };
 
-addEventListener('online', () => { if (Sync.enabled()) Sync.connect(); if (Auth.user()) Inbox.start(); });
+// (Live reconnects the streams when the phone comes back online or the app returns from the background.)
 addEventListener('offline', () => { if (Sync.enabled()) Sync.set('error', 'Offline — will sync when you’re back'); });
+addEventListener('online', () => { if (Sync.enabled()) Sync.flushSoon(0); });
 document.addEventListener('visibilitychange', () => {
-  // iOS suspends background pages; reconnect the streams when we come back
   if (document.hidden || !Auth.user() || !cloudReady()) return;
-  if (Sync.enabled() && (!Sync.es || Sync.es.readyState === 2)) Sync.connect();
-  if (!Inbox.es || Inbox.es.readyState === 2) Inbox.start();
+  if (!Inbox.live) Inbox.poll();
+  if (Sync.enabled() && Sync.q.size) Sync.flushSoon(0);
 });

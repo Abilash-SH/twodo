@@ -10,7 +10,7 @@ const TAPBACKS = ['❤️', '👍', '👎', '😂', '‼️', '❓'];
 
 const Chat = {
   space: null, msgs: {}, rx: {}, played: {}, read: 0, ver: 0, loaded: false,
-  esM: null, esE: null, eTree: {}, dcache: new Map(), chainM: Promise.resolve(), chainE: Promise.resolve(),
+  liveM: null, liveE: null, eTree: {}, dcache: new Map(), chainM: Promise.resolve(), chainE: Promise.resolve(),
   typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0, lastPxD: null, typingT: null,
 
   partnerUid() { const p = D.people && D.people[partnerKey()]; return (p && p.uid) || (L.pair && L.pair.uid) || null; },
@@ -37,33 +37,31 @@ const Chat = {
   clearLocal() { this.stop(); this.msgs = {}; this.rx = {}; this.played = {}; this.read = 0; localStorage.removeItem(CHAT_KEY); this.bump(); this.updateBadge(); },
 
   /* ---------- streams ---------- */
-  ensure() { if (!this.esM && this.ready()) this.start(); },
+  ensure() { if (!this.liveM && this.ready()) this.start(); },
   start() {
     this.stop();
     if (!this.ready()) { this.updateBadge(); return; }
     if (this.space !== Sync.space) this.load();
-    this.connectM(); this.connectE(); this.updateBadge();
+    this.liveM = Live.open({ path: () => this.base() + '/m', query: () => this.mQuery(),
+      on: (type, m) => { this.chainM = this.chainM.then(() => this.onM(type, m)).catch(err => console.warn('chat', err)); } });
+    this.liveE = Live.open({ path: () => this.base() + '/e',
+      on: (type, m) => { this.chainE = this.chainE.then(() => this.onE(type, m)).catch(err => console.warn('chat', err)); } });
+    this.updateBadge();
     for (const m of Object.values(this.msgs)) if (m.status === 'failed' && m.f === L.auth.uid) this.retry(m.id);
   },
-  stop() { [this.esM, this.esE].forEach(es => es && es.close()); this.esM = this.esE = null; clearTimeout(this.retryM); clearTimeout(this.retryE); },
-  async stream(path, query, onMsg, retryKey) {
-    let url;
-    try { url = await streamUrl(path) + (query || ''); } catch (e) { this[retryKey] = setTimeout(() => this.ensure(), 20000); return null; }
-    const es = new EventSource(url);
-    const h = type => e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } onMsg(type, m); };
-    es.addEventListener('put', h('put')); es.addEventListener('patch', h('patch'));
-    es.addEventListener('auth_revoked', () => { es.close(); L.auth.exp = 0; this.start(); });
-    es.addEventListener('cancel', () => es.close());
-    es.onerror = () => { if (es.readyState === 2) { clearTimeout(this[retryKey]); this[retryKey] = setTimeout(() => this.start(), 15000); } };
-    return es;
-  },
-  async connectM() {
-    this.esM = await this.stream(this.base() + '/m', '&orderBy=' + encodeURIComponent('"$key"') + '&limitToLast=300',
-      (type, m) => { this.chainM = this.chainM.then(() => this.onM(type, m)).catch(err => console.warn('chat', err)); }, 'retryM');
-  },
-  async connectE() {
-    this.esE = await this.stream(this.base() + '/e', '',
-      (type, m) => { this.chainE = this.chainE.then(() => this.onE(type, m)).catch(err => console.warn('chat', err)); }, 'retryE');
+  stop() { Live.close(this.liveM); Live.close(this.liveE); this.liveM = this.liveE = null; },
+  // On a reconnect only fetch what can have changed: anything newer than each person's latest message we already
+  // have, minus 20 minutes (Undo Send works for 15). Message ids start with the sender's clock, so this is per sender.
+  mQuery() {
+    let q = '&orderBy=' + encodeURIComponent('"$key"');
+    const newest = {};
+    for (const m of Object.values(this.msgs)) if (m.status === 'sent' && m._u && (!newest[m.f] || m.id > newest[m.f])) newest[m.f] = m.id;
+    const ids = Object.values(newest);
+    if (ids.length >= 2) {
+      const t = Math.min(...ids.map(id => parseInt(id.slice(0, 9), 36))) - 20 * 60e3;
+      if (t > 0) q += '&startAt=' + encodeURIComponent(JSON.stringify(t.toString(36).padStart(9, '0')));
+    }
+    return q + '&limitToLast=300';
   },
 
   async onM(type, { path, data }) {
@@ -82,6 +80,7 @@ const Chat = {
       if (!prev) fresh.push(this.msgs[id]);
     }
     const initial = !this.loaded; this.loaded = true;
+    if (fresh.some(m => m.f !== L.auth.uid) && this.partnerTypingUntil) { this.partnerTypingUntil = 0; clearTimeout(this.typingT); }
     this.bump(); this.saveSoon();
     if (typeof ChatUI !== 'undefined') ChatUI.onMessages(fresh, initial);
     this.updateBadge();
@@ -198,8 +197,9 @@ const Chat = {
   },
 };
 
-addEventListener('online', () => { if (Chat.ready()) Chat.start(); });
+// (Live keeps the two message streams connected.) Failed sends are retried when the connection comes back.
+addEventListener('online', () => { if (Chat.ready()) for (const m of Object.values(Chat.msgs)) if (m.status === 'failed' && m.f === L.auth.uid) Chat.retry(m.id); });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (Chat.typingOn) Chat.setTyping(false); return; }
-  if (Chat.ready() && (!Chat.esM || Chat.esM.readyState === 2 || !Chat.esE || Chat.esE.readyState === 2)) Chat.start();
+  Chat.ensure();
 });

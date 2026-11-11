@@ -13,15 +13,16 @@
 /* layout */
 .view.chatview { overflow: hidden; padding-bottom: 0; background: var(--chat-bg); touch-action: auto; }
 .chatbody { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 84px) 0 calc(var(--safe-bottom) + 70px); }
+  padding: calc(var(--safe-top) + 84px) var(--safe-right) calc(var(--safe-bottom) + 70px) var(--safe-left); }
 body.kb .chatbody { padding-bottom: 70px; }
-.chat-nav { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--safe-top) + 78px); align-items: flex-start; padding-top: calc(var(--safe-top) + 6px);
+.chat-nav { position: absolute; top: 0; left: 0; right: 0; margin: 0; height: calc(var(--safe-top) + 78px); align-items: flex-start; padding-top: calc(var(--safe-top) + 6px);
   background: var(--chat-bar); -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px); box-shadow: 0 .5px 0 var(--sep); }
 .chat-who { position: absolute; left: 50%; top: calc(var(--safe-top) + 6px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .chat-who .av { width: 46px; height: 46px; line-height: 46px; font-size: 20px; display: block; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .chat-who .nm { font-size: 12px; color: var(--label); display: inline-flex; align-items: center; gap: 1px; }
 .chat-who .nm .i { color: var(--label3); }
-.chatlist { display: flex; flex-direction: column; padding-bottom: 4px; }
+.chatlist { display: flex; flex-direction: column; padding-bottom: 4px; max-width: 820px; margin: 0 auto; }
+.c-typing { max-width: 820px; margin: 0 auto; }
 
 /* rows & bubbles */
 .msg-row { position: relative; display: flex; align-items: flex-end; gap: 6px; padding: 0 16px; margin-top: 2px; }
@@ -42,6 +43,7 @@ body.kb .chatbody { padding-bottom: 70px; }
 .msg-row.end .bub.them::after { left: -10px; border-bottom-right-radius: 10px; }
 .mprev.bare { background: none !important; box-shadow: none !important; overflow: visible; }
 .mprev.bare .msg-row { padding: 0; }
+.mprev.bare .bwrap { max-width: none; }
 .mprev.bare .bub::after { display: none; }
 
 .jumbo { font-size: 48px; line-height: 1.15; padding: 2px 2px; }
@@ -56,12 +58,12 @@ body.kb .chatbody { padding-bottom: 70px; }
 .c-pop-heart { position: absolute; left: 50%; top: 50%; font-size: 44px; pointer-events: none; z-index: 5; }
 
 /* tapbacks */
-.tb { position: absolute; top: -16px; display: flex; gap: 2px; z-index: 3; }
-.msg-row.me .tb { left: -14px; }
-.msg-row.them .tb { right: -14px; }
-.tb span { min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px; display: grid; place-items: center; font-size: 15px;
+.tapb { position: absolute; top: -16px; display: flex; gap: 2px; z-index: 3; }
+.msg-row.me .tapb { left: -14px; }
+.msg-row.them .tapb { right: -14px; }
+.tapb span { min-width: 30px; height: 30px; padding: 0 6px; border-radius: 15px; display: grid; place-items: center; font-size: 15px;
   background: var(--bub-them); box-shadow: 0 0 0 2.5px var(--chat-bg); animation: pop .45s var(--bounce); }
-.tb span.mine { background: var(--bub-me); }
+.tapb span.mine { background: var(--bub-me); }
 .mpal.tbp { grid-template-columns: repeat(6, 1fr); }
 .mpal.tbp button { padding: 10px 2px; }
 .mpal.tbp span { font-size: 24px; line-height: 1; transition: transform .25s var(--bounce); }
@@ -108,7 +110,7 @@ body.kb .chatbody { padding-bottom: 70px; }
 
 /* composer */
 .chatbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: flex-end; gap: 8px;
-  padding: 7px 10px calc(7px + var(--safe-bottom)); background: var(--chat-bar); -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px); box-shadow: 0 -.5px 0 var(--sep); }
+  padding: 7px max(calc(10px + var(--safe-right)), calc((100% - 820px) / 2)) calc(7px + var(--safe-bottom)) max(calc(10px + var(--safe-left)), calc((100% - 820px) / 2)); background: var(--chat-bar); -webkit-backdrop-filter: saturate(180%) blur(22px); backdrop-filter: saturate(180%) blur(22px); box-shadow: 0 -.5px 0 var(--sep); }
 body.kb .chatbar { padding-bottom: 7px; }
 .cb-plus { width: 36px; height: 36px; border-radius: 50%; border: 0; flex: none; display: grid; place-items: center; background: var(--fill); color: var(--label2); margin-bottom: 1px; transition: transform .3s var(--bounce); }
 .cb-plus:active { transform: scale(.88); }
@@ -128,7 +130,7 @@ body.kb .chatbar { padding-bottom: 7px; }
 .c-jump[hidden] { display: none; }
 
 /* "Send with effect" */
-.fxp { position: fixed; inset: 0; z-index: 280; display: flex; flex-direction: column; padding: calc(var(--safe-top) + 14px) 18px calc(var(--safe-bottom) + 18px); opacity: 0; transition: opacity .3s; }
+.fxp { position: fixed; inset: 0; z-index: 280; display: flex; flex-direction: column; padding: calc(var(--safe-top) + 14px) calc(18px + var(--safe-right)) calc(var(--safe-bottom) + 18px) calc(18px + var(--safe-left)); opacity: 0; transition: opacity .3s; }
 .fxp.on { opacity: 1; }
 .fxp-bg { position: absolute; inset: 0; background: color-mix(in srgb, var(--chat-bg) 55%, transparent); -webkit-backdrop-filter: blur(24px) saturate(160%); backdrop-filter: blur(24px) saturate(160%); }
 .fxp-top, .fxp-list, .fxp-prev, .fxp-x { position: relative; }
@@ -151,3 +153,12 @@ body.kb .chatbar { padding-bottom: 7px; }
 .fx-canvas { position: fixed; inset: 0; z-index: 270; pointer-events: none; }
 .fx-layer { position: fixed; inset: 0; z-index: 270; pointer-events: none; overflow: hidden; }
 .bub.echo { position: absolute; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* phones in landscape: a compact header leaves room for the conversation */
+@media (max-height: 500px) {
+  .chat-nav { height: calc(var(--safe-top) + 50px); }
+  .chat-who { flex-direction: row; gap: 8px; top: calc(var(--safe-top) + 7px); }
+  .chat-who .av { width: 32px; height: 32px; line-height: 32px; font-size: 15px; }
+  .chat-who .nm { font-size: 15px; font-weight: 600; }
+  .chatbody { padding-top: calc(var(--safe-top) + 58px); }
+}

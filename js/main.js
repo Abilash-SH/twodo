@@ -85,8 +85,9 @@ function boot() {
   const home = makeView({ type: 'home' });
   Nav.stack.push(home); stackEl.append(home); renderView(home);
   history.replaceState({ d: 1 }, '');
+  splitCheck();
   updateComposerCtx();
-  if (!Sync.es) startCloud();
+  if (!Sync.live) startCloud();
   if (L.focus && L.focus.running) { ensureFocusTick(); showLive(); }
   checkReminders();
   if (location.hash === '#chat') { history.replaceState({ d: 1 }, '', location.pathname + location.search); setTimeout(() => ChatUI.open(), 900); }
@@ -96,7 +97,11 @@ function onViewport() {
   const vv = window.visualViewport, root = document.documentElement.style;
   root.setProperty('--vvh', (vv ? vv.height : innerHeight) + 'px');
   root.setProperty('--vvt', (vv ? vv.offsetTop : 0) + 'px');
-  document.body.classList.toggle('kb', !!vv && vv.height < innerHeight * 0.78);
+  const kb = !!vv && vv.height < innerHeight * 0.78;
+  document.body.classList.toggle('kb', kb);
+  // iOS sometimes leaves the page nudged up after the keyboard closes, which shifts the whole layout
+  const typing = document.activeElement && document.activeElement.matches('input, textarea, select');
+  if (!kb && !typing && (window.scrollY || document.documentElement.scrollTop)) window.scrollTo(0, 0);
 }
 
 function init() {
@@ -105,12 +110,11 @@ function init() {
   stackEl = $('#stack');
   shade = document.createElement('div'); shade.className = 'shade';
   Island.el = $('#isl');
-  const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top);visibility:hidden';
-  document.body.append(probe); document.documentElement.style.setProperty('--safe-top-px', probe.offsetHeight + 'px'); probe.remove();
   initMenu(); initComposer(); initGestures(); initFocus(); initImport();
   onViewport();
   if (window.visualViewport) { visualViewport.addEventListener('resize', onViewport); visualViewport.addEventListener('scroll', onViewport); }
   addEventListener('resize', onViewport);
+  document.addEventListener('focusout', () => setTimeout(() => { if (!document.activeElement || !document.activeElement.matches('input, textarea, select')) onViewport(); }, 60));
   if (location.hash.startsWith('#join=')) history.replaceState(null, '', location.pathname + location.search);
 
   if (cloudReady()) {
@@ -126,6 +130,7 @@ function init() {
     if (Sheet.cur) { closeSheet({ history: false }); return; }
     closeMenu();
     const d = (e.state && e.state.d) || 1;
+    if (Split.on) { if (d < 2) { history.pushState({ d: 2 }, ''); popView(); } return; }
     while (Nav.stack.length > Math.max(1, d)) doPop();
   });
 

@@ -92,6 +92,7 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 - **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
 - **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
+- **Any screen:** phones (portrait or landscape), iPads and computers. On an iPad in landscape or a computer, your lists stay on the left and the open list or chat on the right.
 - **💡 Tips & tricks:** every tip, with little animated demos, lives on Home (below My Lists) and in Settings.
 
 ## Updating
@@ -105,6 +106,7 @@ firebase.rules.json    database access rules (paste into Firebase)
 index.html · styles.css · sw.js · manifest.webmanifest · icons/
 js/keys.js     crypto: password KDF, ECDH pairing, safety code, key store
 js/cloud.js    Firebase Auth (REST), accounts, usernames
+js/live.js     live connections that reconnect instantly (and after the phone wakes up)
 js/sync.js     encrypted real-time sync + request inbox
 js/pair.js     partner requests, accept/decline, unpair
 js/push.js     push subscription + encrypted reminder index
