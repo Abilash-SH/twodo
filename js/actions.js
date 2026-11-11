@@ -307,6 +307,7 @@ function onAction(name, el) {
       vp.showDone = !vp.showDone; save(); renderTaskView(v); haptic('light'); return;
     }
     case 'dismissInstall': L.tips.install = 1; save(); scheduleRender(); return;
+    case 'invite': return openInviteSheet();
     case 'dismissPair': L.tips.pair = 1; save(); scheduleRender(); return;
     case 'install': if (installEvt) { installEvt.prompt(); installEvt = null; scheduleRender(); } return;
   }

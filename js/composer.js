@@ -7,9 +7,12 @@ function composerCtx() {
   const v = topView(), spec = v ? v._spec : { type: 'home' };
   const inbox = D.lists.inbox || { emoji: '📥', name: 'Inbox', color: 'blue' };
   const ctx = { listId: 'inbox', due: null, assignee: null, pinned: false, label: `${inbox.emoji} ${inbox.name}`, color: inbox.color };
-  if (spec.type === 'list') {
+  const pick = Cmp.listPick && D.lists[Cmp.listPick] && !D.lists[Cmp.listPick].deleted ? D.lists[Cmp.listPick] : null;
+  if (pick) Object.assign(ctx, { listId: pick.id, label: `${pick.emoji} ${pick.name}${pick.private ? ' · secret' : ''}`, color: pick.color });
+  else if (spec.type === 'list') {
     const l = D.lists[spec.id]; if (l) Object.assign(ctx, { listId: l.id, label: `${l.emoji} ${l.name}${l.private ? ' · secret' : ''}`, color: l.color });
-  } else if (spec.type === 'smart') {
+  }
+  if (spec.type === 'list' && !pick) { /* list view sets the list */ } else if (spec.type === 'smart') {
     const extra = { today: ['due', todayStr(), 'Today'], upcoming: ['due', ymd(addDays(new Date(), 1)), 'Tomorrow'], pinned: ['pinned', true, 'Pinned'], us: ['assignee', 'both', 'For both of you'] }[spec.key];
     if (extra) { ctx[extra[0]] = extra[1]; ctx.label += ' · ' + extra[2]; }
   }
@@ -26,7 +29,7 @@ function updateComposerCtx() {
   const v = topView();
   Cmp.el.classList.toggle('hide', !v || v._spec.type === 'search' || !L.onboarded);
   const c = composerCtx();
-  Cmp.ctx.textContent = c.label;
+  Cmp.ctx.innerHTML = `${esc(c.label)} ${ic('chevD', 'xs')}`;
 }
 
 const chipHTML = c => `<button class="chip" type="button" data-k="${c.kind}" style="--c:var(--c-${c.color})" title="Tap to ignore">${c.icon ? ic(c.icon) : ''}${esc(c.label)}</button>`;
@@ -129,6 +132,15 @@ function initComposer() {
   });
   Cmp.send.addEventListener('click', () => { submitComposer(); });
   Cmp.plus.addEventListener('mousedown', e => e.preventDefault());
+  // Tap the list name under the text box to choose where new tasks go
+  Cmp.ctx.setAttribute('role', 'button'); Cmp.ctx.setAttribute('tabindex', '0'); Cmp.ctx.style.cursor = 'pointer';
+  Cmp.ctx.addEventListener('mousedown', e => e.preventDefault());
+  Cmp.ctx.addEventListener('click', () => {
+    const cur = composerCtx().listId;
+    showMenu({ rect: Cmp.ctx.getBoundingClientRect(), html: `<div class="mrow"><span class="lbl" style="width:auto">Add new tasks to</span></div>` +
+      lists().map(l => `<button class="mi" data-m="pick" data-v="${esc(l.id)}" type="button"><span>${esc(l.emoji)} ${esc(l.name)}</span>${l.id === cur ? ic('check', 'ck') : ''}</button>`).join(''),
+      onPick: (m, v) => { Cmp.listPick = v; updateComposerCtx(); haptic('light'); } });
+  });
   Cmp.plus.addEventListener('click', () => { if (Cmp.el.classList.contains('focus')) Cmp.ta.blur(); else Cmp.ta.focus(); });
   new ResizeObserver(() => $('#app').style.setProperty('--composer-h', Cmp.el.offsetHeight + 'px')).observe(Cmp.el);
 

@@ -29,7 +29,7 @@ function togetherHTML() {
   } else if (p && p.status === 'sent') {
     pairRows = `<div class="cell">${sqI('orange', 'clock')}<span class="grow">Waiting for <b>${esc(p.name)}</b> <span class="val">@${esc(p.username)}</span>${p.code ? `<br><small class="val">Safety code ${esc(p.code)}</small>` : ''}</span><button class="btn-s" data-x="paircancel" type="button" style="background:var(--fill);color:var(--label)">Cancel</button></div>`;
   } else if (u.username) {
-    pairRows = `<div class="cell">${sqI('pink', 'heart')}<input class="inp" id="pairUser" placeholder="Partner’s @username" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Partner username"><button class="btn-s" data-x="pairfind" type="button">Invite</button></div>`;
+    pairRows = `<button class="cell" data-x="invite" type="button">${sqI('pink', 'heart')}<span class="grow"><b>Invite your partner</b></span>${ic('chevR', 'chev')}</button>`;
   }
   const reqRows = inc.map(([uid, r]) => `<button class="cell" data-x="review" data-uid="${esc(uid)}" type="button"><span class="list-ic" style="--c:var(--c-${esc(r.color || 'pink')})">💌</span><span class="grow"><b>${esc(r.name)}</b> wants to pair</span><span class="val">Review</span>${ic('chevR', 'chev')}</button>`).join('');
   const pushRow = Push.configured()
@@ -48,6 +48,7 @@ async function togetherAction(x, el, sh) {
     case 'signin': return openAuthSheet('signin');
     case 'username': return openUsernameSheet();
     case 'vapid': return openVapidSheet();
+    case 'invite': return openInviteSheet();
     case 'pairfind': return busy(el, async () => {
       try { openPairSheet(await Pair.lookup($('#pairUser', sh).value)); } catch (e) { fail(e); }
     });
@@ -196,6 +197,42 @@ async function openVapidSheet() {
         const b = e.target.closest('[data-copy]'); if (!b) return;
         if (await copyText(sh.querySelector('#' + b.dataset.copy).textContent)) { b.textContent = 'Copied ✓'; haptic('success'); }
       });
+    },
+  });
+}
+
+/* Partner invite screen: your username to share, their username to invite, and any incoming requests */
+function openInviteSheet() {
+  if (!Auth.user()) return openSettings();
+  if (!L.auth.username) return openUsernameSheet();
+  if (L.pair && L.pair.status === 'paired') { island({ e: '💞', text: `You’re already paired with ${L.pair.name}` }); return; }
+  const inc = Inbox.incoming();
+  const sent = L.pair && L.pair.status === 'sent';
+  openSheet({
+    title: 'Invite your partner', right: 'Done', tall: true,
+    body: `<div class="big-ic" style="--c:var(--c-pink)">💌</div>
+      ${inc.length ? `<div class="sec-h sub">Requests for you</div><div class="group">${inc.map(([uid, r]) => `<button class="cell" data-x="review" data-uid="${esc(uid)}" type="button"><span class="list-ic" style="--c:var(--c-${esc(r.color || 'pink')})">💌</span><span class="grow"><b>${esc(r.name)}</b> @${esc(r.username)}</span><span class="val">Review</span>${ic('chevR', 'chev')}</button>`).join('')}</div>` : ''}
+      <div class="sec-h sub">1 · Share your username</div>
+      <div class="group"><div class="cell"><span class="grow" style="font-size:22px;font-weight:700">@${esc(L.auth.username)}</span><button class="btn-s" data-x="shareme" type="button">Share</button></div></div>
+      <p class="note-s">Your partner installs Twodo, creates an account, then types this. Or you invite them below.</p>
+      <div class="sec-h sub">2 · Or invite them</div>
+      ${sent ? `<div class="group"><div class="cell">${sqI('orange', 'clock')}<span class="grow">Waiting for <b>${esc(L.pair.name)}</b> @${esc(L.pair.username)}${L.pair.code ? `<br><small class="val">Safety code ${esc(L.pair.code)}</small>` : ''}</span><button class="btn-s" data-x="paircancel" type="button" style="background:var(--fill);color:var(--label)">Cancel</button></div></div>`
+        : `<div class="group"><div class="cell"><span class="val" style="font-size:20px">@</span><input class="inp" id="pairUser" placeholder="their username" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Partner username"><button class="btn-s" data-x="pairfind" type="button">Invite</button></div></div>`}
+      <p class="note-s">They’ll get a request in Twodo. You both check a short safety code, then they accept.</p>`,
+    onMount: sh => {
+      sh.querySelector('.sheet-body').addEventListener('click', async e => {
+        const b = e.target.closest('[data-x]'); if (!b) return;
+        if (b.dataset.x === 'shareme') {
+          const text = `Add me on Twodo 💞 My username is @${L.auth.username}\n${location.origin}${location.pathname}`;
+          if (navigator.share) { try { await navigator.share({ text }); return; } catch (x) { if (x.name === 'AbortError') return; } }
+          if (await copyText(text)) island({ e: '📋', text: 'Copied', ms: 1500 });
+          return;
+        }
+        if (b.dataset.x === 'paircancel') { await togetherAction('paircancel', b, sh); openInviteSheet(); return; }
+        togetherAction(b.dataset.x, b, sh);
+      });
+      const inp = sh.querySelector('#pairUser');
+      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') sh.querySelector('[data-x="pairfind"]').click(); });
     },
   });
 }
