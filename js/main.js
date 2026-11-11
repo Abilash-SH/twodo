@@ -160,4 +160,17 @@ function init() {
   }
 }
 
-init();
+/* ---------- launch animation: let the intro finish, then zoom through into the app ---------- */
+const Splash = {
+  hide() {
+    const el = $('#splash'); if (!el || el.classList.contains('out')) return;
+    const min = reducedMotion.matches ? 300 : 1080, wait = Math.max(0, min - (performance.now() - (window.splashT || 0)));
+    setTimeout(() => {
+      el.classList.add('out');
+      document.body.classList.add('landing'); document.body.classList.remove('launching'); applyTheme();
+      setTimeout(() => { el.remove(); document.body.classList.remove('landing'); }, 800);
+    }, wait);
+  },
+};
+
+try { init(); } finally { Splash.hide(); }

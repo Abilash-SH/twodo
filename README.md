@@ -92,6 +92,7 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 - **Gestures:** swipe right to complete · swipe left to pin or delete · long-press for quick actions · swipe from the left edge to go back · drag sheets down to close.
 - **Smart lists:** Today (Overdue / Morning / Afternoon / Tonight), Upcoming, Together, Pinned, All, Completed, plus your own lists and a 🎁 Secret list.
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
+- **💡 Tips & tricks:** every tip, with little animated demos, lives on Home (below My Lists) and in Settings.
 
 ## Updating
 After changing files, bump `VERSION` in `sw.js` so phones fetch the new version.
@@ -110,6 +111,7 @@ js/push.js     push subscription + encrypted reminder index
 js/account.js  Together settings + account sheets
 js/gate.js     sign-in screen
 js/chat.js · js/chatui.js · js/effects.js · chat.css   Messages
+js/tips.js     the Tips & tricks screen
 js/*.js        the rest of the app (views, gestures, parser, focus timer…)
 PROMPT.md      the original prompt
 ```

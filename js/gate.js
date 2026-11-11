@@ -38,8 +38,9 @@ function startGate(first = 'welcome') {
         <li><span class="e">💌</span><div>Pair with ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}<small>Tap “Add partner” on Home and search their @username — like a friend request.</small></div></li>
         <li><span class="e">⌨️</span><div>Just type naturally<small>“Movie night fri 8pm @us !!” sets the date, time, person and priority.</small></div></li>
         <li><span class="e">👉</span><div>Swipe right to complete<small>Swipe left to pin or delete. Long-press for more.</small></div></li>
-        <li><span class="e">🎁</span><div>A Secret list<small>Never syncs — perfect for planning surprises.</small></div></li>
-      </ul><div class="spacer"></div><button class="btn" data-g="done" type="button">Start using Twodo</button>`,
+        <li><span class="e">💬</span><div>Message each other<small>Tap 💬 on Home. Hold ↑ to send with an effect.</small></div></li>
+      </ul><div class="spacer"></div><button class="btn" data-g="done" type="button">Start using Twodo</button>
+      <button class="btn ghost" data-g="tips" type="button">💡 Show me all the tips</button>`,
   };
   const order = ['welcome', 'create', 'signin', 'username', 'ready'];
   function show(name) {
@@ -120,6 +121,7 @@ function startGate(first = 'welcome') {
       });
     }
     if (g === 'done') { haptic('success'); enter({ e: '✨', text: `You’re @${L.auth.username}`, sub: 'Share it with your partner to pair' }); }
+    if (g === 'tips') { haptic('light'); enter(); setTimeout(() => openTips(), 420); }
   });
   show(first);
 }

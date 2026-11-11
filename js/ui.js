@@ -11,7 +11,7 @@ function applyTheme() {
   const acc = s.accent === 'me' ? person(L.me).color : s.accent;
   root.style.setProperty('--accent', `var(--c-${acc || 'blue'})`);
   const meta = $('meta[name="theme-color"]');
-  if (meta) meta.content = dark ? '#000000' : '#F2F2F7';
+  if (meta) meta.content = document.body.classList.contains('launching') ? '#F6528C' : dark ? '#000000' : '#F2F2F7';
 }
 darkMQ.addEventListener?.('change', applyTheme);
 

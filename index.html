@@ -26,7 +26,12 @@
     } catch (e) {}
   </script>
 </head>
-<body>
+<body class="launching">
+  <div id="splash" aria-hidden="true">
+    <div class="sp-mark"><svg viewBox="10 22 80 56"><circle class="s1" cx="38" cy="50" r="24"/><circle class="s2" cx="62" cy="50" r="24"/><path class="sck" d="M35.5 51l10.5 10.5 20.5-23"/></svg></div>
+    <div class="sp-word">Twodo</div><div class="sp-tag">made for two</div>
+  </div>
+  <script>window.splashT = performance.now();</script>
   <div id="app">
     <div id="stack"></div>
 
@@ -72,6 +77,7 @@
   <script src="js/chat.js"></script>
   <script src="js/effects.js"></script>
   <script src="js/chatui.js"></script>
+  <script src="js/tips.js"></script>
   <script src="js/focus.js"></script>
   <script src="js/composer.js"></script>
   <script src="js/main.js"></script>

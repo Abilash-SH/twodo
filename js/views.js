@@ -13,6 +13,7 @@ function viewTitle(spec) {
   if (spec.type === 'home') return 'Twodo';
   if (spec.type === 'search') return 'Search';
   if (spec.type === 'chat') return firstWord(ptName());
+  if (spec.type === 'tips') return 'Tips';
   if (spec.type === 'list') { const l = D.lists[spec.id]; return l ? l.name : 'List'; }
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
   return SMART[spec.key].title;
@@ -118,6 +119,7 @@ function renderView(v) {
     if (bar) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.strokeDashoffset = 113.1 * (1 - lastRingP); }));
     return;
   }
+  if (spec.type === 'tips') { right.innerHTML = ''; if (!v._tips) { v._tips = 1; renderTips(v); } return; }
   right.innerHTML = `<button class="nav-btn" data-a="viewmenu" type="button" aria-label="More options">${ic('more')}</button>`;
   renderTaskView(v);
 }
@@ -163,6 +165,7 @@ function homeHTML() {
     </div>
     <div class="sec-title"><h2>My Lists</h2></div>
     <div class="group">${listRows}<button class="cell accent tap" data-a="addlist" type="button"><span class="list-ic" style="--c:var(--accent)">${ic('plus', 'sm')}</span><span class="grow">Add List</span></button></div>
+    <div class="group tips-cell"><button class="cell tap" data-a="tips" type="button"><span class="list-ic" style="--c:var(--c-yellow)">💡</span><span class="grow">Tips &amp; tricks</span><span class="val">${TIPS.length}</span>${ic('chevR', 'chev')}</button></div>
     <div class="foot">Twodo · made for ${esc(firstWord(person('a').name))} & ${esc(firstWord(person('b').name))} 💞</div>`;
 }
 

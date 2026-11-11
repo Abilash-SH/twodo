@@ -47,14 +47,8 @@ function openSettings() {
       <button class="cell red" data-x="reset" type="button">Erase everything on this phone</button>
     </div>
 
-    <div class="sec-h sub">Tips</div>
-    <div class="group kbd-list">
-      <div class="cell noico">👉 Swipe right to complete · left to pin or delete</div>
-      <div class="cell noico">👆 Long-press a task for quick actions</div>
-      <div class="cell noico">↩️ Swipe from the left edge to go back</div>
-      <div class="cell noico">⌨️ <span>Type <kbd>tomorrow 6pm</kbd> <kbd>!!</kbd> <kbd>@us</kbd> <kbd>#Groceries</kbd> <kbd>every mon</kbd></span></div>
-      <div class="cell noico">🧩 Tap a chip in the composer to ignore it</div>
-      <div class="cell noico">💻 <span><kbd>N</kbd> new task · <kbd>⌘K</kbd> search · <kbd>Esc</kbd> back</span></div>
+    <div class="group">
+      <button class="cell" data-x="tips" type="button">${sq('yellow', 'bulb')}<span class="grow">Tips &amp; tricks</span>${ic('chevR', 'chev')}</button>
     </div>
     <div class="foot">Twodo 1.0 · made for two 💞</div>`;
 
@@ -94,7 +88,8 @@ function openSettings() {
       }));
       sh.querySelector('.sheet-body').addEventListener('click', e => {
         const b = e.target.closest('[data-x]'); if (!b) return;
-        if (['export', 'import', 'reset'].includes(b.dataset.x)) settingsAction(b.dataset.x, sh); else togetherAction(b.dataset.x, b, sh);
+        if (b.dataset.x === 'tips') { closeSheet(); setTimeout(() => openTips(), 350); }
+        else if (['export', 'import', 'reset'].includes(b.dataset.x)) settingsAction(b.dataset.x, sh); else togetherAction(b.dataset.x, b, sh);
       });
       sh.querySelector('.sheet-body').addEventListener('change', async e => {
         if (e.target.id !== 'pushSw') return;
