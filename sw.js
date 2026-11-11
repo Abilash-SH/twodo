@@ -1,5 +1,5 @@
 /* Twodo service worker: offline app shell + encrypted push reminders. Bump VERSION when you deploy changes. */
-const VERSION = 'twodo-v2.0.0';
+const VERSION = 'twodo-v2.0.1';
 const SHELL = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'config.js',
   'js/util.js', 'js/store.js', 'js/parse.js', 'js/keys.js', 'js/cloud.js', 'js/sync.js', 'js/push.js', 'js/pair.js',
