@@ -49,7 +49,7 @@ function confirmDialog({ title, message = '', ok = 'OK', cancel = 'Cancel', dest
     const w = document.createElement('div');
     w.className = 'alert-wrap';
     w.innerHTML = `<div class="alert" role="alertdialog" aria-label="${esc(title)}"><h4>${esc(title)}</h4><p>${esc(message)}</p>
-      <div class="btns"><button data-r="0">${esc(cancel)}</button><button data-r="1" class="${destructive ? 'red' : 'b'}">${esc(ok)}</button></div></div>`;
+      <div class="btns">${cancel === null ? '' : `<button data-r="0">${esc(cancel)}</button>`}<button data-r="1" class="${destructive ? 'red' : 'b'}">${esc(ok)}</button></div></div>`;
     document.body.append(w);
     requestAnimationFrame(() => w.classList.add('on'));
     haptic('warn');

@@ -678,3 +678,10 @@ button.banner span { display: block; color: var(--label2); font-size: 14px; }
 /* toasts never block taps on what's underneath (only their button is tappable) */
 .isl.toast { pointer-events: none; }
 .isl.toast .ib { pointer-events: auto; }
+
+/* sign-in gate */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 70px !important; }
+.pw-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: var(--fill); color: var(--label2); border-radius: 9px; padding: 6px 10px; font-size: 14px; font-weight: 600; }
+.pw-wrap .at { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 19px; font-weight: 600; color: var(--label3); pointer-events: none; }
+.ob-page .err { margin: -8px 4px 14px; }

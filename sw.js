@@ -1,9 +1,9 @@
 /* Twodo service worker: offline app shell + encrypted push reminders. Bump VERSION when you deploy changes. */
-const VERSION = 'twodo-v2.0.1';
+const VERSION = 'twodo-v2.1.0';
 const SHELL = [
   './', 'index.html', 'styles.css', 'manifest.webmanifest', 'config.js',
   'js/util.js', 'js/store.js', 'js/parse.js', 'js/keys.js', 'js/cloud.js', 'js/sync.js', 'js/push.js', 'js/pair.js',
-  'js/ui.js', 'js/views.js', 'js/actions.js', 'js/sheets.js', 'js/settings.js', 'js/account.js', 'js/focus.js', 'js/composer.js', 'js/main.js',
+  'js/ui.js', 'js/views.js', 'js/actions.js', 'js/sheets.js', 'js/settings.js', 'js/account.js', 'js/gate.js', 'js/focus.js', 'js/composer.js', 'js/main.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

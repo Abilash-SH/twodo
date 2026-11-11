@@ -86,7 +86,7 @@ function boot() {
   Nav.stack.push(home); stackEl.append(home); renderView(home);
   history.replaceState({ d: 1 }, '');
   updateComposerCtx();
-  startCloud();
+  if (!Sync.es) startCloud();
   if (L.focus && L.focus.running) { ensureFocusTick(); showLive(); }
   checkReminders();
 }
@@ -112,7 +112,12 @@ function init() {
   addEventListener('resize', onViewport);
   if (location.hash.startsWith('#join=')) history.replaceState(null, '', location.pathname + location.search);
 
-  if (!L.onboarded) { Cmp.el.classList.add('hide'); startOnboarding(); }
+  if (cloudReady()) {
+    // Accounts are on: sign-in comes first, before anything else
+    if (!Auth.user() || L.auth.expired) { if (L.auth && L.auth.expired) L.auth = null; startGate(L.lastUid ? 'signin' : 'welcome'); }
+    else if (!L.auth.username) { boot(); startGate('username'); }
+    else boot();
+  } else if (!L.onboarded) { Cmp.el.classList.add('hide'); startOnboarding(); }
   else boot();
 
   addEventListener('popstate', e => {

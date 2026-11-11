@@ -96,11 +96,26 @@ async function createKeysAndSpace(uid, wrap) {
   await KeyStore.set({ wrap, priv: await importPriv(kp.privJwk), pub: kp.pub, space });
   return space;
 }
-async function signUp(email, password) {
+// A different account on this phone must never inherit the previous account's tasks.
+function switchingAccount() {
+  if (L.lastUid && L.lastUid !== L.auth.uid) {
+    D = { tasks: {}, lists: {}, people: null };
+    L.view = {}; L.remSig = {}; L.focus = null; L.notified = {}; L.pair = null; L.me = 'a';
+    ensureBasics();
+  }
+  L.lastUid = L.auth.uid; L.lastEmail = L.auth.email;
+}
+async function signUp(email, password, profile = null) {
   email = email.trim().toLowerCase();
   const { authPass, wrap } = await derivePasswordKeys(password, email);
   Auth.setSession(await Auth.call('signUp', { email, password: authPass, returnSecureToken: true }));
   L.auth.email = email;
+  switchingAccount();
+  if (profile) { // first-run sign-up from the gate: set names, lists and starter tasks
+    L.me = 'a';
+    setPeople({ name: profile.name, color: profile.color || 'blue' }, { name: profile.partner || 'Partner', color: profile.color === 'pink' ? 'purple' : 'pink' });
+    seedLists(); if (!liveTasks().length) seedTasks(); applyTheme();
+  }
   const space = await createKeysAndSpace(L.auth.uid, wrap);
   if (!D.people) setPeople(person('a'), person('b'));
   D.people[L.me] = { ...person(L.me), uid: L.auth.uid };
@@ -113,6 +128,7 @@ async function signIn(email, password) {
   const { authPass, wrap } = await derivePasswordKeys(password, email);
   Auth.setSession(await Auth.call('signInWithPassword', { email, password: authPass, returnSecureToken: true }));
   L.auth.email = email;
+  switchingAccount();
   const uid = L.auth.uid;
   const [pub, priv] = await Promise.all([dbGet(`users/${uid}/public`), dbGet(`users/${uid}/private`)]);
   let space;
@@ -126,6 +142,8 @@ async function signIn(email, password) {
   }
   if (pub && pub.username) L.auth.username = pub.username;
   if (D.people) D.people.updatedAt = 0; // the copy in your space wins over this phone's onboarding names
+  else D.people = { kind: 'people', id: 'people', updatedAt: 0, a: { name: (pub && pub.name) || email.split('@')[0], color: (pub && pub.color) || 'blue', uid }, b: { name: 'Partner', color: 'pink' } };
+  ensureBasics(); addSecretList(); applyTheme();
   resetSyncFlags();
   L.sync = { space: space.id }; L.pair = null; save();
   await startCloud();
@@ -135,7 +153,9 @@ async function signOut() {
   Sync.close(); Inbox.stop();
   await KeyStore.clear().catch(() => {});
   L.auth = null; L.pair = null; L.sync = {}; L.push = null; resetSyncFlags(); save();
-  Sync.set('off'); scheduleRender();
+  Sync.set('off');
+  if (Sheet.cur) closeSheet();
+  startGate('signin'); // tasks stay on this phone, locked behind sign-in
 }
 async function claimUsername(raw) {
   const name = normUsername(raw);
