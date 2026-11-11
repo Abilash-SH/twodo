@@ -35,7 +35,7 @@ function startGate(first = 'welcome') {
       <div class="err" id="gErr"></div><div class="spacer"></div><button class="btn" data-g="username" type="button">Continue</button>`,
     ready: () => `<h1>You’re in, ${esc(firstWord(myName()))} 💞</h1><p class="lead">A few things that make Twodo feel like magic:</p>
       <ul class="tips">
-        <li><span class="e">💌</span><div>Pair with ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}<small>Once they’ve made an account: Settings → Together → type their @username.</small></div></li>
+        <li><span class="e">💌</span><div>Pair with ${esc(firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName()))}<small>Tap “Add partner” on Home and search their @username — like a friend request.</small></div></li>
         <li><span class="e">⌨️</span><div>Just type naturally<small>“Movie night fri 8pm @us !!” sets the date, time, person and priority.</small></div></li>
         <li><span class="e">👉</span><div>Swipe right to complete<small>Swipe left to pin or delete. Long-press for more.</small></div></li>
         <li><span class="e">🎁</span><div>A Secret list<small>Never syncs — perfect for planning surprises.</small></div></li>

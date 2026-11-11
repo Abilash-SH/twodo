@@ -186,9 +186,9 @@ const Inbox = {
     else { const it = this.items[parts[0]] = this.items[parts[0]] || {}; it[parts[1]] = data; }
     for (const [from, r] of Object.entries(this.items)) if (r && r.type === 'accepted') { delete this.items[from]; Pair.onAccepted(from, r); }
     const fresh = this.incoming().filter(([k]) => !before.has(k));
-    if (this.loaded && fresh.length) { const r = fresh[0][1]; island({ e: '💞', text: `${r.name} wants to pair with you`, sub: 'Open Settings to review', ms: 5000 }); haptic('success'); }
+    if (this.loaded && fresh.length) { const r = fresh[0][1]; island({ e: '💌', text: `${r.name} sent you a partner request`, sub: 'Tap “Add partner” to accept', ms: 5000 }); haptic('success'); }
     this.loaded = true;
-    scheduleRender(); updateSyncUI();
+    scheduleRender(); updateSyncUI(); if (this.onChange) this.onChange();
   },
   incoming() { return Object.entries(this.items).filter(([, r]) => r && r.space && r.wk && r.type !== 'accepted'); },
 };

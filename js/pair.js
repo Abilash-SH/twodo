@@ -91,8 +91,8 @@ const Pair = {
     dbPatch('', { [`requests/${L.auth.uid}/${from}`]: null }).catch(() => {});
     if (!L.pair || L.pair.uid !== from) return;
     L.pair.status = 'paired'; save();
-    island({ e: '💞', text: `${r.name} accepted!`, sub: 'Your lists now sync together' });
-    haptic('success'); confetti(); updateSyncUI();
+    island({ e: '💞', text: `${r.name} accepted your request!`, sub: 'Your lists now sync together' });
+    haptic('success'); confetti(); updateSyncUI(); if (Inbox.onChange) Inbox.onChange();
   },
 
   // Leave the shared space and start a fresh private one. Everything on this phone stays.

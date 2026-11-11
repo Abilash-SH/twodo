@@ -29,9 +29,9 @@ function togetherHTML() {
   } else if (p && p.status === 'sent') {
     pairRows = `<div class="cell">${sqI('orange', 'clock')}<span class="grow">Waiting for <b>${esc(p.name)}</b> <span class="val">@${esc(p.username)}</span>${p.code ? `<br><small class="val">Safety code ${esc(p.code)}</small>` : ''}</span><button class="btn-s" data-x="paircancel" type="button" style="background:var(--fill);color:var(--label)">Cancel</button></div>`;
   } else if (u.username) {
-    pairRows = `<button class="cell" data-x="invite" type="button">${sqI('pink', 'heart')}<span class="grow"><b>Invite your partner</b></span>${ic('chevR', 'chev')}</button>`;
+    pairRows = `<button class="cell" data-x="invite" type="button">${sqI('pink', 'heart')}<span class="grow"><b>Add partner</b></span>${ic('chevR', 'chev')}</button>`;
   }
-  const reqRows = inc.map(([uid, r]) => `<button class="cell" data-x="review" data-uid="${esc(uid)}" type="button"><span class="list-ic" style="--c:var(--c-${esc(r.color || 'pink')})">💌</span><span class="grow"><b>${esc(r.name)}</b> wants to pair</span><span class="val">Review</span>${ic('chevR', 'chev')}</button>`).join('');
+  const reqRows = inc.length ? `<button class="cell" data-x="invite" type="button"><span class="list-ic" style="--c:var(--c-pink)">💌</span><span class="grow"><b>${inc.length} partner request${inc.length > 1 ? 's' : ''}</b></span><span class="val">View</span>${ic('chevR', 'chev')}</button>` : '';
   const pushRow = Push.configured()
     ? `<div class="cell">${sqI('red', 'bell')}<span class="grow">Push reminders</span><input type="checkbox" class="switch" id="pushSw" ${Push.on() ? 'checked' : ''} aria-label="Push reminders"></div>`
     : `<button class="cell" data-x="vapid" type="button">${sqI('red', 'bell')}<span class="grow">Set up push reminders</span><span class="val">Keys</span>${ic('chevR', 'chev')}</button>`;
@@ -201,38 +201,66 @@ async function openVapidSheet() {
   });
 }
 
-/* Partner invite screen: your username to share, their username to invite, and any incoming requests */
+/* Add partner: friend-request style. Search a username → Add → they Accept or Decline. */
+function reqCard(av, title, sub, actions) {
+  return `<div class="fr-card">${av}<div class="fr-t"><b>${title}</b><span>${sub}</span></div><div class="fr-a">${actions}</div></div>`;
+}
+const frAv = (name, color) => `<span class="av" style="--c:var(--c-${esc(color || 'pink')})">${esc(initial(name))}</span>`;
+function addPartnerHTML(found) {
+  const inc = Inbox.incoming(), p = L.pair;
+  let h = '';
+  if (inc.length) h += `<div class="sec-h sub">Partner requests</div><div class="group fr">${inc.map(([uid, r]) => reqCard(frAv(r.name, r.color), esc(r.name), '@' + esc(r.username) + ' wants to add you',
+    `<button class="btn-s" data-f="accept" data-uid="${esc(uid)}" type="button">Accept</button><button class="btn-s gray" data-f="decline" data-uid="${esc(uid)}" type="button">Decline</button>`)).join('')}</div>`;
+  if (p && p.status === 'sent') {
+    h += `<div class="sec-h sub">Sent</div><div class="group fr">${reqCard(frAv(p.name, 'pink'), esc(p.name), '@' + esc(p.username) + ' · Requested' + (p.code ? ` · code ${esc(p.code)}` : ''),
+      `<button class="btn-s gray" data-f="cancel" type="button">Cancel</button>`)}</div>`;
+  } else {
+    h += `<div class="sec-h sub">Find your partner</div>
+      <div class="group"><div class="cell"><span class="val" style="font-size:20px">@</span><input class="inp" id="frUser" placeholder="username" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Partner username"><button class="btn-s" data-f="search" type="button">Search</button></div></div>`;
+    if (found) h += `<div class="group fr">${reqCard(frAv(found.name, found.color), esc(found.name), '@' + esc(found.username), `<button class="btn-s" data-f="add" type="button">${ic('plus', 'xs')} Add</button>`)}</div>`;
+  }
+  h += `<div class="sec-h sub">Your username</div>
+    <div class="group"><div class="cell"><span class="grow" style="font-size:20px;font-weight:700">@${esc(L.auth.username)}</span><button class="btn-s gray" data-f="share" type="button">Share</button></div></div>
+    <p class="note-s">Once they accept, you share every list except Secret ones. You’ll each see the same 8-digit code. If it matches, nobody tampered with the request.</p>`;
+  return h;
+}
 function openInviteSheet() {
   if (!Auth.user()) return openSettings();
   if (!L.auth.username) return openUsernameSheet();
   if (L.pair && L.pair.status === 'paired') { island({ e: '💞', text: `You’re already paired with ${L.pair.name}` }); return; }
-  const inc = Inbox.incoming();
-  const sent = L.pair && L.pair.status === 'sent';
+  let found = null;
   openSheet({
-    title: 'Invite your partner', right: 'Done', tall: true,
-    body: `<div class="big-ic" style="--c:var(--c-pink)">💌</div>
-      ${inc.length ? `<div class="sec-h sub">Requests for you</div><div class="group">${inc.map(([uid, r]) => `<button class="cell" data-x="review" data-uid="${esc(uid)}" type="button"><span class="list-ic" style="--c:var(--c-${esc(r.color || 'pink')})">💌</span><span class="grow"><b>${esc(r.name)}</b> @${esc(r.username)}</span><span class="val">Review</span>${ic('chevR', 'chev')}</button>`).join('')}</div>` : ''}
-      <div class="sec-h sub">1 · Share your username</div>
-      <div class="group"><div class="cell"><span class="grow" style="font-size:22px;font-weight:700">@${esc(L.auth.username)}</span><button class="btn-s" data-x="shareme" type="button">Share</button></div></div>
-      <p class="note-s">Your partner installs Twodo, creates an account, then types this. Or you invite them below.</p>
-      <div class="sec-h sub">2 · Or invite them</div>
-      ${sent ? `<div class="group"><div class="cell">${sqI('orange', 'clock')}<span class="grow">Waiting for <b>${esc(L.pair.name)}</b> @${esc(L.pair.username)}${L.pair.code ? `<br><small class="val">Safety code ${esc(L.pair.code)}</small>` : ''}</span><button class="btn-s" data-x="paircancel" type="button" style="background:var(--fill);color:var(--label)">Cancel</button></div></div>`
-        : `<div class="group"><div class="cell"><span class="val" style="font-size:20px">@</span><input class="inp" id="pairUser" placeholder="their username" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Partner username"><button class="btn-s" data-x="pairfind" type="button">Invite</button></div></div>`}
-      <p class="note-s">They’ll get a request in Twodo. You both check a short safety code, then they accept.</p>`,
+    title: 'Add partner', right: 'Done', tall: true,
+    body: `<div id="frWrap">${addPartnerHTML()}</div>`,
     onMount: sh => {
-      sh.querySelector('.sheet-body').addEventListener('click', async e => {
-        const b = e.target.closest('[data-x]'); if (!b) return;
-        if (b.dataset.x === 'shareme') {
+      const wrap = sh.querySelector('#frWrap');
+      const redraw = () => { wrap.innerHTML = addPartnerHTML(found); };
+      const fail = e => { island({ e: '⚠️', text: e.message, ms: 4000 }); haptic('warn'); };
+      Inbox.onChange = () => { if (sh.isConnected) redraw(); };
+      wrap.addEventListener('keydown', e => { if (e.target.id === 'frUser' && e.key === 'Enter') wrap.querySelector('[data-f="search"]').click(); });
+      wrap.addEventListener('click', async e => {
+        const b = e.target.closest('[data-f]'); if (!b) return;
+        const f = b.dataset.f;
+        if (f === 'search') return busy(b, async () => { try { found = await Pair.lookup(wrap.querySelector('#frUser').value); redraw(); } catch (x) { fail(x); } });
+        if (f === 'add') return busy(b, async () => {
+          try { await Pair.send(found); found = null; redraw(); haptic('success'); island({ e: '💌', text: `Request sent to ${L.pair.name}`, sub: `Code ${L.pair.code}` }); } catch (x) { fail(x); }
+        });
+        if (f === 'cancel') return busy(b, async () => { try { await Pair.cancel(); redraw(); } catch (x) { fail(x); } });
+        if (f === 'accept') return busy(b, async () => {
+          try {
+            const r = await Pair.review(b.dataset.uid);
+            if (!(await confirmDialog({ title: `Add ${r.name}?`, message: `Check ${firstWord(r.name)} sees this code too: ${r.code}`, ok: 'Accept' }))) return;
+            await Pair.accept(r); haptic('success'); confetti(); closeSheet(); island({ e: '💞', text: `You and ${r.name} are paired`, sub: 'Your lists now sync in real time' });
+          } catch (x) { fail(x); }
+        });
+        if (f === 'decline') return busy(b, async () => { try { await Pair.decline(await Pair.review(b.dataset.uid)); redraw(); } catch (x) { fail(x); } });
+        if (f === 'share') {
           const text = `Add me on Twodo 💞 My username is @${L.auth.username}\n${location.origin}${location.pathname}`;
           if (navigator.share) { try { await navigator.share({ text }); return; } catch (x) { if (x.name === 'AbortError') return; } }
           if (await copyText(text)) island({ e: '📋', text: 'Copied', ms: 1500 });
-          return;
         }
-        if (b.dataset.x === 'paircancel') { await togetherAction('paircancel', b, sh); openInviteSheet(); return; }
-        togetherAction(b.dataset.x, b, sh);
       });
-      const inp = sh.querySelector('#pairUser');
-      if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') sh.querySelector('[data-x="pairfind"]').click(); });
     },
+    onClose: () => { Inbox.onChange = null; },
   });
 }
