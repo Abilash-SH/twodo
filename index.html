@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Twodo</title>
+  <meta name="description" content="A beautiful to-do list made for two.">
+  <meta name="theme-color" content="#F2F2F7">
+  <meta name="color-scheme" content="light dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Twodo">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // Apply theme before first paint to avoid a flash
+    try {
+      var s = JSON.parse(localStorage.getItem('twodo:local') || '{}').settings || {};
+      var dark = s.theme === 'dark' || (s.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div id="stack"></div>
+
+    <div id="composer">
+      <div class="pills" id="pills" aria-label="Quick tokens"></div>
+      <div class="cbox">
+        <div class="chips" id="chips"></div>
+        <label for="cta" class="sr">Add a task</label>
+        <textarea id="cta" rows="1" placeholder="Add a task…" enterkeyhint="send" autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea>
+        <div class="crow">
+          <button class="cplus" id="cplus" aria-label="Show quick options"></button>
+          <div class="cctx" id="cctx"></div>
+          <span class="chint">↵ add · ⇧↵ new line</span>
+          <button class="csend" id="csend" aria-label="Add task"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="layer"></div>
+  <div id="menu"></div>
+  <div id="island"><div class="isl" id="isl" role="status" aria-live="polite"></div></div>
+  <div id="focus" aria-hidden="true"></div>
+  <label id="haptic" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+
+  <script src="js/util.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/parse.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/views.js"></script>
+  <script src="js/actions.js"></script>
+  <script src="js/sheets.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/focus.js"></script>
+  <script src="js/composer.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

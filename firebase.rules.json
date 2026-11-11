@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "twodo": {
+      "$space": {
+        ".read": "$space.length === 40",
+        ".write": "$space.length === 40",
+        "r": {
+          "$rec": {
+            ".validate": "newData.hasChildren(['u', 'd']) && newData.child('u').isNumber() && newData.child('d').isString() && newData.child('d').val().length < 200000"
+          }
+        }
+      }
+    }
+  }
+}
