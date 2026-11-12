@@ -6,41 +6,27 @@
 .sheet.open { transition: transform var(--dur-sheet) var(--ease-spring); }
 body.sheet-drag .sheet { transition: none; }
 .backdrop { transition: opacity var(--dur-page) var(--ease-ios); }
-/* the app behind a sheet only scales (its corners round at once, no animated radius or filter) */
-#app { transition: transform var(--dur-sheet) var(--ease-ios); }
 
 /* Screens push and pop on the page curve */
 .view { transition: transform var(--dur-page) var(--ease-ios); }
 .shade { transition: opacity var(--dur-page) var(--ease-ios); }
 
-/* The chat background stays still: an endlessly drifting layer under the glass made the iPhone re-blur the
-   header and message bar on every frame */
-.chatview::before { animation: none; will-change: auto; transform: translate3d(-2%, 2%, 0); }
-.c-sub.online::before { animation: none; }
 
 /* Reply bar, reactions and highlights: transform + opacity only */
 .cb-reply.in { animation: rbIn var(--dur-page) var(--ease-spring); }
 .cb-reply.out { animation: rbOut var(--dur-quick) ease-in forwards; }
 .bwrap.hl .bub, .bwrap.hl .tcard { animation: hlPulse 900ms var(--ease-out); }
 @keyframes hlPulse { 0% { transform: scale(1); } 22% { transform: scale(1.045); } 44% { transform: scale(.99); } 66% { transform: scale(1.02); } 100% { transform: none; } }
-.bwrap.ly-on .bub, .bwrap.ly-on .tcard { animation: lyBeat 1.6s var(--ease-out); }
-@keyframes lyBeat { 0%, 100% { transform: none; } 14% { transform: scale(1.06); } 28% { transform: scale(1); } 42% { transform: scale(1.045); } 60% { transform: none; } }
 .d-press .d-row { animation-name: dPressT; }
 @keyframes dPressT { 0%, 14% { transform: none; } 30%, 80% { transform: scale(1.04); } 92%, 100% { transform: none; } }
-/* entrance of a page's contents: at most the first few items, once */
-.view.enter .group:nth-of-type(n+4), .view.enter .task:nth-child(n+7), .view.enter .cell:nth-child(n+7) { animation: none; }
 
-/* ---------- Reduce Motion: movement becomes simple fades ---------- */
+/* ---------- Reduce Motion: movement becomes simple fades ----------
+   (31-native-surfaces.css turns every animation and transition off; screens, sheets and rows fade instead) */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 1ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .view.offright, .view.under { transform: none; }
   .view.offright { opacity: 0; }
-  .view, .shade { transition: opacity var(--dur-standard) ease; }
-  .sheet, .sheet.open { transform: none; transition: opacity var(--dur-standard) ease; }
+  .sheet, .sheet.open { transform: none; }
   .sheet:not(.open) { opacity: 0; }
-  body.sheet-open #app { transform: none; border-radius: 0; }
-  #app { transition: none; }
-  .isl, .isl.on { transform: none; }
-  .task.leaving { transform: none; }
-  .pills { transform: none; }
+  .isl, .isl.on, .task.leaving, .pills { transform: none; }
+  :is(.view, .shade, .sheet, .backdrop, .isl, .task.leaving, .alert-wrap, .mbg) { transition-property: opacity !important; transition-duration: var(--dur-standard) !important; transition-timing-function: ease !important; }
 }

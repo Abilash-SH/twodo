@@ -25,8 +25,8 @@ export function playBubbleFx(el: HTMLElement | null, fx: string, scroller?: HTML
   if (!el || reducedMotion.matches) return;
   if (fx === 'slam') {
     el.animate([
-      { transform: 'translateY(-140px) scale(2.6)', opacity: 0, filter: 'blur(3px)' },
-      { transform: 'translateY(0) scale(1)', opacity: 1, filter: 'blur(0)', offset: 0.5, easing: 'cubic-bezier(.6,0,1,.6)' },
+      { transform: 'translateY(-140px) scale(2.6)', opacity: 0 },
+      { transform: 'translateY(0) scale(1)', opacity: 1, offset: 0.5, easing: 'cubic-bezier(.6,0,1,.6)' },
       { transform: 'scale(.9)', offset: 0.62 }, { transform: 'scale(1.03)', offset: 0.8 }, { transform: 'scale(1)' }], { duration: 850 });
     const ring = document.createElement('div'); ring.className = 'fx-ring'; el.appendChild(ring);
     ring.animate([{ transform: 'scale(.6)', opacity: 0.7 }, { transform: 'scale(2.2)', opacity: 0 }], { duration: 600, delay: 400, easing: 'ease-out', fill: 'both' }).onfinish = () => ring.remove();

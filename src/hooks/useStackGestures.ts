@@ -1,13 +1,13 @@
 /* Twodo · touch gestures on the screen stack:
    - task rows: swipe right to complete, left for Pin / Delete (long swipe deletes), long-press for the menu
-   - pages: swipe right from the edge, or a sideways drag anywhere that isn't a task row or a control, to go back
+   - pages: swipe right from the edge, or a sideways drag anywhere (including task text; controls retain their own gestures), to go back
    Fingers are followed with touch events (decided within a few pixels, then the page can't scroll underneath);
    a mouse uses pointer events. */
 import { useEffect } from 'react';
 import { haptic } from '@/lib/feedback';
 import { flushDeferred, renderGate } from '@/lib/render';
 import { EASE, MS } from '@/lib/motion';
-import { isTouch } from '@/lib/util';
+import { isTouch, reducedMotion } from '@/lib/util';
 import { NO_SWIPE, SLOP, Velocity, flung, touchById } from './swipe';
 import { Menu, menuOpen } from '@/ui/menu';
 import { Nav, liveEntries, popView, viewEl } from '@/ui/nav';
@@ -70,12 +70,12 @@ interface Pt { x: number; y: number; id: number; touch: boolean; target: HTMLEle
 function moveEdge(G: PageG, p: Pt): boolean {
   const dx = Math.max(0, p.x - G.x0), dy = p.y - G.y0;
   if (!G.active) {
-    if (dx < 4 && Math.abs(dy) < SLOP) return false;
-    if (Math.abs(dy) > dx * 1.5) { Gesture.g = null; return false; } // scrolling down the edge of the page: let it
+    if (Math.abs(p.x - G.x0) < SLOP && Math.abs(dy) < SLOP) return false;
+    if (p.x <= G.x0 || Math.abs(dy) > dx * 1.5) { Gesture.g = null; return false; } // scrolling down the edge of the page: let it
     // catch the screen wherever it is, even halfway through opening or closing (interruptible, no jump)
     const m = getComputedStyle(G.top).transform;
     G.base = m && m !== 'none' ? Math.max(0, new DOMMatrixReadOnly(m).m41) : 0;
-    G.active = true; G.x0 = p.x - Math.min(dx, 6); document.getElementById('stack')!.classList.add('dragging'); Nav.dragging = true;
+    G.active = true; document.getElementById('stack')!.classList.add('dragging'); Nav.dragging = true;
   }
   G.v.add(p.x, p.y);
   G.dx = Math.max(0, G.base + p.x - G.x0);
@@ -90,8 +90,12 @@ function endEdge(G: PageG, cancelled = false) {
   document.getElementById('stack')!.classList.remove('dragging'); Nav.dragging = false;
   const { vx } = G.v.get();
   const go = !cancelled && vx > -0.15 && flung(G.dx, vx, G.w);
-  // clear the finger offsets and pop in the same frame, so the page keeps sliding from where it was let go
+  // Commit the dragged position before switching the CSS destination; release never restarts at zero.
+  void G.top.offsetWidth;
+  G.top.style.transition = reducedMotion.matches ? 'none' : go ? 'transform .26s cubic-bezier(.2,.8,.2,1)' : 'transform .42s cubic-bezier(.34,1.4,.64,1)';
+  G.prev.style.transition = G.top.style.transition;
   G.top.style.transform = ''; G.prev.style.transform = '';
+  setTimeout(() => { G.top.style.transition = ''; G.prev.style.transition = ''; }, 440);
   if (go) { Gesture.suppressClickUntil = performance.now() + 400; haptic('light'); popView(); }
   else { const sh = shade(); if (sh) sh.style.opacity = '.12'; }
   flushDeferred();
@@ -134,7 +138,7 @@ export function useStackGestures(stackRef: React.RefObject<HTMLDivElement | null
       if (G.kind === 'pan') { // decide: scrolling (let it be) or a swipe back (follow the finger from here)
         const dx = p.x - G.x0, dy = p.y - G.y0;
         if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return false;
-        if (dx > 0 && dx >= Math.abs(dy)) { G.kind = 'edge'; return moveEdge(G, p); }
+        if (dx > 0 && dx >= Math.abs(dy) * .85) { G.kind = 'edge'; return moveEdge(G, p); }
         Gesture.g = null; return false;
       }
       if (G.kind === 'edge') return moveEdge(G, p);
@@ -142,6 +146,11 @@ export function useStackGestures(stackRef: React.RefObject<HTMLDivElement | null
       if (R.mode === 'lp' || R.mode === 'scroll') return R.mode === 'lp';
       const dx = p.x - R.x0, dy = p.y - R.y0;
       if (!R.mode) {
+        if (R.touch && R.base === 0 && dx >= SLOP && dx > Math.abs(dy) * .85 && liveEntries().length > 1 && !R.row.querySelector('.chk')?.contains(p.target)) {
+          clearTimeout(R.lp);
+          const back = pageG('edge', { ...p, x: R.x0, y: R.y0 });
+          if (back) { back.v = R.v; Gesture.g = back; return moveEdge(back, p); }
+        }
         if (Math.hypot(dx, dy) > 8) clearTimeout(R.lp);
         if (Math.abs(dx) > SLOP && Math.abs(dx) > Math.abs(dy)) { R.mode = 'swipe'; R.row.classList.add('swiping'); }
         else if (Math.abs(dy) > SLOP) { R.mode = 'scroll'; return false; }

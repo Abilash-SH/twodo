@@ -1,6 +1,7 @@
 'use client';
 /* Twodo · photo viewer: the picture flies up from where you tapped it; drag it away or tap outside to close */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useSwipeAway } from '@/hooks/swipe';
 import { L, person } from '@/lib/store';
 import { reducedMotion } from '@/lib/util';
 import { PhotoView, photoStore, pickPhoto, setPhoto } from '@/ui/photos';
@@ -12,6 +13,8 @@ const ease = 'cubic-bezier(.32,.72,0,1)';
 export function PhotoViewer() {
   const cur = useStore(photoStore);
   const [on, setOn] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useSwipeAway(root, { enabled: !!cur, down: true, onClose: () => { PhotoView.close = null; setOn(false); photoStore.set(null); } });
   const img = useRef<HTMLDivElement>(null), bg = useRef<HTMLDivElement>(null), closing = useRef(false), drag = useRef<{ x0: number; y0: number; id: number; d: number } | null>(null);
   const fromT = () => {
     const el = cur && cur.from, i = img.current;
@@ -41,16 +44,16 @@ export function PhotoViewer() {
   if (!cur) return null;
   const k = cur.k, p = person(k), mine = k === L.me;
   return (
-    <div className={`pv${on ? ' on' : ''}`} role="dialog" aria-label={p.name}
+    <div ref={root} className={`pv${on ? ' on' : ''}`} role="dialog" aria-label={p.name}
       onClick={e => { if (!(e.target as HTMLElement).closest('.pv-acts, .pv-img, .pv-x')) close(); }}
-      onPointerDown={e => { if (!(e.target as HTMLElement).closest('button')) drag.current = { x0: e.clientX, y0: e.clientY, id: e.pointerId, d: 0 }; }}
+      onPointerDown={e => { if (e.pointerType !== 'mouse') return; if (!(e.target as HTMLElement).closest('button')) drag.current = { x0: e.clientX, y0: e.clientY, id: e.pointerId, d: 0 }; }}
       onPointerMove={e => { // drag it away in any direction (down, or right like going back)
-        const d = drag.current; if (!d || e.pointerId !== d.id || !img.current) return;
+        const d = drag.current; if (e.pointerType !== 'mouse' || !d || e.pointerId !== d.id || !img.current) return;
         const x = e.clientX - d.x0, y = e.clientY - d.y0; d.d = Math.hypot(x, y);
         img.current.style.transform = `translate(${x}px, ${y}px) scale(${1 - Math.min(d.d, 300) / 1200})`;
         if (bg.current) bg.current.style.opacity = String(1 - Math.min(d.d, 300) / 400);
       }}
-      onPointerUp={e => endDrag(e.pointerId)} onPointerCancel={e => endDrag(e.pointerId)}>
+      onPointerUp={e => { if (e.pointerType === 'mouse') endDrag(e.pointerId); }} onPointerCancel={e => { if (e.pointerType === 'mouse') endDrag(e.pointerId, true); }}>
       <div ref={bg} className="pv-bg" />
       <button className="pv-x" type="button" aria-label="Close" onClick={() => close()}><Icon name="x" /></button>
       <div className="pv-main"><div ref={img} className="pv-img"><Avatar k={k} /></div><div className="pv-name">{p.name}</div>
@@ -60,11 +63,11 @@ export function PhotoViewer() {
         </div> : null}</div>
     </div>
   );
-  function endDrag(id: number) {
+  function endDrag(id: number, cancel = false) {
     const d = drag.current; if (!d || id !== d.id) return;
     const dist = d.d; drag.current = null;
     const i = img.current; if (!i) return;
-    if (dist > 80) { i.style.transform = ''; close(); return; }
+    if (!cancel && dist > 80) { i.style.transform = ''; close(); return; }
     i.style.transition = 'transform .35s cubic-bezier(.34,1.56,.64,1)'; i.style.transform = ''; if (bg.current) bg.current.style.opacity = '';
     setTimeout(() => { i.style.transition = ''; }, 360);
   }

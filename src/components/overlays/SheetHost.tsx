@@ -1,7 +1,7 @@
 'use client';
 /* Twodo · sheets: card modals that slide up, and close with Done, a tap outside, a drag down or a swipe right */
 import { useEffect, useRef, useState } from 'react';
-import { clamp } from '@/lib/util';
+import { clamp, reducedMotion } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { NO_SWIPE, SLOP, Velocity, flung, touchById } from '@/hooks/swipe';
 import { EASE, MS } from '@/lib/motion';
@@ -16,12 +16,16 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = sh.current; if (!el) return;
     const head = el.querySelector<HTMLElement>('.sheet-head')!, body = el.querySelector<HTMLElement>('.sheet-body')!;
+    let settling = false;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (fn: () => void, ms: number) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); };
     let S: { id: number; x0: number; y0: number; axis: null | 'x' | 'y'; d: number; v: Velocity; canDown: boolean } | null = null;
     const apply = (d: number, axis: 'x' | 'y') => {
       el.style.transform = axis === 'y' ? `translate3d(0,${d}px,0)` : `translate3d(${d}px,0,0)`;
       document.body.style.setProperty('--sp', String(clamp(1 - d / (axis === 'y' ? el.offsetHeight : el.offsetWidth), 0, 1)));
     };
     const begin = (id: number, x: number, y: number, target: HTMLElement) => {
+      if (settling) return;
       if (target.closest('button') && head.contains(target)) return;
       const inHead = head.contains(target);
       if (!inHead && target.closest(NO_SWIPE)) return;
@@ -34,7 +38,7 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
       if (!G.axis) {
         if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return false;
         if (G.canDown && dy > 0 && dy >= Math.abs(dx)) G.axis = 'y';
-        else if (!mouse && dx > 0 && dx > Math.abs(dy)) G.axis = 'x';
+        else if (!mouse && dx > 0 && dx > Math.abs(dy) * .85) G.axis = 'x';
         else { S = null; return false; }
         document.body.classList.add('sheet-drag'); el.style.transition = 'none';
       }
@@ -47,26 +51,21 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
       const G = S; S = null; if (!G || !G.axis) return;
       document.body.classList.remove('sheet-drag');
       const { vx, vy } = G.v.get();
-      if (G.axis === 'y') {
-        if (!cancel && (G.d > 130 || vy > 0.5)) { // carry on down at the speed of the swipe
-          const left = el.offsetHeight + 40 - G.d;
-          el.style.transition = `transform ${speedMs(left, vy)}ms ${EASE.out}`; apply(el.offsetHeight + 40, 'y');
-          closeSheet(); return;
-        }
-        el.style.transition = `transform ${MS.page}ms ${EASE.spring}`; el.style.transform = '';
-        document.body.style.setProperty('--sp', '1');
-        setTimeout(() => { el.style.transition = ''; }, MS.page + 20);
-        return;
+      const go = !cancel && (G.axis === 'y' ? flung(G.d, vy, el.offsetHeight) : flung(G.d, vx, el.offsetWidth));
+      const size = (G.axis === 'y' ? el.offsetHeight : el.offsetWidth) + 40;
+      const ms = speedMs(size - G.d, G.axis === 'y' ? vy : vx); // a fast flick finishes fast, a slow drag calmly
+      settling = true;
+      el.style.transition = reducedMotion.matches ? 'none' : go ? `transform ${ms}ms ${EASE.out}` : `transform ${MS.page}ms ${EASE.spring}`;
+      if (go) {
+        apply(size, G.axis);
+        later(() => {
+          const back = G.axis === 'x' && el.querySelector<HTMLElement>('.sheet-bar [data-back]');
+          if (back) back.click(); else closeSheet();
+        }, reducedMotion.matches ? 0 : ms);
+      } else {
+        el.style.transform = ''; document.body.style.setProperty('--sp', '1');
+        later(() => { el.style.transition = ''; settling = false; }, reducedMotion.matches ? 0 : MS.page + 10);
       }
-      if (!cancel && vx > -0.15 && flung(G.d, vx, el.offsetWidth)) { // swiped away: keep going off to the right
-        el.style.transition = `transform ${speedMs(el.offsetWidth + 40 - G.d, vx)}ms ${EASE.out}`; apply(el.offsetWidth + 40, 'x');
-        const back = el.querySelector<HTMLElement>('.sheet-bar [data-back]'); // a page inside Settings goes back to Settings
-        if (back) back.click(); else closeSheet();
-        return;
-      }
-      el.style.transition = `transform ${MS.page}ms ${EASE.spring}`; el.style.transform = '';
-      document.body.style.setProperty('--sp', '1');
-      setTimeout(() => { el.style.transition = ''; }, MS.page + 20);
     };
     const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(true); return; } const t = e.touches[0]; begin(t.identifier, t.clientX, t.clientY, e.target as HTMLElement); };
     const tMove = (e: TouchEvent) => {
@@ -88,6 +87,7 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
     head.addEventListener('pointerdown', pDown); head.addEventListener('pointermove', pMove);
     head.addEventListener('pointerup', pUp); head.addEventListener('pointercancel', pUp);
     return () => {
+      timers.forEach(clearTimeout); document.body.classList.remove('sheet-drag');
       el.removeEventListener('touchstart', tStart); el.removeEventListener('touchmove', tMove);
       el.removeEventListener('touchend', tEnd); el.removeEventListener('touchcancel', tEnd);
       head.removeEventListener('pointerdown', pDown); head.removeEventListener('pointermove', pMove);
