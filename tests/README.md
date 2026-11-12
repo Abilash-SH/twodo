@@ -13,7 +13,16 @@ python3 tests/e2e/test_1_pair_and_chat.py      # creates both accounts and pairs
 python3 tests/e2e/test_2_todos.py
 python3 tests/e2e/test_3_desktop_focus_signout.py
 python3 tests/e2e/test_5_service_worker_responsive.py
+python3 tests/e2e/test_6_secret_gestures_keyboard.py
+python3 tests/e2e/test_7_native_regressions.py
+node tests/velocity.cjs
 ```
 `test_4_offline_onboarding.py` needs a build without Firebase settings (no accounts), served on port 8004:
 `NEXT_PUBLIC_FIREBASE_API_KEY= NEXT_PUBLIC_FIREBASE_DATABASE_URL= NEXT_PUBLIC_BASE_PATH= npm run build`.
 Each test prints what it checked and ends with `ERRORS: NONE` when the page logged no errors.
+
+Tests 6 and 7 require both online (8003) and offline (8004) builds. Test 7 asserts
+geometry, focus retention, encrypted long-passcode round trips and changes, overlay
+swipes, and text contrast for every palette pair. Test 6 refreshes bubble geometry
+after reply dismissal because the reply bar changes the available message area.
+Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.

@@ -73,6 +73,13 @@ export function NavStack() {
   useLayoutEffect(() => {
     const st = ref.current; if (!st) return;
     const ins = entries.filter(e => e.phase === 'in');
+    // One entrance budget per screen, including nested cells: never animate a group and its children.
+    st.querySelectorAll<HTMLElement>('.view.enter:not([data-motion-budget])').forEach(view => {
+      view.dataset.motionBudget = 'true';
+      Array.from(view.querySelectorAll<HTMLElement>('.hub-card, .task, .cell, .hub-done')).slice(0, 6).forEach((item, i) => {
+        item.classList.add('entrance-item'); item.style.setProperty('--entrance-delay', `${i * 35}ms`);
+      });
+    });
     if (ins.length) {
       void st.offsetWidth;
       NavFx.lastAction = 'push';

@@ -108,7 +108,9 @@ async def main():
         await drag(r['x'], r['y'], r['x'] + 70, r['y'] + 28, steps=6); await A.wait_for_timeout(700)  # 22° off horizontal
         print('angled reply', await q("!!document.querySelector('.cb-reply:not([hidden])')"))
         await A.click('.rb-x'); await A.wait_for_timeout(500)
+        r = await q("(() => { const b = [...document.querySelectorAll('.msg-row[data-id] .bub')].pop().getBoundingClientRect(); return { x: b.left + 20, y: b.top + b.height / 2 }; })()")
         await drag(r['x'], r['y'], r['x'] + 36, r['y'] + 4, steps=3, ms=10); await A.wait_for_timeout(700)  # short quick flick
+        assert await q("!!document.querySelector('.cb-reply:not([hidden])')"), 'Short angled reply flick must catch'
         print('flick reply', await q("!!document.querySelector('.cb-reply:not([hidden])')"))
         await A.click('.rb-x'); await A.wait_for_timeout(500)
         await drag(r['x'], r['y'], r['x'] + 8, r['y'] + 90, steps=6); await A.wait_for_timeout(700)  # scrolling: no reply

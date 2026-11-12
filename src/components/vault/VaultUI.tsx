@@ -2,6 +2,7 @@
 /* Twodo · locking secret lists: a passcode keypad (no keyboard needed), Face ID, and the lock screen a secret list
    shows while it's locked. The cryptography lives in lib/vault.ts. */
 import { useEffect, useRef, useState } from 'react';
+import { useTapKeep } from '@/hooks/useTapKeep';
 import { blip, haptic } from '@/lib/feedback';
 import { renderNow } from '@/lib/render';
 import { D } from '@/lib/store';
@@ -40,6 +41,10 @@ function Pad({ mode, then }: { mode: Mode; then?: () => void }) {
   const [pin, setPin] = useState(''), [msg, setMsg] = useState(''), [busy, setBusy] = useState(false), [shake, setShake] = useState(0);
   const [wait, setWait] = useState(() => Vault.waitLeft()), [bio, setBio] = useState(false);
   const first = useRef('');
+  const [long, setLong] = useState(false);
+  const field = useRef<HTMLInputElement>(null), go = useRef<HTMLButtonElement>(null);
+  // No metadata or crypto changes: either kind is passed unchanged to the same vault KDF.
+  const valid = step === 'current' ? pin.length > 0 : pin.length >= 8 && /^[A-Za-z0-9]+$/.test(pin) && /[A-Za-z]/.test(pin) && /[0-9]/.test(pin);
   useEffect(() => { if (!wait) return; const t = setInterval(() => setWait(Vault.waitLeft()), 500); return () => clearInterval(t); }, [wait]);
   useEffect(() => { if (step === 'bio') return; void Vault.bioAvailable().then(setBio); }, [step]);
 
@@ -78,15 +83,16 @@ function Pad({ mode, then }: { mode: Mode; then?: () => void }) {
     haptic('light');
     setMsg('');
     const p = (pin + d).slice(0, PIN_LEN); setPin(p);
-    if (p.length === PIN_LEN) setTimeout(() => void submit(p), 120); // let the last dot fill first
+    if (p.length === PIN_LEN) { setBusy(true); setTimeout(() => void submit(p), 120); } // let the last dot fill first
   };
   const back = () => { if (!busy && pin) { setPin(pin.slice(0, -1)); haptic('light'); } };
+  useTapKeep(go, () => { if (long && valid && !busy && !wait) void submit(pin); }, field);
   // a hardware keyboard works too
   const keyRef = useRef(key), backRef = useRef(back); keyRef.current = key; backRef.current = back;
   useEffect(() => {
-    const kd = (e: KeyboardEvent) => { if (/^[0-9]$/.test(e.key)) { e.preventDefault(); keyRef.current(e.key); } else if (e.key === 'Backspace') { e.preventDefault(); backRef.current(); } };
+    const kd = (e: KeyboardEvent) => { if ((e.target as HTMLElement)?.closest('input, textarea') || long || step === 'bio') return; if (/^[0-9]$/.test(e.key)) { e.preventDefault(); keyRef.current(e.key); } else if (e.key === 'Backspace') { e.preventDefault(); backRef.current(); } };
     addEventListener('keydown', kd); return () => removeEventListener('keydown', kd);
-  }, []);
+  }, [long, step]);
 
   if (step === 'bio') return (
     <div className="vault-pad">
@@ -102,20 +108,30 @@ function Pad({ mode, then }: { mode: Mode; then?: () => void }) {
   );
   const title = step === 'current' ? (mode === 'change' ? 'Enter your current passcode' : 'Enter passcode')
     : step === 'new' ? (mode === 'change' ? 'Choose a new passcode' : 'Create a passcode') : 'Enter it once more';
-  const sub = wait ? `Too many tries. Try again in ${secs(wait)}.` : msg || (step === 'new' ? `${PIN_LEN} digits. If you forget it, secret lists can’t be recovered.` : busy ? 'Checking…' : ' ');
+  const sub = wait ? `Too many tries. Try again in ${secs(wait)}.` : msg || (step === 'new' ? (long ? '8–128 letters and numbers, including at least one of each.' : `${PIN_LEN} digits. If you forget it, secret lists can’t be recovered.`) : busy ? 'Checking…' : ' ');
   return (
     <div className="vault-pad">
       <div className="vault-ic"><Icon name={step === 'current' ? 'lock' : 'shield'} /></div>
       <h3 className="vault-h">{title}</h3>
-      <div key={shake} className={`pin-dots${shake ? ' shake' : ''}${busy ? ' busy' : ''}`} aria-label={`${pin.length} of ${PIN_LEN} digits entered`}>
-        {Array.from({ length: PIN_LEN }, (_, i) => <i key={i} className={i < pin.length ? 'on' : ''} />)}</div>
+      {long ? <label className="vault-password">Passcode
+        <input ref={field} type="password" value={pin} minLength={step === 'current' ? 1 : 8} maxLength={128}
+          autoComplete={step === 'current' ? 'current-password' : 'new-password'} autoCapitalize="none" spellCheck={false}
+          disabled={busy || !!wait} onChange={e => { setPin(e.target.value); setMsg(''); }}
+          onKeyDown={e => { if (e.key === 'Enter' && valid && !busy && !wait) { e.preventDefault(); void submit(pin); } }} />
+      </label> : <div key={shake} className={`pin-dots${shake ? ' shake' : ''}${busy ? ' busy' : ''}`} aria-label={`${pin.length} of ${PIN_LEN} digits entered`}>
+        {Array.from({ length: PIN_LEN }, (_, i) => <i key={i} className={i < pin.length ? 'on' : ''} />)}</div>}
       <p className={`vault-p${msg || wait ? ' warn' : ''}`} role="status">{sub}</p>
-      <div className="keypad" role="group" aria-label="Passcode keypad">
-        {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => <button key={d} type="button" disabled={!!wait} onClick={() => key(d)}>{d}</button>)}
+      <button hidden={!long} ref={go} className="btn" type="button" disabled={!valid || busy || !!wait}>{busy ? 'Checking…' : 'Continue'}</button>
+      {!long ? <div className="keypad" role="group" aria-label="Passcode keypad">
+        {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => <button key={d} type="button" disabled={busy || !!wait} onClick={() => key(d)}>{d}</button>)}
         {mode === 'unlock' && Vault.hasBio() ? <button type="button" className="kp-fn" aria-label="Unlock with Face ID" onClick={() => void unlockWithBio().then(ok => { if (ok) { closeSheet(); then?.(); } })}><Icon name="faceid" /></button> : <span />}
-        <button type="button" disabled={!!wait} onClick={() => key('0')}>0</button>
+        <button type="button" disabled={busy || !!wait} onClick={() => key('0')}>0</button>
         <button type="button" className="kp-fn" aria-label="Delete" onClick={back}><Icon name="backspace" /></button>
-      </div>
+      </div> : null}
+      {step !== 'confirm' ? <button className="link-btn vault-code-kind" type="button" disabled={busy || !!wait} onClick={() => { setLong(!long); setPin(''); setMsg(''); }}>
+        {long ? 'Use 6 digits' : 'Use letters and numbers'}
+      </button> : null}
+      {mode === 'unlock' && long && Vault.hasBio() ? <button className="link-btn" type="button" onClick={() => void unlockWithBio().then(ok => { if (ok) { closeSheet(); then?.(); } })}>Unlock with Face ID</button> : null}
       {mode === 'unlock' ? <button className="link-btn vault-forgot" type="button" onClick={() => void forgot()}>Forgot passcode?</button> : null}
     </div>
   );
