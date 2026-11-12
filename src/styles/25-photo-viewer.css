@@ -1,17 +1,17 @@
 /* ===================== Photo viewer ===================== */
-.pv { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; touch-action: none; }
-.pv-bg { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 62%, transparent); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); opacity: 0; transition: opacity .35s; }
+.pv { position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; place-items: center; touch-action: none; }
+.pv-bg { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 62%, transparent); -webkit-backdrop-filter: blur(28px) saturate(150%); backdrop-filter: blur(28px) saturate(150%); opacity: 0; transition: opacity var(--dur-page); }
 .pv.on .pv-bg { opacity: 1; }
 .pv-main { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 20px; }
 .pv-img { width: min(74vw, 340px, 58vh); aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 30px 70px -20px rgba(0,0,0,.45); will-change: transform; }
 .pv-img .av { display: block; width: 100%; height: 100%; border-radius: 50%; font-size: min(30vw, 140px); line-height: min(74vw, 340px, 58vh); text-align: center; }
-.pv-name { font: 700 24px/1.2 var(--round); color: var(--label); opacity: 0; transform: translateY(8px); transition: opacity .35s .1s, transform .45s .1s var(--spring); }
-.pv-acts { display: flex; gap: 10px; opacity: 0; transform: translateY(8px); transition: opacity .35s .15s, transform .45s .15s var(--spring); }
+.pv-name { font: 700 24px/1.2 var(--round); color: var(--label); opacity: 0; transform: translateY(8px); transition: opacity var(--dur-page) .1s, transform var(--dur-page) .1s var(--ease-ios); }
+.pv-acts { display: flex; gap: 10px; opacity: 0; transform: translateY(8px); transition: opacity var(--dur-page) .15s, transform var(--dur-page) .15s var(--ease-ios); }
 .pv.on .pv-name, .pv.on .pv-acts { opacity: 1; transform: none; }
 .pv-b { display: flex; align-items: center; gap: 7px; border: 0; border-radius: 22px; padding: 11px 18px; font-size: 15px; font-weight: 600; color: var(--label);
   background: color-mix(in srgb, var(--bg2) 85%, transparent); box-shadow: 0 0 0 .5px var(--sep), 0 6px 18px rgba(0,0,0,.08); }
 .pv-b .i { width: 18px; height: 18px; }
 .pv-b.red { color: var(--c-red); }
 .pv-x { position: absolute; top: calc(var(--safe-top) + 12px); right: calc(14px + var(--safe-right)); width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center;
-  background: color-mix(in srgb, var(--label) 8%, transparent); color: var(--label); opacity: 0; transition: opacity .3s; }
+  background: color-mix(in srgb, var(--label) 8%, transparent); color: var(--label); opacity: 0; transition: opacity var(--dur-standard); }
 .pv.on .pv-x { opacity: 1; }

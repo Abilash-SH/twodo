@@ -8,7 +8,7 @@ import { EMOJIS, PALETTE, type Color } from '@/lib/util';
 import { confirmDialog } from '@/ui/alert';
 import { island } from '@/ui/island';
 import { openList, popView, topSpec } from '@/ui/nav';
-import { closeSheet, openSheet } from '@/ui/sheet';
+import { closeSheet, focusWhenOpen, openSheet } from '@/ui/sheet';
 import { Vault } from '@/lib/vault';
 import { openVault } from '../vault/VaultUI';
 import { colorVar, Sq } from '../ui/Avatar';
@@ -20,7 +20,7 @@ function ListEditor({ id }: { id: string | null }) {
   const ex = id ? D.lists[id] : null;
   const [st, setSt] = useState<St>({ name: ex ? ex.name : '', emoji: ex ? ex.emoji : '📝', color: ex ? ex.color : 'blue', priv: !!(ex && ex.private) });
   const nameRef = useRef<HTMLInputElement>(null), bigRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (ex) return; const t = setTimeout(() => nameRef.current?.focus(), 380); return () => clearTimeout(t); }, [ex]);
+  useEffect(() => { if (!ex) focusWhenOpen(nameRef.current); }, [ex]);
   const save = () => {
     const name = (nameRef.current?.value || '').trim().slice(0, 40);
     if (!name) { nameRef.current?.focus(); haptic('warn'); return; }

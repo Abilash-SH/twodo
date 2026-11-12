@@ -3,6 +3,7 @@ import { blip, confetti, haptic } from '@/lib/feedback';
 import { renderNow, scheduleRender } from '@/lib/render';
 import { D, L, SMART, commit, fmtDate, fmtDue, liveTasks, listOf, makeTask, nextDue, snapshot, sortTasks, updateTask } from '@/lib/store';
 import type { Task } from '@/lib/types';
+import { MS } from '@/lib/motion';
 import { addDays, copyText, reducedMotion, todayStr, uid, ymd } from '@/lib/util';
 import { island } from './island';
 import { specKey, topSpec, viewPrefs } from './nav';
@@ -14,13 +15,14 @@ export const Leaving = new Set<string>(); // rows collapsing away
 
 const rowsFor = (id: string) => Array.from(document.querySelectorAll<HTMLElement>(`#stack .task[data-id="${CSS.escape(id)}"]`));
 function pop(id: string) { Popping.add(id); setTimeout(() => { Popping.delete(id); scheduleRender(); }, 500); }
-function collapseRows(id: string, cb: () => void) {
+// the row fades out where it is; once it's gone the rows below slide up into its place (hooks/useFlip.ts)
+export function leaveThen(id: string, cb: () => void) {
   const rows = rowsFor(id);
   if (!rows.length || reducedMotion.matches) return cb();
-  rows.forEach(r => { r.style.height = r.offsetHeight + 'px'; void r.offsetHeight; });
   Leaving.add(id); renderNow();
-  setTimeout(() => { Leaving.delete(id); cb(); }, 360);
+  setTimeout(() => { Leaving.delete(id); cb(); }, MS.quick + 60);
 }
+const collapseRows = leaveThen;
 const viewShowsDone = () => { const s = topSpec(); return s.type !== 'home' && !!viewPrefs(specKey(s)).showDone; };
 
 export function toggleDone(id: string, { instant = false } = {}): void {

@@ -48,7 +48,7 @@ async def main():
         await A.keyboard.press('Escape'); await A.wait_for_timeout(800); await A.keyboard.press('Escape'); await A.wait_for_timeout(800)
         # sign out → sign-in gate → sign back in
         await A.click('.fab-btn[aria-label=Settings]'); await A.wait_for_timeout(800)
-        await A.click('.sheet.open .cell.red:has-text("Sign out")'); await A.wait_for_timeout(500)
+        await A.click('.sheet.open .group.danger .cell:has-text("Sign out")'); await A.wait_for_timeout(500)
         await A.click('.alert button[data-r="1"]'); await A.wait_for_timeout(1500)
         print('gate', await q("[!!document.getElementById('ob'), (document.querySelector('#ob h1')||{}).textContent, (document.querySelector('#gEmail')||{}).value]"))
         await A.fill('#gPass', 'wrong password'); await A.click('[data-p="signin"] [data-submit]'); await A.wait_for_timeout(3500)

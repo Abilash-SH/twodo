@@ -1,8 +1,16 @@
 /* iOS has no keyboard events. Measure VisualViewport on focus/resize/scroll, coalesced once per frame.
    Never predict a saved height, animate layout, or hide the app to force a reflow. */
 import { useEffect } from 'react';
-import { isIOS, standalone } from '@/lib/util';
+import { isIOS, reducedMotion, standalone } from '@/lib/util';
 
+// a field inside a sheet or a page scrolls itself into view above the keyboard (only that list scrolls, never the page)
+function revealField() {
+  const el = document.activeElement as HTMLElement | null;
+  if (!el || !isField(el) || el.closest('#composer, .chatbar')) return;
+  const sc = el.closest<HTMLElement>('.sheet-body, .view'); if (!sc) return;
+  const r = el.getBoundingClientRect(), b = sc.getBoundingClientRect(), pad = 16;
+  if (r.bottom > b.bottom - pad) sc.scrollBy({ top: r.bottom - b.bottom + pad, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+}
 const isField = (el: Element | null): boolean => !!el?.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=button]):not([type=submit]):not([type=color]), textarea, select, [contenteditable="true"]');
 
 export function useKeyboard(): void {
@@ -22,6 +30,7 @@ export function useKeyboard(): void {
       // Clearing at the detection threshold would expand standalone CSS for the final 80 px of keyboard travel.
       const covered = layoutHeight - height - top > (wasCovered ? 4 : 80);
       document.body.classList.toggle('kb', covered);
+      if (covered && !wasCovered) setTimeout(revealField, 60);
       const root = document.documentElement.style;
       root.setProperty('--vvh', `${height}px`);
       root.setProperty('--vvt', `${top}px`);

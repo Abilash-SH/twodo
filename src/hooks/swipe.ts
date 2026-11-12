@@ -2,6 +2,7 @@
    sideways swipe away from us halfway through to start scrolling, so swipes start at the first few pixels and
    feel as quick as a native app. A mouse still uses pointer events where it matters. */
 import { useEffect, useRef } from 'react';
+import { EASE, MS } from '@/lib/motion';
 import { reducedMotion } from '@/lib/util';
 
 // places where a sideways drag belongs to the control itself, not to "go back / close"
@@ -85,14 +86,15 @@ export function useSwipeAway(ref: React.RefObject<HTMLElement | null>, opts: Swi
       const G = S; stop(); if (!G || !G.axis) return;
       const { vx, vy } = G.v.get(), size = G.axis === 'x' ? el.offsetWidth : el.offsetHeight;
       const go = !cancel && flung(G.d, G.axis === 'x' ? vx : vy, size);
+      const v = Math.abs(G.axis === 'x' ? vx : vy), ms = Math.round(Math.max(140, Math.min(MS.page, (size + 40 - G.d) / Math.max(v, 0.6))));
       settling = true;
-      el.style.transition = reducedMotion.matches ? 'none' : go ? 'transform .26s cubic-bezier(.2,.8,.2,1)' : 'transform .42s cubic-bezier(.34,1.4,.64,1)';
+      el.style.transition = reducedMotion.matches ? 'none' : go ? `transform ${ms}ms ${EASE.out}` : `transform ${MS.page}ms ${EASE.spring}`;
       if (go) {
         set(size + 40, G.axis);
-        later(() => { o.current.onClose(); later(() => { el.style.transition = ''; el.style.transform = ''; settling = false; }, 430); }, reducedMotion.matches ? 0 : 260);
+        later(() => { o.current.onClose(); later(() => { el.style.transition = ''; el.style.transform = ''; settling = false; }, MS.page + 10); }, reducedMotion.matches ? 0 : ms);
       } else {
         el.style.transform = ''; o.current.onProgress?.(0);
-        later(() => { el.style.transition = ''; settling = false; }, reducedMotion.matches ? 0 : 430);
+        later(() => { el.style.transition = ''; settling = false; }, reducedMotion.matches ? 0 : MS.page + 10);
       }
     };
     const touchEnd = (e: TouchEvent) => { if (S && touchById(e, S.id)) end(e.type === 'touchcancel'); };

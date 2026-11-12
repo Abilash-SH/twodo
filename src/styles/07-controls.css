@@ -5,23 +5,23 @@
 }
 .seg button {
   position: relative; z-index: 1; border: 0; background: none; font-size: 13px; font-weight: 500; padding: 0 6px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: font-weight .2s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: none;
 }
 .seg button.on { font-weight: 600; }
 .seg .thumb {
   position: absolute; top: 2px; bottom: 2px; left: 2px; width: calc((100% - 4px) / var(--n));
   transform: translateX(calc(100% * var(--i))); background: var(--thumb); border-radius: 7px;
-  box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 3px 1px rgba(0,0,0,.04); transition: transform .4s var(--spring);
+  box-shadow: 0 3px 8px rgba(0,0,0,.12), 0 3px 1px rgba(0,0,0,.04); transition: transform var(--dur-page) var(--ease-ios);
 }
 .view .seg.who { margin: 0 16px 16px; }
 
 .switch {
   -webkit-appearance: none; appearance: none; width: 51px; height: 31px; border-radius: 31px; margin: 0; flex: none;
-  background: var(--fill2); position: relative; transition: background-color .25s; cursor: pointer;
+  background: var(--fill2); position: relative; transition: background-color var(--dur-standard); cursor: pointer;
 }
 .switch::after {
   content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff;
-  box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform .35s var(--spring);
+  box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 3px 1px rgba(0,0,0,.06); transition: transform var(--dur-page) var(--ease-ios);
 }
 .switch:checked { background: var(--c-green); }
 .switch:checked::after { transform: translateX(20px); }
@@ -29,7 +29,7 @@
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 14px;
   height: 50px; padding: 0 22px; font-size: 17px; font-weight: 600; background: var(--accent); color: #fff;
-  transition: transform .25s var(--spring), opacity .2s; width: 100%;
+  transition: transform var(--dur-standard) var(--ease-ios), opacity var(--dur-quick); width: 100%;
 }
 .btn:active { transform: scale(.97); opacity: .85; }
 .btn:disabled { opacity: .35; }

@@ -15,6 +15,7 @@ python3 tests/e2e/test_3_desktop_focus_signout.py
 python3 tests/e2e/test_5_service_worker_responsive.py
 python3 tests/e2e/test_6_secret_gestures_keyboard.py
 python3 tests/e2e/test_7_native_regressions.py
+python3 tests/e2e/test_8_keyboard_layers_motion_settings.py
 node tests/velocity.cjs
 ```
 `test_4_offline_onboarding.py` needs a build without Firebase settings (no accounts), served on port 8004:

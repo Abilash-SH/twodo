@@ -1,6 +1,8 @@
 'use client';
 /* Twodo · a list of tasks: one of your lists, or a smart list (Today, Upcoming, Reminders, Together, Pinned, All, Completed) */
+import { useRef } from 'react';
 import { haptic } from '@/lib/feedback';
+import { useFlip } from '@/hooks/useFlip';
 import { renderNow } from '@/lib/render';
 import { D, L, SMART, fmtDate, liveTasks, listOf, lists, myName, partnerKey, ptName, save, sortTasks, whoMatch, type SmartKey } from '@/lib/store';
 import type { Task } from '@/lib/types';
@@ -75,7 +77,8 @@ const EMPTY: Record<SmartKey, [string, string, string]> = {
 };
 
 export function TaskListView({ spec }: { spec: Spec }) {
-  const key = specKey(spec), vp = viewPrefs(key);
+  const key = specKey(spec), vp = viewPrefs(key), listRef = useRef<HTMLDivElement>(null);
+  useFlip(listRef, key); // rows slide into place when one is added, completed, deleted or moved
   const who = vp.who || 'all', showDone = !!vp.showDone, isDone = spec.key === 'done';
   let color: string, heading: string, sub: React.ReactNode = '', base: Task[], doneSet: Task[] = [];
   if (spec.type === 'list' && vaultBlocks(spec.id)) return <VaultGate />;
@@ -105,7 +108,7 @@ export function TaskListView({ spec }: { spec: Spec }) {
     <div className="subtitle">{sub}</div>
     <Segmented name="who" cls="who" opts={[['all', 'All'], ['me', shortName(myName())], ['partner', shortName(ptName())], ['both', 'Us']]} value={who}
       onChange={v => { viewPrefs(key).who = v; save(); renderNow(); }} />
-    <div className="vlist">
+    <div ref={listRef} className="vlist">
       {empty ? <Empty e={empty[0]} h={empty[1]} p={empty[2]} /> : groups.map((g, i) => <TaskGroup key={g.title + i} g={g} ctx={ctx} />)}
       {!isDone && doneSet.length ? (<>
         <button className="done-toggle" type="button" onClick={() => { vp.showDone = !vp.showDone; save(); renderNow(); haptic('light'); }}><span>{doneSet.length} completed</span><b>{showDone ? 'Hide' : 'Show'}</b></button>

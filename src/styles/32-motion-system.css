@@ -1,0 +1,32 @@
+/* Twodo · one motion system: the --dur-* / --ease-* tokens, only transform and opacity animate,
+   nothing loops in the background, and Reduce Motion turns movement into simple fades. */
+
+/* Sheets rise with a gentle spring and leave a little quicker (a swipe sets its own speed: SheetHost.tsx) */
+.sheet { transition: transform var(--dur-page) var(--ease-ios); }
+.sheet.open { transition: transform var(--dur-sheet) var(--ease-spring); }
+body.sheet-drag .sheet { transition: none; }
+.backdrop { transition: opacity var(--dur-page) var(--ease-ios); }
+
+/* Screens push and pop on the page curve */
+.view { transition: transform var(--dur-page) var(--ease-ios); }
+.shade { transition: opacity var(--dur-page) var(--ease-ios); }
+
+
+/* Reply bar, reactions and highlights: transform + opacity only */
+.cb-reply.in { animation: rbIn var(--dur-page) var(--ease-spring); }
+.cb-reply.out { animation: rbOut var(--dur-quick) ease-in forwards; }
+.bwrap.hl .bub, .bwrap.hl .tcard { animation: hlPulse 900ms var(--ease-out); }
+@keyframes hlPulse { 0% { transform: scale(1); } 22% { transform: scale(1.045); } 44% { transform: scale(.99); } 66% { transform: scale(1.02); } 100% { transform: none; } }
+.d-press .d-row { animation-name: dPressT; }
+@keyframes dPressT { 0%, 14% { transform: none; } 30%, 80% { transform: scale(1.04); } 92%, 100% { transform: none; } }
+
+/* ---------- Reduce Motion: movement becomes simple fades ----------
+   (31-native-surfaces.css turns every animation and transition off; screens, sheets and rows fade instead) */
+@media (prefers-reduced-motion: reduce) {
+  .view.offright, .view.under { transform: none; }
+  .view.offright { opacity: 0; }
+  .sheet, .sheet.open { transform: none; }
+  .sheet:not(.open) { opacity: 0; }
+  .isl, .isl.on, .task.leaving, .pills { transform: none; }
+  :is(.view, .shade, .sheet, .backdrop, .isl, .task.leaving, .alert-wrap, .mbg) { transition-property: opacity !important; transition-duration: var(--dur-standard) !important; transition-timing-function: ease !important; }
+}

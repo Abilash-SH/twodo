@@ -1,5 +1,5 @@
 /* ---------- Misc ---------- */
-#confetti { position: fixed; inset: 0; z-index: 290; pointer-events: none; }
+#confetti { position: fixed; inset: 0; z-index: var(--z-fx); pointer-events: none; }
 .hl-row { animation: flash 1.4s ease; }
 
 @media (prefers-reduced-motion: reduce) {

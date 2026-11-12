@@ -8,20 +8,20 @@
 .c-typing { max-width: 820px; margin: 0 auto; }
 .chatview.nopair .chatbar, .chatview.nopair .c-typing { display: none; }
 
-.chat-nav { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: grid; grid-template-columns: 44px 1fr 44px; align-items: start; justify-items: center;
+.chat-nav { position: absolute; top: 0; left: 0; right: 0; z-index: var(--z-header); display: grid; grid-template-columns: 44px 1fr 44px; align-items: start; justify-items: center;
   padding: calc(var(--safe-top) + 6px) calc(12px + var(--safe-right)) 8px calc(12px + var(--safe-left));
   pointer-events: none; }
 .chat-nav > * { pointer-events: auto; position: relative; }
 /* no box: a soft glass wash that fades out under the header, so the messages slide away gently */
 .chat-nav::before { content: ""; position: absolute; inset: 0 0 -26px; z-index: 0; pointer-events: none; background: color-mix(in srgb, var(--bg) 55%, transparent);
   -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%);
-  -webkit-mask-image: linear-gradient(#000 68%, transparent); mask-image: linear-gradient(#000 68%, transparent); opacity: 0; transition: opacity .3s; }
+  -webkit-mask-image: linear-gradient(#000 68%, transparent); mask-image: linear-gradient(#000 68%, transparent); opacity: 0; transition: opacity var(--dur-standard); }
 .chat-nav.scrolled::before { opacity: 1; }
 
 /* the two small floating buttons: Settings (left), To-dos & reminders (right) */
 .fab-btn { position: relative; width: 38px; height: 38px; margin-top: -2px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--label);
   background: color-mix(in srgb, var(--bg2) 72%, transparent); box-shadow: 0 0 0 .5px color-mix(in srgb, var(--label) 9%, transparent), 0 4px 14px -6px rgba(0,0,0,.18);
-  transition: transform .25s var(--bounce), background-color .2s; }
+  transition: transform var(--dur-standard) var(--ease-bounce), background-color var(--dur-quick); }
 .fab-btn:active { transform: scale(.88); }
 .fab-btn .i { width: 19px; height: 19px; stroke-width: 1.9; }
 .fab-dot { position: absolute; top: 1px; right: 1px; width: 9px; height: 9px; border-radius: 50%; background: var(--me-c); box-shadow: 0 0 0 2px var(--bg); }
@@ -31,7 +31,7 @@
 /* who you're talking to: the name leads; your two photos and the little heart sit above it */
 .ch-who { display: flex; flex-direction: column; align-items: center; min-width: 0; max-width: 100%; }
 .lovebar { display: flex; align-items: center; justify-content: center; gap: 1px; }
-.lb-av { position: relative; flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: none; transition: transform .3s var(--bounce); }
+.lb-av { position: relative; flex: none; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: none; transition: transform var(--dur-standard) var(--ease-bounce); }
 .lb-av:active { transform: scale(.9); }
 .lb-av .av { display: block; width: 34px; height: 34px; line-height: 34px; font-size: 15px; }
 .lb-av.pt .av { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px color-mix(in srgb, var(--pt-c) 70%, transparent); }
@@ -41,7 +41,7 @@
 .lb-ghost .i { width: 17px; height: 17px; }
 .lb-link { position: relative; width: 42px; height: 22px; display: grid; place-items: center; cursor: pointer; }
 .lb-link svg:first-child { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.lb-line { fill: none; stroke: url(#lbLine); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: .1 6; opacity: .5; transition: opacity .4s; }
+.lb-line { fill: none; stroke: url(#lbLine); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: .1 6; opacity: .5; transition: opacity var(--dur-page); }
 .nopair .lb-line { stroke: color-mix(in srgb, var(--label) 25%, transparent); }
 .lb-s1 { stop-color: var(--pt-c); } .lb-s2 { stop-color: var(--me-c); }
 .lovebar.live .lb-line { opacity: .9; animation: lbFlow 1.8s linear infinite; }
@@ -55,7 +55,7 @@
 .ch-pill::before { content: ""; position: absolute; left: 50%; top: -4px; width: 11px; height: 11px; margin-left: -5.5px; border-radius: 3px 0 0 0; transform: rotate(45deg); background: inherit; box-shadow: -.5px -.5px 0 color-mix(in srgb, var(--pt-c) 22%, transparent); }
 @keyframes pillIn { from { opacity: 0; transform: translateY(-6px) scale(.9); } }
 .lb-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 650 16px/20px var(--round); letter-spacing: .1px; color: var(--label); }
-.c-sub { display: flex; align-items: center; justify-content: center; gap: 5px; height: 15px; font-size: 11.5px; line-height: 15px; color: var(--label2); white-space: nowrap; transition: color .2s; }
+.c-sub { display: flex; align-items: center; justify-content: center; gap: 5px; height: 15px; font-size: 11.5px; line-height: 15px; color: var(--label2); white-space: nowrap; transition: color var(--dur-quick); }
 .c-sub:empty { height: 0; }
 .c-sub.online::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c-green); animation: liveDot 2s ease-out infinite; }
 @keyframes liveDot { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-green) 55%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }

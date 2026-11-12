@@ -4,6 +4,7 @@ import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 're
 import { Chat, REACTS, type Msg, type TaskRef } from '@/lib/chat';
 import { haptic } from '@/lib/feedback';
 import { Ink, playBubbleFx } from '@/lib/fx';
+import { EASE, MS, calm } from '@/lib/motion';
 import { renderNow } from '@/lib/render';
 import { D, L, SMART, fmtDue, liveTasks, makeTask, partnerKey, person, ptName, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
@@ -332,8 +333,8 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       const { vx } = G.v.get(), last = G.dx + G.x0 - G.sx; // how far the finger really travelled
       const go = fire && (G.hit || (last > 24 && vx > 0.3)); // reached the arrow, or flicked toward it
       const row = G.row, hint = G.hint;
-      row.style.transition = reducedMotion.matches ? 'none' : 'transform .42s cubic-bezier(.34,1.56,.64,1)'; row.style.transform = '';
-      setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, 440);
+      row.style.transition = reducedMotion.matches ? 'none' : `transform ${MS.page}ms ${EASE.bounce}`; row.style.transform = '';
+      setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, MS.page + 20);
       if (go) { if (!G.hit) haptic('medium'); ChatCtl.setReply(G.m, false); }
     };
     // touch
@@ -400,7 +401,16 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
     const r1 = new ResizeObserver(() => { if (ChatCtl.pinned) b.scrollTop = b.scrollHeight; });
     // the conversation starts right under the header, and ends above the message box, whatever their height
     const r2 = new ResizeObserver(() => ref.current?.style.setProperty('--head-full', h.offsetHeight + 'px'));
-    const r3 = new ResizeObserver(() => { ref.current?.style.setProperty('--bar-h', cb.offsetHeight + 'px'); if (ChatCtl.pinned) b.scrollTop = b.scrollHeight; });
+    let barH = cb.offsetHeight;
+    const r3 = new ResizeObserver(() => {
+      const h = cb.offsetHeight, d = h - barH; barH = h;
+      ref.current?.style.setProperty('--bar-h', h + 'px');
+      if (!ChatCtl.pinned) return;
+      b.scrollTop = b.scrollHeight;
+      // the reply bar opening/closing (not the keyboard, which glides on its own): messages slide instead of jumping
+      if (Math.abs(d) > 2 && Math.abs(d) < 160 && !calm())
+        for (const el of [list.current, b.querySelector<HTMLElement>('.c-typing')]) el?.animate([{ transform: `translate3d(0,${d}px,0)` }, { transform: 'translate3d(0,0,0)' }], { duration: MS.standard, easing: EASE.out, composite: 'add' });
+    });
     r1.observe(b); r2.observe(h); r3.observe(cb);
     return () => { r1.disconnect(); r2.disconnect(); r3.disconnect(); };
   }, []);

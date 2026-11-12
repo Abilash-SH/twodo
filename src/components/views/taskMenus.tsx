@@ -7,8 +7,8 @@ import type { Task } from '@/lib/types';
 import { confirmDialog } from '@/ui/alert';
 import { island } from '@/ui/island';
 import { setMenuContent, showMenu } from '@/ui/menu';
-import { specKey, viewPrefs, type Spec } from '@/ui/nav';
-import { deleteTask, duplicateTask, quickDue, shareList, toggleDone, togglePin } from '@/ui/tasks';
+import { specKey, topSpec, viewPrefs, type Spec } from '@/ui/nav';
+import { deleteTask, duplicateTask, leaveThen, quickDue, shareList, toggleDone, togglePin } from '@/ui/tasks';
 import { openFocus } from '../overlays/FocusOverlay';
 import { openListSheet } from '../sheets/ListSheet';
 import { Avatar } from '../ui/Avatar';
@@ -61,7 +61,10 @@ export function openTaskMenu(row: HTMLElement): void {
         case 'back': setMenuContent(<TaskMenu t={D.tasks[id]} />); return 'keep';
         case 'moveto': {
           const l = D.lists[v!]; if (!l) return;
-          updateTask(id, { listId: l.id });
+          // leaving this list: the row fades out and the others close the gap; in any other view it just updates
+          const s = topSpec(), gone = s.type === 'list' && s.id !== l.id;
+          if (gone) setTimeout(() => leaveThen(id, () => updateTask(id, { listId: l.id })), 260); // after the menu closes
+          else updateTask(id, { listId: l.id });
           island({ e: l.emoji, text: `Moved to ${l.name}`, sub: l.private ? 'Secret · not synced' : '', ms: 1600 });
           return;
         }

@@ -1,10 +1,10 @@
 /* ---------- Alert ---------- */
-.alert-wrap { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center; background: rgba(0,0,0,.3); opacity: 0; transition: opacity .25s; }
+.alert-wrap { position: fixed; inset: 0; z-index: var(--z-alert); display: grid; place-items: center; background: rgba(0,0,0,.3); opacity: 0; transition: opacity var(--dur-standard); }
 .alert-wrap.on { opacity: 1; }
 .alert {
   width: 270px; border-radius: 14px; overflow: hidden; text-align: center; background: var(--menu);
   -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
-  transform: scale(1.15); transition: transform .4s var(--spring);
+  transform: scale(1.15); transition: transform var(--dur-page) var(--ease-ios);
 }
 .alert-wrap.on .alert { transform: scale(1); }
 .alert h4 { margin: 18px 16px 2px; font-size: 17px; }
