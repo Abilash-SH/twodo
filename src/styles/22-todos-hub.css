@@ -2,7 +2,7 @@
 .hub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 2px 16px 12px; }
 .hub-card { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; gap: 10px 8px; padding: 12px 14px 11px; border: 0; border-radius: 20px;
   text-align: left; color: var(--label); background: color-mix(in srgb, var(--c) 9%, var(--bg2)); box-shadow: 0 0 0 .5px color-mix(in srgb, var(--c) 14%, transparent);
-  transition: transform .25s var(--bounce), background-color .2s; }
+  transition: transform var(--dur-standard) var(--ease-bounce), background-color var(--dur-quick); }
 [data-theme="dark"] .hub-card { background: color-mix(in srgb, var(--c) 15%, var(--bg2)); }
 .hub-card:active { transform: scale(.96); }
 .hub-ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--c); }

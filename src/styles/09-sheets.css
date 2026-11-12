@@ -1,13 +1,13 @@
 /* ---------- Sheets ---------- */
-#layer { position: fixed; left: 0; right: 0; top: var(--vvt, 0px); height: var(--vvh, 100%); z-index: 100; pointer-events: none; }
-.backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.32); opacity: 0; transition: opacity .5s var(--spring); pointer-events: auto; }
+#layer { position: fixed; left: 0; right: 0; top: var(--vvt, 0px); height: var(--vvh, 100%); z-index: var(--z-sheet); pointer-events: none; }
+.backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.32); opacity: 0; transition: opacity var(--dur-page) var(--ease-ios); pointer-events: auto; }
 .backdrop.on { opacity: calc(var(--sp, 1)); }
 body.sheet-drag .backdrop { transition: none; }
 .sheet {
   position: absolute; left: 0; right: 0; bottom: 0; margin: 0 auto; max-width: 640px;
   max-height: calc(var(--vvh, 100vh) - var(--safe-top) - 12px);
   background: var(--sheet); border-radius: 14px 14px 0 0; display: flex; flex-direction: column;
-  transform: translateY(105%); transition: transform .55s var(--spring); pointer-events: auto;
+  transform: translateY(105%); transition: transform var(--dur-sheet) var(--ease-ios); pointer-events: auto;
   box-shadow: 0 -8px 40px rgba(0,0,0,.18);
 }
 .sheet.tall { height: calc(var(--vvh, 100vh) - var(--safe-top) - 12px); }
@@ -42,13 +42,13 @@ body.sheet-drag .sheet { transition: none; }
 .meta-foot { text-align: center; font-size: 13px; color: var(--label2); padding: 0 24px 10px; line-height: 1.5; }
 
 .picker { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; padding: 12px; }
-.picker button { aspect-ratio: 1; border: 0; border-radius: 50%; background: var(--fill); font-size: 20px; display: grid; place-items: center; transition: transform .25s var(--bounce); padding: 0; }
+.picker button { aspect-ratio: 1; border: 0; border-radius: 50%; background: var(--fill); font-size: 20px; display: grid; place-items: center; transition: transform var(--dur-standard) var(--ease-bounce); padding: 0; }
 .picker button.on { box-shadow: 0 0 0 2.5px var(--cell), 0 0 0 4.5px var(--label3); transform: scale(1.06); }
 .colors { display: grid; grid-template-columns: repeat(6, 1fr); justify-items: center; gap: 12px 6px; padding: 14px 16px; }
-.colors button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--c); padding: 0; transition: transform .3s var(--bounce); }
+.colors button { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--c); padding: 0; transition: transform var(--dur-standard) var(--ease-bounce); }
 .colors button.on { box-shadow: 0 0 0 3px var(--cell), 0 0 0 5px var(--c); transform: scale(1.04); }
 .colors.sm button { width: 28px; height: 28px; }
-.big-ic { width: 84px; height: 84px; border-radius: 50%; margin: 6px auto 16px; display: grid; place-items: center; font-size: 42px; background: color-mix(in srgb, var(--c) 22%, transparent); box-shadow: 0 8px 28px color-mix(in srgb, var(--c) 35%, transparent); transition: background-color .3s; }
+.big-ic { width: 84px; height: 84px; border-radius: 50%; margin: 6px auto 16px; display: grid; place-items: center; font-size: 42px; background: color-mix(in srgb, var(--c) 22%, transparent); box-shadow: 0 8px 28px color-mix(in srgb, var(--c) 35%, transparent); transition: background-color var(--dur-standard); }
 .name-inp { display: block; width: calc(100% - 32px); margin: 0 16px 22px; border: 0; border-radius: 12px; background: var(--cell); text-align: center; font-size: 20px; font-weight: 600; padding: 13px; color: var(--c, var(--label)); }
 
 .couple { display: flex; gap: 12px; margin: 0 16px 22px; }

@@ -2,6 +2,7 @@
 /* Twodo · context menus: a lifted preview with a menu under it, kept fully on screen together (like iOS) */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { haptic } from '@/lib/feedback';
+import { useTapKeepWithin } from '@/hooks/useTapKeep';
 import { clamp } from '@/lib/util';
 import { Menu, closeMenu, menuStore } from '@/ui/menu';
 import { useStore } from '@/ui/store';
@@ -23,7 +24,8 @@ export function MenuHost() {
   const { open, desc, seq } = useStore(menuStore);
   const [show, setShow] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const listRef = useRef<HTMLDivElement>(null), prevRef = useRef<HTMLDivElement>(null), shift = useRef(0);
+  const listRef = useRef<HTMLDivElement>(null), prevRef = useRef<HTMLDivElement>(null), shift = useRef(0), rootRef = useRef<HTMLDivElement>(null);
+  useTapKeepWithin(rootRef); // picking from a menu while typing keeps the keyboard up
 
   useEffect(() => {
     if (open) { setMounted(true); const r = requestAnimationFrame(() => setShow(true)); return () => cancelAnimationFrame(r); }
@@ -36,8 +38,9 @@ export function MenuHost() {
   useLayoutEffect(() => {
     const list = listRef.current; if (!list || !desc || !open) return;
     const rect = desc.rect, prev = prevRef.current, withPreview = !!desc.preview;
-    const vh = window.visualViewport ? visualViewport!.height : innerHeight, vw = innerWidth, ins = safeInsets();
-    const gap = 10, margin = 10, topMin = ins.top + margin, botMax = vh - (document.body.classList.contains('kb') ? 0 : ins.bottom) - margin, room = botMax - topMin;
+    // the part of the screen you can see: above the keyboard, below the status bar (iOS may have scrolled the view)
+    const vv = window.visualViewport, vh = vv ? vv.height : innerHeight, off = vv ? vv.offsetTop : 0, vw = innerWidth, ins = safeInsets();
+    const gap = 10, margin = 10, topMin = off + ins.top + margin, botMax = off + vh - (document.body.classList.contains('kb') ? 0 : ins.bottom) - margin, room = botMax - topMin;
     list.style.maxHeight = 'none';
     let mh = list.offsetHeight; const mw = list.offsetWidth;
     let top: number; shift.current = 0;
@@ -65,9 +68,9 @@ export function MenuHost() {
   }, [desc, open, seq, mounted]);
   useEffect(() => { if (prevRef.current) prevRef.current.style.transform = show ? `translateY(${shift.current}px) scale(1.02)` : ''; }, [show]);
 
-  if (!mounted || !desc) return <div id="menu" />;
+  if (!mounted || !desc) return <div ref={rootRef} id="menu" />;
   return (
-    <div id="menu" className={`on${desc.preview ? '' : ' plain'}${show ? ' show' : ''}`} onClick={e => {
+    <div ref={rootRef} id="menu" className={`on${desc.preview ? '' : ' plain'}${show ? ' show' : ''}`} onClick={e => {
       if (performance.now() < Menu.armAt) return;
       const t = e.target as HTMLElement, b = t.closest<HTMLElement>('[data-m]');
       if (b) {

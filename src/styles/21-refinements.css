@@ -52,7 +52,7 @@ input.name-inp { background: var(--fill); border-radius: 16px; }
   box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5.5px color-mix(in srgb, var(--me-c) 70%, transparent), 0 16px 32px -14px var(--me-c); }
 .me-prof .pc-cam { width: 30px; height: 30px; right: -1px; bottom: -1px; background: var(--me-c); color: var(--me-ink); box-shadow: 0 0 0 3px var(--sheet); }
 .me-prof .pc-cam .i { width: 15px; height: 15px; }
-input.me-name { margin-top: 14px; width: min(100%, 300px); border: 0; background: none; text-align: center; font: 750 24px/1.2 var(--round); color: var(--label); padding: 6px 10px; border-radius: 12px; transition: background-color .2s; }
+input.me-name { margin-top: 14px; width: min(100%, 300px); border: 0; background: none; text-align: center; font: 750 24px/1.2 var(--round); color: var(--label); padding: 6px 10px; border-radius: 12px; transition: background-color var(--dur-quick); }
 input.me-name:focus { background: var(--fill); }
 .me-handle { margin-top: 1px; font-size: 15px; color: var(--label2); }
 .me-colors { display: grid; grid-template-columns: repeat(5, 30px); justify-content: center; gap: 14px 18px; padding: 20px 0 0; }
@@ -61,6 +61,4 @@ input.me-name:focus { background: var(--fill); }
 .me-hint { margin: 12px 0 0; font-size: 13px; color: var(--label2); }
 
 /* the app follows the keyboard as it slides (see main.js → keyboard) */
-/* only the height glides; the top follows iOS's own scroll at once, so the header never slides out of view */
-body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .4s cubic-bezier(.22,.9,.28,1); }
-body.kb-anim #layer { transition: height .4s cubic-bezier(.22,.9,.28,1); }
+/* (the keyboard no longer animates the app's height: see hooks/useKeyboard.ts) */

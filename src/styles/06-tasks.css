@@ -5,16 +5,16 @@
 .sec-h.sub { font-size: 13px; font-weight: 500; text-transform: uppercase; color: var(--label2); padding: 0 32px 6px; letter-spacing: .2px; }
 
 .task { position: relative; background: var(--cell); overflow: hidden; scroll-margin-bottom: calc(var(--composer-h) + 24px); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-.task.enter { animation: enter .55s var(--spring) both; }
+.task.enter { animation: enter var(--dur-page) var(--ease-out) both; }
 @keyframes enter { from { opacity: 0; transform: translateY(16px) scale(.97); } }
-.task.leaving { height: 0 !important; opacity: 0; transition: height .38s var(--spring), opacity .22s; }
+.task.leaving { opacity: 0; transform: scale(.96); pointer-events: none; transition: opacity var(--dur-quick) var(--ease-out), transform var(--dur-standard) var(--ease-out); }
 .task.flash .ti { animation: flash 1.2s ease; }
 @keyframes flash { 20% { background: color-mix(in srgb, var(--accent) 16%, var(--cell)); } }
 
 .ti {
   position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 12px;
   padding: 11px 14px 11px 16px; background: var(--cell); touch-action: pan-y; cursor: default;
-  transition: background-color .15s;
+  transition: background-color var(--dur-quick);
 }
 .ti:active { background: color-mix(in srgb, var(--fill) 60%, var(--cell)); }
 .task.swiping .ti { transition: none; }
@@ -22,7 +22,7 @@
 .tt { font-size: 17px; line-height: 22px; word-break: break-word; }
 .tt > span {
   background: linear-gradient(currentColor, currentColor) 0 58% / 0 1.5px no-repeat;
-  transition: background-size .38s var(--spring), color .3s;
+  transition: color var(--dur-standard);
 }
 .task.checked .tt > span { background-size: 100% 1.5px; color: var(--label2); }
 .prio { font-weight: 700; margin-right: 4px; }
@@ -39,10 +39,10 @@
 .chk {
   position: relative; width: 24px; height: 24px; border-radius: 50%; flex: none; padding: 0; margin-top: -1px;
   border: 1.7px solid var(--label3); background: transparent; display: grid; place-items: center;
-  transition: background-color .25s, border-color .25s, transform .4s var(--bounce);
+  transition: background-color var(--dur-standard), border-color var(--dur-standard), transform var(--dur-page) var(--ease-bounce);
 }
 .chk::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; transform: scale(1); }
-.chk .i { width: 14px; height: 14px; color: #fff; stroke-width: 3.2; opacity: 0; transform: scale(.3); transition: opacity .2s, transform .4s var(--bounce); }
+.chk .i { width: 14px; height: 14px; color: #fff; stroke-width: 3.2; opacity: 0; transform: scale(.3); transition: opacity var(--dur-quick), transform var(--dur-page) var(--ease-bounce); }
 .chk:active { transform: scale(.82); }
 .p1 .chk { border-color: var(--c-blue); } .p2 .chk { border-color: var(--c-orange); } .p3 .chk { border-color: var(--c-red); }
 .task.checked .chk { background: var(--accent); border-color: var(--accent); }
@@ -59,14 +59,14 @@
 }
 .task[data-dir="l"] .act-l { display: none; }
 .task[data-dir="r"] .act-r { display: none; }
-.act-l .i { transition: transform .35s var(--bounce); }
+.act-l .i { transition: transform var(--dur-page) var(--ease-bounce); }
 .task.armed .act-l .i { transform: scale(1.3); }
-.act-r { position: absolute; top: 0; bottom: 0; right: 0; width: var(--sw, 0px); display: flex; overflow: hidden; transition: width .45s var(--spring); }
+.act-r { position: absolute; top: 0; bottom: 0; right: 0; width: var(--sw, 0px); display: flex; overflow: hidden; transition: width var(--dur-page) var(--ease-ios); }
 .task.swiping .act-r { transition: none; }
 .act-r button {
   flex: 1 1 0; min-width: 0; border: 0; color: #fff; font-size: 13px; font-weight: 600; overflow: hidden; white-space: nowrap;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-  transition: flex .3s var(--spring);
+  transition: flex var(--dur-standard) var(--ease-ios);
 }
 .act-r .pinb { background: var(--c-orange); }
 .act-r .delb { background: var(--c-red); }

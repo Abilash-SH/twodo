@@ -1,15 +1,15 @@
 /* ===================== Motion: everything answers your touch ===================== */
-:where(button, [role="button"], .chip, .pill, .hub-card) { transition: scale .32s var(--bounce); }
+:where(button, [role="button"], .chip, .pill, .hub-card) { transition: scale var(--dur-standard) var(--ease-bounce); }
 :where(button:not(.mi):not(:disabled), [role="button"], .chip, .pill, .hub-card):active { scale: .94; }
 .mi:active, .cell:active, .seg button:active, .alert .btns button:active, .tabs button:active { scale: 1; }
-.fab-btn .i { transition: rotate .5s var(--bounce), scale .3s var(--bounce); }
+.fab-btn .i { transition: rotate var(--dur-page) var(--ease-bounce), scale var(--dur-standard) var(--ease-bounce); }
 .fab-btn:active .i { rotate: 70deg; scale: 1.15; }
 .fab-btn[data-a="todos"]:active .i { rotate: -8deg; scale: 1.25; }
-.cb-heart { transition: transform .35s var(--bounce), opacity .2s, scale .3s var(--bounce); }
+.cb-heart { transition: transform var(--dur-page) var(--ease-bounce), opacity var(--dur-quick), scale var(--dur-standard) var(--ease-bounce); }
 .cb-heart:active { scale: 1.35; }
 .cb-pill:not(.has) .cb-heart { animation: heartIdle 3.2s ease-in-out infinite; }
 @keyframes heartIdle { 0%, 82%, 100% { transform: scale(1); } 88% { transform: scale(1.18); } 94% { transform: scale(1); } }
-.cb-plus { transition: transform .3s var(--bounce), rotate .4s var(--bounce); }
+.cb-plus { transition: transform var(--dur-standard) var(--ease-bounce), rotate var(--dur-page) var(--ease-bounce); }
 .cb-plus:active { rotate: 90deg; }
 .cb-in:focus { caret-color: var(--me-c); }
 /* screens glide in, and their contents follow one after another */
@@ -20,7 +20,7 @@
 .view.enter .task:nth-child(2) { animation-delay: .05s; } .view.enter .task:nth-child(3) { animation-delay: .09s; } .view.enter .task:nth-child(4) { animation-delay: .13s; } .view.enter .task:nth-child(5) { animation-delay: .17s; } .view.enter .task:nth-child(n+6) { animation-delay: .21s; }
 @keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(.98); } }
 .c-jump:active { scale: .92; }
-.msg-row .bub, .msg-row .tcard { transition: transform .25s var(--bounce); }
+.msg-row .bub, .msg-row .tcard { transition: transform var(--dur-standard) var(--ease-bounce); }
 .msg-row .bwrap:active .bub { transform: scale(.985); }
 @media (prefers-reduced-motion: reduce) {
   .chatview::before, .cb-pill:not(.has) .cb-heart, .c-sub.online::before { animation: none; }

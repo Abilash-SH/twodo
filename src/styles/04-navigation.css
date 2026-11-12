@@ -2,7 +2,7 @@
 .view {
   position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; touch-action: pan-y;
   background: var(--bg); -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;
-  transition: transform .55s var(--spring);
+  transition: transform var(--dur-sheet) var(--ease-ios);
   padding: 0 var(--safe-right) calc(var(--composer-h) + 28px) var(--safe-left);
 }
 .vbody { max-width: 800px; margin: 0 auto; }
@@ -10,14 +10,14 @@
 .view.under { transform: translateX(-28%); }
 .view.offright { transform: translateX(100%); }
 #stack.dragging .view, #stack.dragging .shade { transition: none; }
-.shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .55s var(--spring); }
+.shade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity var(--dur-sheet) var(--ease-ios); }
 
 .nav {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky; top: 0; z-index: var(--z-header);
   height: calc(46px + var(--safe-top)); padding: var(--safe-top) max(calc(8px + var(--safe-right)), calc((100% - 800px) / 2 + var(--safe-right))) 0 max(calc(8px + var(--safe-left)), calc((100% - 800px) / 2 + var(--safe-left)));
   margin: 0 calc(-1 * var(--safe-right)) 0 calc(-1 * var(--safe-left));
   display: flex; align-items: center; justify-content: space-between;
-  transition: background-color .25s, box-shadow .25s;
+  transition: background-color var(--dur-standard);
 }
 .nav.scrolled {
   background: var(--bar); box-shadow: 0 .5px 0 var(--sep);
@@ -26,14 +26,14 @@
 .nav-title {
   position: absolute; left: 50%; bottom: 13px; max-width: 55%;
   font-weight: 600; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  opacity: 0; transform: translate(-50%, 6px); transition: opacity .2s, transform .25s var(--spring); pointer-events: none;
+  opacity: 0; transform: translate(-50%, 6px); transition: opacity var(--dur-quick), transform var(--dur-standard) var(--ease-ios); pointer-events: none;
 }
 .nav.scrolled .nav-title { opacity: 1; transform: translate(-50%, 0); }
 .nav-side { display: flex; align-items: center; gap: 2px; min-width: 44px; z-index: 1; }
 .nav-btn {
   display: inline-flex; align-items: center; gap: 1px; min-height: 44px; min-width: 44px; justify-content: center;
   padding: 0 8px; border: 0; background: none; color: var(--accent); font-size: 17px; border-radius: 10px;
-  transition: opacity .15s;
+  transition: opacity var(--dur-quick);
 }
 .nav-btn:active { opacity: .45; }
 .nav-btn .i { width: 24px; height: 24px; }

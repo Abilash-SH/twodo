@@ -5,6 +5,7 @@ import { cloudReady } from '@/lib/config';
 import { chatSound, haptic } from '@/lib/feedback';
 import { Auth } from '@/lib/firebase';
 import { FX, autoFx, playBubbleFx, playScreenFx } from '@/lib/fx';
+import { EASE, MS } from '@/lib/motion';
 import { renderNow } from '@/lib/render';
 import { L, ptName } from '@/lib/store';
 import { firstWord, reducedMotion } from '@/lib/util';
@@ -58,11 +59,17 @@ export const ChatCtl = {
     const el = this.el(id), m = Chat.msgs[id]; if (!el || !m) return;
     this.animUntil = Date.now() + 900;
     if (m.fx && FX.isBubble(m.fx) && m.fx !== 'ink') { playBubbleFx(el, m.fx, this.body()); this.animUntil = Date.now() + 2700; }
-    else if (from && !reducedMotion.matches) {
+    else if (from && !reducedMotion.matches) { // the bubble travels from the message field into its place
       const to = el.getBoundingClientRect();
-      el.animate([{ transform: `translate(${from.left + 6 - to.left}px, ${from.bottom - to.bottom}px) scale(.96)`, opacity: 0.6 },
-        { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.22,.95,.3,1.08)' });
+      const a = el.animate([{ transform: `translate(${from.left + 6 - to.left}px, ${from.bottom - to.bottom}px) scale(.96)`, opacity: 0.6 },
+        { transform: 'none', opacity: 1 }], { duration: MS.page, easing: EASE.spring });
+      a.onfinish = () => haptic('light');
+      return this.fxLater(m, el);
     }
+    haptic('light');
+    this.fxLater(m, el);
+  },
+  fxLater(m: Msg, el: HTMLElement) {
     if (m.fx && !FX.isBubble(m.fx)) setTimeout(() => playScreenFx(m.fx!, { from: this.center(el), text: m.t, mine: true }), 300);
   },
   animateIn(id: string) {
@@ -131,7 +138,7 @@ export const ChatCtl = {
     if (typing) input.focus({ preventScroll: true }); // the keyboard stays up for the next message
     this.draw({ sentId: m.id, fromRect: from });
     setTimeout(() => { if (m.status === 'sending') renderNow(); }, 950);
-    chatSound('send'); haptic('light');
+    chatSound('send'); // the haptic comes when the bubble lands (animateSent)
     if (Chat.lovePair(m)) setTimeout(() => this.loveYou(), 420);
     const sb = this.view!.querySelector('.cb-send');
     if (sb && !reducedMotion.matches) sb.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 -22px', opacity: 0, offset: .5 }, { translate: '0 14px', opacity: 0, offset: .51 }, { translate: '0 0', opacity: 1 }], { duration: 460, easing: 'cubic-bezier(.3,.8,.3,1)' });

@@ -1,0 +1,59 @@
+/* Twodo · inset-grouped lists, iOS style: Settings, every sheet, and the lists on the to-dos home.
+   One rounded card per section with hairline separators that start after the icon. (Task rows keep their own
+   cards: .group.tasks.) Nothing inside a sheet gets a backdrop blur; the sheet itself is already blurred. */
+.group:not(.tasks) { margin: 0 16px 24px; background: var(--cell); border-radius: 14px; overflow: hidden; box-shadow: none; }
+.group:not(.tasks) > .cell { border-radius: 0; min-height: 52px; padding: 8px 16px; gap: 12px; }
+.group:not(.tasks) > .cell + .cell::before,
+.group:not(.tasks) > .learn-body + .cell::before { display: block; content: ""; position: absolute; top: 0; right: 0; left: 60px; height: .5px; background: var(--sep); pointer-events: none; }
+.group:not(.tasks) > .cell:not(:has(> .sq, > .list-ic, > .pc-photo))::before { left: 16px; }
+.view .group:not(.tasks) { box-shadow: var(--shadow); }
+.view.enter .group:not(.tasks) .cell { animation: none; } /* the card rises as one piece */
+
+/* section titles and the one-line notes line up with the text inside the cards */
+.sheet .sec-h.sub, .view .sec-h.sub { padding: 0 32px 8px; }
+.note-s { padding: 0 32px; margin: -16px 0 24px; font-size: 13px; line-height: 1.4; color: var(--label2); }
+
+/* Learn more */
+.cell.learn { color: var(--accent); font-size: 15px; min-height: 44px; }
+.cell.learn .chev { transition: transform var(--dur-standard) var(--ease-ios); }
+.cell.learn.open .chev { transform: rotate(180deg); }
+.learn-body { padding: 0 16px 14px; font-size: 13px; line-height: 1.5; color: var(--label2); animation: learnIn var(--dur-standard) var(--ease-out); }
+.learn-body p { margin: 0 0 8px; } .learn-body p:last-child { margin: 0; }
+@keyframes learnIn { from { opacity: 0; transform: translateY(-4px); } }
+
+/* segmented controls inside a row: tall enough to hit, never crowding their label (fits a 320 px iPhone SE) */
+.cell .seg { flex: 1 1 auto; max-width: 280px; min-width: 140px; min-height: 36px; margin-left: auto; border-radius: 10px; }
+.cell .seg .thumb { border-radius: 8px; }
+.cell .seg button { font-size: 14px; min-width: 0; padding: 0 4px; }
+.cell:has(> .seg) > .grow { flex: 0 0 auto; min-width: max-content; }
+.cell .seg:has(> button:nth-of-type(4)) > button { font-size: 13px; padding: 0 2px; }
+/* on a narrow phone, a four-way choice drops under its label instead of squeezing into "N…" */
+@media (max-width: 370px) {
+  .cell:has(> .seg > button:nth-of-type(4)) { flex-wrap: wrap; row-gap: 8px; padding-top: 10px; padding-bottom: 10px; }
+  .cell:has(> .seg > button:nth-of-type(4)) > .seg { flex: 1 0 calc(100% - 44px); max-width: none; margin-left: 44px; }
+}
+
+/* destructive actions: one group at the bottom, red and centred */
+.group.danger > .cell { justify-content: center; color: var(--c-red); font-weight: 500; }
+
+/* the sheet's top bar stays put; a hairline appears once its content scrolls under it */
+.sheet-head { background: inherit; z-index: 2; }
+.sheet-head.scrolled { box-shadow: 0 .5px 0 var(--sep); }
+
+/* profile header */
+.me-prof { padding: 4px 24px 28px; }
+.me-prof .pc-photo .av { width: 88px; height: 88px; line-height: 88px; font-size: 36px; }
+input.me-name { margin-top: 12px; font-size: 24px; padding: 4px 10px; }
+.me-handle { margin-top: 0; font-size: 15px; }
+.me-colors { grid-template-columns: repeat(5, 32px); gap: 14px; padding: 18px 0 0; }
+.me-colors button { width: 32px; height: 32px; }
+.me-hint { margin: 14px 0 0; font-size: 13px; color: var(--label2); }
+.foot { padding: 0 0 calc(12px + var(--safe-bottom)); }
+
+/* ---------- Polish: small controls keep their look but get a 44 px hit area ---------- */
+:is(.fab-btn, .cb-heart, .cb-send, .csend, .cplus, .banner .x, .lb-av, .chk, .cctx) { position: relative; }
+:is(.fab-btn, .cb-heart, .cb-send, .csend, .cplus, .lb-av)::before { content: ""; position: absolute; inset: -5px; }
+:is(.banner .x, .chk)::before { content: ""; position: absolute; inset: -10px; }
+.cctx::before { content: ""; position: absolute; inset: -13px -8px; }
+.view .seg.who { min-height: 34px; }
+.view .seg.who button { font-size: 14px; }

@@ -14,7 +14,7 @@ import { copyText, firstWord, isTouch } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { confirmDialog } from '@/ui/alert';
 import { island } from '@/ui/island';
-import { closeSheet, openSheet } from '@/ui/sheet';
+import { closeSheet, focusWhenOpen, openSheet } from '@/ui/sheet';
 import { cssVars, PlainAvatar, Sq } from '../ui/Avatar';
 import { BusyButton } from '../ui/Busy';
 import { Icon } from '../ui/Icon';
@@ -22,7 +22,7 @@ import { openSettings } from './Settings';
 
 const BackToSettings = () => <button className="nav-btn" type="button" data-back="" onClick={() => openSettings()}><Icon name="chevL" />Settings</button>;
 const fail = (e: unknown, ms = 4500) => { island({ e: '⚠️', text: (e as Error).message, ms }); haptic('warn'); };
-const delayFocus = (r: React.RefObject<HTMLInputElement | null>) => { if (!isTouch()) setTimeout(() => r.current?.focus(), 350); };
+const delayFocus = (r: React.RefObject<HTMLInputElement | null>) => focusWhenOpen(r.current);
 
 /* ---------- Sign in / create account (from Settings, when signed out) ---------- */
 function AuthForm({ up }: { up: boolean }) {

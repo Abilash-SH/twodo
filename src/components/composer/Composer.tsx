@@ -8,7 +8,7 @@ import { D, L, commit, firstName, fmtDue, listOf, lists, makeTask, partnerKey, p
 import type { Task } from '@/lib/types';
 import { addDays, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
-import { useTapKeep } from '@/hooks/useTapKeep';
+import { useTapKeep, useTapKeepWithin } from '@/hooks/useTapKeep';
 import { closeOpenRow } from '@/hooks/useStackGestures';
 import { island } from '@/ui/island';
 import { showMenu } from '@/ui/menu';
@@ -60,6 +60,17 @@ function Pills({ onPick }: { onPick: (kind: ChipKind, tok: string) => void }) {
 
 const PLACEHOLDERS = (pt: string) => ['Add a task…', 'Try “Call mom tomorrow 6pm”', 'Try “Movie night fri 8pm @us !!”', 'Try “Milk #Groceries”',
   'Try “Gym every mon 7am”', `Try “Book flights @${pt.toLowerCase()} !!!”`, 'Paste a list: one task per line'];
+
+/* Bring a new row into view by scrolling only its own list (scrollIntoView can also scroll the whole page on iPhone
+   while the keyboard is up, which pushes the header out of view) */
+function revealRow(row: Element) {
+  const view = row.closest<HTMLElement>('.view'); if (!view) return;
+  const r = row.getBoundingClientRect(), v = view.getBoundingClientRect();
+  const bottom = v.bottom - (parseFloat(getComputedStyle(document.getElementById('app')!).getPropertyValue('--composer-h')) || 0) - 12;
+  const top = v.top + 100; // below the header
+  const by = r.bottom > bottom ? r.bottom - bottom : r.top < top ? r.top - top : 0;
+  if (by) view.scrollBy({ top: by, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+}
 
 export function Composer({ hidden }: { hidden: boolean }) {
   useApp();
@@ -115,7 +126,7 @@ export function Composer({ hidden }: { hidden: boolean }) {
     const row = document.querySelector(`#stack .view:not(.under):not(.offright) .task[data-id="${CSS.escape(last.id)}"]`);
     const undo = () => { created.forEach(t => { t.deleted = true; commit(t, { silent: true }); }); scheduleRender(); };
     if (row) {
-      row.scrollIntoView({ block: 'nearest', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      revealRow(row);
       if (created.length > 1) island({ e: '✨', text: `Added ${created.length} tasks`, btn: 'Undo', onBtn: undo });
     } else {
       const l = listOf(last);
@@ -125,6 +136,7 @@ export function Composer({ hidden }: { hidden: boolean }) {
     }
   };
   useTapKeep(send, () => submit(), ta);
+  useTapKeepWithin(el, ta); // pills, chips, + and the list picker never close the keyboard
   const c = composerCtx();
   return (
     <div id="composer" ref={el} className={`${focus ? 'focus' : ''}${hidden ? ' hide' : ''}`.trim() || undefined}>

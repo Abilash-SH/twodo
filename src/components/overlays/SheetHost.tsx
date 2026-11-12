@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { clamp } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { NO_SWIPE, SLOP, Velocity, flung, touchById } from '@/hooks/swipe';
+import { EASE, MS } from '@/lib/motion';
 import { closeSheet, sheetStore, type SheetEntry } from '@/ui/sheet';
 import { useStore } from '@/ui/store';
 
 /* Drag a sheet down to close it (from its top bar, or anywhere once its content is scrolled to the top), or swipe it
    away to the right, like going back. Fingers use touch events so the sheet's own scrolling can't steal the swipe. */
+// the rest of the way at the finger's speed: a fast flick finishes fast, a slow drag finishes calmly
+const speedMs = (px: number, v: number) => Math.round(Math.max(140, Math.min(MS.page, px / Math.max(Math.abs(v), 0.6))));
 function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = sh.current; if (!el) return;
@@ -45,19 +48,25 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
       document.body.classList.remove('sheet-drag');
       const { vx, vy } = G.v.get();
       if (G.axis === 'y') {
-        el.style.transition = ''; el.style.transform = '';
-        if (!cancel && (G.d > 130 || vy > 0.5)) closeSheet(); else document.body.style.setProperty('--sp', '1');
+        if (!cancel && (G.d > 130 || vy > 0.5)) { // carry on down at the speed of the swipe
+          const left = el.offsetHeight + 40 - G.d;
+          el.style.transition = `transform ${speedMs(left, vy)}ms ${EASE.out}`; apply(el.offsetHeight + 40, 'y');
+          closeSheet(); return;
+        }
+        el.style.transition = `transform ${MS.page}ms ${EASE.spring}`; el.style.transform = '';
+        document.body.style.setProperty('--sp', '1');
+        setTimeout(() => { el.style.transition = ''; }, MS.page + 20);
         return;
       }
       if (!cancel && vx > -0.15 && flung(G.d, vx, el.offsetWidth)) { // swiped away: keep going off to the right
-        el.style.transition = 'transform .26s cubic-bezier(.2,.8,.2,1)'; apply(el.offsetWidth + 40, 'x');
+        el.style.transition = `transform ${speedMs(el.offsetWidth + 40 - G.d, vx)}ms ${EASE.out}`; apply(el.offsetWidth + 40, 'x');
         const back = el.querySelector<HTMLElement>('.sheet-bar [data-back]'); // a page inside Settings goes back to Settings
         if (back) back.click(); else closeSheet();
         return;
       }
-      el.style.transition = 'transform .42s cubic-bezier(.34,1.4,.64,1)'; el.style.transform = '';
+      el.style.transition = `transform ${MS.page}ms ${EASE.spring}`; el.style.transform = '';
       document.body.style.setProperty('--sp', '1');
-      setTimeout(() => { el.style.transition = ''; }, 430);
+      setTimeout(() => { el.style.transition = ''; }, MS.page + 20);
     };
     const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(true); return; } const t = e.touches[0]; begin(t.identifier, t.clientX, t.clientY, e.target as HTMLElement); };
     const tMove = (e: TouchEvent) => {
@@ -99,7 +108,7 @@ function SheetView({ s }: { s: SheetEntry }) {
     <div ref={ref} className={`sheet${d.tall ? ' tall' : ''}${on ? ' open' : ''}`} role="dialog" aria-modal="true" aria-label={d.title}>
       <div className="sheet-head"><div className="grab" /><div className="sheet-bar"><div>{d.left}</div><h3>{d.title}</h3><div>
         {right ? <button className="nav-btn b" data-s="done" type="button" onClick={() => (d.onRight ? d.onRight() : closeSheet())}>{right}</button> : null}</div></div></div>
-      <div className="sheet-body">{d.body}</div>
+      <div className="sheet-body" onScroll={e => { const h = e.currentTarget.previousElementSibling; h?.classList.toggle('scrolled', e.currentTarget.scrollTop > 2); }}>{d.body}</div>
     </div>
   </>);
 }

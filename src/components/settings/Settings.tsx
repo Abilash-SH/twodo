@@ -25,6 +25,7 @@ import { closeSheet, openSheet } from '@/ui/sheet';
 import { Avatar, colorVar, Sq } from '../ui/Avatar';
 import { BusyButton } from '../ui/Busy';
 import { Icon } from '../ui/Icon';
+import { LearnMore } from '../ui/LearnMore';
 import { Segmented } from '../ui/Segmented';
 import { VaultSettings } from '../vault/VaultUI';
 import { openAuthSheet, openInviteSheet, openUsernameSheet, openVapidSheet } from './AccountSheets';
@@ -50,45 +51,39 @@ function Profile() {
           D.people![L.me] = { ...person(L.me), color: c }; commit(D.people!);
           L.settings.accent = 'me'; save(); applyTheme(); renderNow(); haptic('light');
         }} />))}</div>
-      <p className="me-hint">Your colour shows on your messages and across the app.</p>
+      <p className="me-hint">Your colour, on your messages and across Twodo.</p>
     </div>
   );
 }
 
 function Together() {
   if (!cloudReady()) return (<>
-    <div className="group"><div className="cell"><Sq c="gray" i="cloud" /><span className="grow">Accounts &amp; sync are off</span></div></div>
-    <p className="note-s">To sync with {firstWord(ptName())}, add your free Firebase details to the app’s environment settings (README, “Turn on accounts &amp; sync”).</p>
+    <div className="group" id="syncWrap"><div className="cell"><Sq c="gray" i="cloud" /><span className="grow">Accounts &amp; sync are off</span></div></div>
+    <p className="note-s">Add Firebase details to sync (see the README).</p>
   </>);
   const u = Auth.user();
   if (!u) return (<>
-    <div className="group">
+    <div className="group" id="syncWrap">
       <button className="cell" type="button" onClick={() => openAuthSheet('signup')}><Sq c="green" i="person" /><span className="grow">Create an account</span><Icon name="chevR" cls="chev" /></button>
       <button className="cell" type="button" onClick={() => openAuthSheet('signin')}><Sq c="blue" i="key" /><span className="grow">Sign in</span><Icon name="chevR" cls="chev" /></button></div>
-    <p className="note-s">An account lets you pair with {firstWord(ptName())} by username and back up your lists. Everything is end-to-end encrypted on your phones.</p>
+    <p className="note-s">Pair with {firstWord(ptName())} by username. Everything is end-to-end encrypted.</p>
   </>);
   const fail = (e: unknown) => { island({ e: '⚠️', text: (e as Error).message, ms: 4500 }); haptic('warn'); };
   const p = L.pair, inc = Inbox.incoming();
   const sc = Sync.state === 'live' ? 'green' : Sync.state === 'error' ? 'red' : 'orange';
-  return (<>
-    <div className="group">
+  return (
+    <div className="group" id="syncWrap">
       <div className="cell"><Sq c={person(L.me).color} i="person" /><span className="grow">{u.username ? <b>@{u.username}</b> : 'Signed in'}<br /><small className="val">{u.email || ''}</small></span>
         {u.username ? null : <button className="btn-s" type="button" onClick={() => openUsernameSheet()}>Pick username</button>}</div>
       {u.expired ? <button className="cell" type="button" onClick={() => openAuthSheet('signin')}><Sq c="red" i="key" /><span className="grow">Session expired — sign in again</span><Icon name="chevR" cls="chev" /></button> : null}
       <div className="cell"><Sq c={sc} i="cloud" /><span className={`grow status ${Sync.state}`}><i />{Sync.label()}</span></div>
       {inc.length ? <button className="cell" type="button" onClick={() => openInviteSheet()}><span className="list-ic" style={colorVar('pink')}>💌</span><span className="grow"><b>{inc.length} partner request{inc.length > 1 ? 's' : ''}</b></span><span className="val">View</span><Icon name="chevR" cls="chev" /></button> : null}
-      {p && p.status === 'paired' ? (<>
+      {p && p.status === 'paired' ? (
         <div className="cell"><Sq c="pink" i="heart" /><span className="grow">Paired with <b>{p.name}</b>{p.username ? <> <span className="val">@{p.username}</span></> : null}</span></div>
-        <button className="cell red" type="button" onClick={async () => {
-          if (!(await confirmDialog({ title: `Unpair from ${p.name}?`, message: 'You’ll stop syncing. Everything stays on this phone, and you can pair again later.', ok: 'Unpair', destructive: true }))) return;
-          try { await Pair.unpair(); renderNow(); island({ e: '👋', text: 'Unpaired', sub: 'Your lists are private again' }); } catch (e) { fail(e); }
-        }}>Unpair</button>
-      </>) : p && p.status === 'sent' ? (
+      ) : p && p.status === 'sent' ? (
         <div className="cell"><Sq c="orange" i="clock" /><span className="grow">Waiting for <b>{p.name}</b> <span className="val">@{p.username}</span>{p.code ? <><br /><small className="val">Safety code {p.code}</small></> : null}</span>
-          <BusyButton className="btn-s" style={{ background: 'var(--fill)', color: 'var(--label)' }} onRun={async () => { try { await Pair.cancel(); renderNow(); } catch (e) { fail(e); } }}>Cancel</BusyButton></div>
+          <BusyButton className="btn-s gray" onRun={async () => { try { await Pair.cancel(); renderNow(); } catch (e) { fail(e); } }}>Cancel</BusyButton></div>
       ) : u.username ? <button className="cell" type="button" onClick={() => openInviteSheet()}><Sq c="pink" i="heart" /><span className="grow"><b>Add partner</b></span><Icon name="chevR" cls="chev" /></button> : null}
-    </div>
-    <div className="group">
       {Push.configured()
         ? <div className="cell"><Sq c="red" i="bell" /><span className="grow">Push reminders</span><input key={String(Push.on())} type="checkbox" className="switch" id="pushSw" defaultChecked={Push.on()} aria-label="Push reminders" onChange={async e => {
             const inp = e.currentTarget, on = inp.checked;
@@ -97,13 +92,35 @@ function Together() {
             renderNow();
           }} /></div>
         : <button className="cell" type="button" onClick={() => void openVapidSheet()}><Sq c="red" i="bell" /><span className="grow">Set up push reminders</span><span className="val">Keys</span><Icon name="chevR" cls="chev" /></button>}
-      <button className="cell red" type="button" onClick={async () => {
+      <LearnMore label="How your data is protected">
+        <p>🔒 Tasks are encrypted on your phones (AES-256-GCM) before they’re saved. Firebase can’t read them, and only your paired accounts can even download them.</p>
+        <p>{Push.why() && !Push.on() ? Push.why() : 'Push reminders arrive within about 5–15 minutes of the due time.'}</p>
+      </LearnMore>
+    </div>
+  );
+}
+
+/* Unpair, Sign out and Erase: together at the bottom, each asks first */
+function DangerZone() {
+  const u = Auth.user(), p = L.pair;
+  const fail = (e: unknown) => { island({ e: '⚠️', text: (e as Error).message, ms: 4500 }); haptic('warn'); };
+  return (
+    <div className="group danger">
+      {u && p && p.status === 'paired' ? <button className="cell" type="button" onClick={async () => {
+        if (!(await confirmDialog({ title: `Unpair from ${p.name}?`, message: 'You’ll stop syncing. Everything stays on this phone, and you can pair again later.', ok: 'Unpair', destructive: true }))) return;
+        try { await Pair.unpair(); renderNow(); island({ e: '👋', text: 'Unpaired', sub: 'Your lists are private again' }); } catch (e) { fail(e); }
+      }}>Unpair from {firstWord(p.name)}</button> : null}
+      {u ? <button className="cell" type="button" onClick={async () => {
         if (!(await confirmDialog({ title: 'Sign out?', message: 'Your tasks stay on this phone. Sign back in any time to sync again.', ok: 'Sign out', destructive: true }))) return;
         await signOut(); renderNow();
-      }}>Sign out</button>
+      }}>Sign out</button> : null}
+      <button className="cell" type="button" onClick={async () => {
+        if (!(await confirmDialog({ title: 'Erase everything?', message: 'This removes all tasks, secret lists and settings from this phone. Synced data stays in your shared space.', ok: 'Erase', destructive: true }))) return;
+        Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {});
+        ['twodo:chat', 'twodo:data', 'twodo:local', 'twodo:vault'].forEach(k => localStorage.removeItem(k)); location.reload();
+      }}>Erase everything on this phone</button>
     </div>
-    <p className="note-s">🔒 Tasks are encrypted on your phones (AES-256-GCM) before they’re saved. Firebase can’t read them, and only your paired accounts can even download them. {Push.why() && !Push.on() ? Push.why() : 'Push reminders arrive within about 5–15 minutes of the due time.'}</p>
-  </>);
+  );
 }
 
 function Switch({ k, label, c, i }: { k: 'haptics' | 'sounds' | 'confetti' | 'notify'; label: string; c: string; i: string }) {
@@ -126,28 +143,30 @@ function Switch({ k, label, c, i }: { k: 'haptics' | 'sounds' | 'confetti' | 'no
 function SettingsBody() {
   useApp();
   const s = L.settings;
-  const notifyNote = isIOS() && !standalone() ? 'On iPhone, reminders need Twodo added to your Home Screen first.' : 'Reminders pop up while Twodo is open or recently used. For alerts that always fire, use “Add to Calendar” on a task.';
+  const notifyNote = isIOS() && !standalone() ? 'On iPhone, reminders need Twodo on your Home Screen.' : 'In-app reminders show while Twodo is open.';
   return (<>
     <Profile />
     {Auth.user() ? null : <div className="group"><div className="cell"><Sq c="gray" i="phone" /><span className="grow">I am</span>
       <Segmented name="me" opts={[['a', shortName(person('a').name)], ['b', shortName(person('b').name)]]} value={L.me} onChange={v => { L.me = v as PersonKey; save(); applyTheme(); renderNow(); }} /></div></div>}
     <div className="sec-h sub">Together</div>
-    <div id="syncWrap"><Together /></div>
+    <Together />
     <div className="sec-h sub">Appearance</div>
-    <div className="group"><div className="cell"><Sq c="indigo" i="sun" /><span className="grow">Theme</span>
-      <Segmented name="theme" opts={[['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']]} value={s.theme} onChange={v => { L.settings.theme = v as typeof s.theme; save(); applyTheme(); }} /></div></div>
+    <div className="group">
+      <div className="cell"><Sq c="indigo" i="sun" /><span className="grow">Theme</span>
+        <Segmented name="theme" opts={[['auto', 'Auto'], ['light', 'Light'], ['dark', 'Dark']]} value={s.theme} onChange={v => { L.settings.theme = v as typeof s.theme; save(); applyTheme(); }} /></div>
+      <div className="cell"><Sq c="blue" i="cal" /><span className="grow">5/12 is</span>
+        <Segmented name="dmy" opts={[['dmy', '5 Dec'], ['mdy', 'May 12']]} value={s.dmy ? 'dmy' : 'mdy'} onChange={v => { L.settings.dmy = v === 'dmy'; save(); renderNow(); }} /></div>
+    </div>
     <div className="sec-h sub">Feel</div>
     <div className="group">
       <Switch k="haptics" label="Haptics" c="pink" i="hand" />
       <Switch k="sounds" label="Sounds" c="orange" i="bell" />
       <Switch k="confetti" label="Celebrations" c="purple" i="sparkles" />
       <Switch k="notify" label="In-app reminders" c="red" i="clock" />
-      <div className="cell"><Sq c="blue" i="cal" /><span className="grow">5/12 is</span>
-        <Segmented name="dmy" opts={[['dmy', '5 Dec'], ['mdy', 'May 12']]} value={s.dmy ? 'dmy' : 'mdy'} onChange={v => { L.settings.dmy = v === 'dmy'; save(); }} /></div>
     </div>
     <p className="note-s">{notifyNote}</p>
     <VaultSettings />
-    <div className="sec-h sub">Backup</div>
+    <div className="sec-h sub">Backup &amp; help</div>
     <div className="group">
       <button className="cell" type="button" onClick={() => {
         // secret lists never leave this phone, not even in a backup file
@@ -155,13 +174,9 @@ function SettingsBody() {
         island({ e: '💾', text: 'Backup saved' });
       }}><Sq c="green" i="download" /><span className="grow">Export backup</span></button>
       <button className="cell" type="button" onClick={() => document.getElementById('importFile')?.click()}><Sq c="blue" i="upload" /><span className="grow">Import backup</span></button>
-      <button className="cell red" type="button" onClick={async () => {
-        if (!(await confirmDialog({ title: 'Erase everything?', message: 'This removes all tasks and settings from this phone. Synced data stays in your shared space.', ok: 'Erase', destructive: true }))) return;
-        Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {});
-        ['twodo:chat', 'twodo:data', 'twodo:local', 'twodo:vault'].forEach(k => localStorage.removeItem(k)); location.reload();
-      }}>Erase everything on this phone</button>
+      <button className="cell" type="button" onClick={() => { closeSheet(); setTimeout(() => openTips(), 350); }}><Sq c="yellow" i="bulb" /><span className="grow">Tips &amp; tricks</span><Icon name="chevR" cls="chev" /></button>
     </div>
-    <div className="group"><button className="cell" type="button" onClick={() => { closeSheet(); setTimeout(() => openTips(), 350); }}><Sq c="yellow" i="bulb" /><span className="grow">Tips &amp; tricks</span><Icon name="chevR" cls="chev" /></button></div>
+    <DangerZone />
     <div className="foot">Twodo 5.0 · made for two 💞</div>
   </>);
 }

@@ -2,12 +2,14 @@
    Screens animate like iOS: push slides in from the right, back slides out (or follows your finger). */
 import { cloudReady } from '@/lib/config';
 import { haptic } from '@/lib/feedback';
+import { MS } from '@/lib/motion';
 import { Auth } from '@/lib/firebase';
 import { Push } from '@/lib/push';
 import { renderNow, scheduleRender } from '@/lib/render';
 import { D, L, SMART, person, type SmartKey } from '@/lib/store';
 import type { ViewPrefs } from '@/lib/types';
 import { firstWord } from '@/lib/util';
+import { flushSync } from 'react-dom';
 import { closeMenu } from './menu';
 import { createStore } from './store';
 
@@ -48,7 +50,7 @@ export function pushView(spec: Spec, { replace = false } = {}): number {
   Nav.entering.add(e.id); setTimeout(() => { Nav.entering.delete(e.id); scheduleRender(); }, 1100); // contents rise in one after another
   navState.set(s => ({ entries: [...s.entries, e] }));
   if (replace) history.replaceState({ d: depth() }, ''); else history.pushState({ d: depth() }, '');
-  haptic('light');
+  setTimeout(() => haptic('light'), MS.page - 80); // the tick lands with the screen, not before it moves
   return e.id;
 }
 export function popView(): void {
@@ -66,7 +68,7 @@ export function doPop({ instant = false } = {}): void {
     return;
   }
   navState.set(s => ({ entries: s.entries.map(x => (x.id === top.id ? { ...x, phase: 'out' } : x)) }));
-  setTimeout(() => navState.set(s => ({ entries: s.entries.filter(x => x.id !== top.id) })), 560);
+  setTimeout(() => navState.set(s => ({ entries: s.entries.filter(x => x.id !== top.id) })), MS.page + 120);
 }
 // Go somewhere from a button: replace whatever is open (Back always leads Home)
 export function navTo(spec: Spec): void {
@@ -87,10 +89,12 @@ export function navTo(spec: Spec): void {
 export const openSmart = (key: SmartKey): void => { pushView({ type: 'smart', key }); };
 export const composerState = createStore<{ listPick: string | null }>({ listPick: null });
 export const openList = (id: string): void => { composerState.set({ listPick: null }); pushView({ type: 'list', id }); };
+// The search field is focused inside the same tap that opened it: that's the only way an iPhone shows the keyboard
+// (focusing a moment later just leaves a blinking cursor and no keyboard)
 export function openSearch(): void {
   if (topSpec().type === 'search') return;
-  pushView({ type: 'search' });
-  requestAnimationFrame(() => (document.querySelector('#q') as HTMLInputElement | null)?.focus({ preventScroll: true }));
+  flushSync(() => { pushView({ type: 'search' }); });
+  (document.querySelector('#q') as HTMLInputElement | null)?.focus({ preventScroll: true });
 }
 export function openTips(cat?: string): void {
   if (cat) viewPrefs('tips').cat = cat;

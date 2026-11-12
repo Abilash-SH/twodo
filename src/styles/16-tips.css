@@ -3,7 +3,7 @@
   padding: 8px 16px 12px; background: linear-gradient(var(--bg) 72%, color-mix(in srgb, var(--bg) 0%, transparent)); }
 .tip-pills::-webkit-scrollbar { display: none; }
 .tip-pill { flex: none; border: 0; border-radius: 17px; height: 34px; padding: 0 14px; font-size: 14px; font-weight: 600; background: var(--bg2); color: var(--label);
-  box-shadow: 0 0 0 .5px var(--sep); transition: background-color .25s, color .25s, transform .3s var(--bounce); }
+  box-shadow: 0 0 0 .5px var(--sep); transition: background-color var(--dur-standard), color var(--dur-standard), transform var(--dur-standard) var(--ease-bounce); }
 .tip-pill:active { transform: scale(.93); }
 .tip-pill.on { background: var(--accent); color: #fff; box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
 .tip-sec { align-items: center; gap: 10px; padding-top: 12px; }

@@ -2,6 +2,8 @@
 /* Twodo · Dynamic Island: toasts with an Undo-style button, and the focus timer's live activity */
 import { useEffect, useRef, useState } from 'react';
 import { haptic } from '@/lib/feedback';
+import { useTapKeepWithin } from '@/hooks/useTapKeep';
+import { EASE, MS, calm } from '@/lib/motion';
 import { D, L } from '@/lib/store';
 import { hideIsland, islandStore } from '@/ui/island';
 import { useStore } from '@/ui/store';
@@ -21,13 +23,14 @@ function LiveActivity() {
 }
 
 export function IslandHost() {
-  const s = useStore(islandStore), el = useRef<HTMLDivElement>(null);
+  const s = useStore(islandStore), el = useRef<HTMLDivElement>(null), root = useRef<HTMLDivElement>(null);
+  useTapKeepWithin(root); // "Undo" while typing keeps the keyboard up
   useEffect(() => {
-    if (s.mode === 'toast') el.current?.animate([{ transform: 'scale(.94)' }, { transform: 'scale(1.02)' }, { transform: 'scale(1)' }], { duration: 450, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+    if (s.mode === 'toast' && !calm()) el.current?.animate([{ transform: 'scale(.96)' }, { transform: 'scale(1)' }], { duration: MS.standard, easing: EASE.spring, composite: 'add' });
   }, [s.seq, s.mode]);
   const on = s.mode !== 'off';
   return (
-    <div id="island">
+    <div ref={root} id="island">
       <div ref={el} id="isl" className={`isl${on ? ' on' : ''}${s.mode === 'toast' ? ' toast' : ''}${s.mode === 'live' ? ' live' : ''}`} role="status" aria-live="polite"
         onClick={e => {
           if ((e.target as HTMLElement).closest('.ib')) { const fn = islandStore.get().msg.onBtn; hideIsland(); if (fn) { fn(); haptic('light'); } return; }

@@ -11,6 +11,7 @@ import { island } from '@/ui/island';
 import { closeSheet, openSheet } from '@/ui/sheet';
 import { Sq } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
+import { LearnMore } from '../ui/LearnMore';
 
 type Mode = 'unlock' | 'create' | 'change';
 type Step = 'current' | 'new' | 'confirm' | 'bio';
@@ -175,7 +176,11 @@ export function VaultSettings() {
           }} /></div> : null}
         {open ? <button className="cell" type="button" onClick={() => { void Vault.lock().then(() => { force(n => n + 1); island({ e: '🔒', text: 'Secret lists locked' }); }); }}><Sq c="gray" i="lock" /><span className="grow">Lock now</span></button> : null}
       </>)}
+      <LearnMore label="How secret lists work">
+        <p>🔒 They’re encrypted on this phone (AES-256-GCM, with a key made from your passcode) and never synced or backed up.</p>
+        <p>They lock as soon as you leave the app, and their to-dos never show in Today, search or counts. If you forget the passcode, they can’t be recovered.</p>
+      </LearnMore>
     </div>
-    <p className="note-s">🔒 Secret lists are encrypted on this phone (AES-256-GCM, with a key made from your passcode) and never synced. They lock as soon as you leave the app, and their to-dos never show in Today, search or counts. If you forget the passcode, they can’t be recovered.</p>
+    <p className="note-s">Only on this phone. Locks when you leave Twodo.</p>
   </>);
 }

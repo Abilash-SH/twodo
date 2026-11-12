@@ -2,6 +2,7 @@
    sideways swipe away from us halfway through to start scrolling, so swipes start at the first few pixels and
    feel as quick as a native app. A mouse still uses pointer events where it matters. */
 import { useEffect, useRef } from 'react';
+import { EASE, MS } from '@/lib/motion';
 
 // places where a sideways drag belongs to the control itself, not to "go back / close"
 export const NO_SWIPE = 'input, textarea, select, [contenteditable], .seg, .pills, .tip-pills, .no-pan, .picker, .colors, .f-ring';
@@ -77,9 +78,10 @@ export function useSwipeAway(ref: React.RefObject<HTMLElement | null>, opts: Swi
       const G = S; stop(); if (!G || !G.axis) return;
       const { vx, vy } = G.v.get(), size = G.axis === 'x' ? el.offsetWidth : el.offsetHeight;
       const go = !cancel && flung(G.d, G.axis === 'x' ? vx : vy, size);
-      el.style.transition = go ? 'transform .26s cubic-bezier(.2,.8,.2,1)' : 'transform .42s cubic-bezier(.34,1.4,.64,1)';
-      if (go) { set(size + 40, G.axis); setTimeout(() => { o.current.onClose(); setTimeout(() => { el.style.transition = ''; el.style.transform = ''; }, 420); }, 200); }
-      else { el.style.transform = ''; o.current.onProgress?.(0); setTimeout(() => { el.style.transition = ''; }, 430); }
+      const v = Math.abs(G.axis === 'x' ? vx : vy), ms = Math.round(Math.max(140, Math.min(MS.page, (size + 40 - G.d) / Math.max(v, 0.6))));
+      el.style.transition = go ? `transform ${ms}ms ${EASE.out}` : `transform ${MS.page}ms ${EASE.spring}`;
+      if (go) { set(size + 40, G.axis); setTimeout(() => { o.current.onClose(); setTimeout(() => { el.style.transition = ''; el.style.transform = ''; }, MS.page); }, ms - 40); }
+      else { el.style.transform = ''; o.current.onProgress?.(0); setTimeout(() => { el.style.transition = ''; }, MS.page + 20); }
     };
     const touchEnd = (e: TouchEvent) => { if (S && touchById(e, S.id)) end(e.type === 'touchcancel'); };
     el.addEventListener('touchstart', start, { passive: true });

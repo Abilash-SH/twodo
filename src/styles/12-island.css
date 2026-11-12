@@ -1,17 +1,20 @@
 /* ---------- Dynamic Island ---------- */
-#island { position: fixed; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%); z-index: 300; pointer-events: none; }
+/* Toasts sit just under the header bar: never over its buttons, never over the iPhone's own Dynamic Island.
+   The small live timer pill stays in the header row, between the buttons. */
+#island { position: fixed; top: calc(var(--vvt, 0px) + var(--safe-top) + 52px); left: 50%; transform: translateX(-50%); z-index: var(--z-island); pointer-events: none; }
+#island:has(> .isl.live) { top: calc(var(--vvt, 0px) + var(--safe-top) + 6px); }
 .isl {
   display: flex; align-items: center; gap: 10px; height: 37px; width: 120px; padding: 0 8px 0 14px; margin: 0 auto;
-  border-radius: 20px; background: #000; color: #fff; overflow: hidden; opacity: 0; transform: scale(.6) translateY(-14px);
+  border-radius: 20px; background: #000; color: #fff; overflow: hidden; opacity: 0; transform: scale(.86) translateY(-10px);
   box-shadow: 0 10px 30px rgba(0,0,0,.28);
-  transition: width .55s var(--spring), height .55s var(--spring), border-radius .55s var(--spring), transform .55s var(--spring), opacity .3s;
+  transition: transform var(--dur-page) var(--ease-spring), opacity var(--dur-quick) var(--ease-out);
 }
 [data-theme="dark"] .isl { box-shadow: 0 0 0 .5px rgba(255,255,255,.14), 0 10px 30px rgba(0,0,0,.6); }
 .isl.on { opacity: 1; transform: none; pointer-events: auto; cursor: pointer; }
 .isl.toast { height: 54px; border-radius: 28px; width: min(92vw, 380px); }
-.isl.live { width: 210px; }
-.isl .e { font-size: 20px; flex: none; transition: transform .5s var(--bounce); }
-.isl .txt { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity .2s .12s; }
+.isl.live { width: 184px; height: 36px; }
+.isl .e { font-size: 20px; flex: none; }
+.isl .txt { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity var(--dur-quick) var(--ease-out) 80ms; }
 .isl.on .txt { opacity: 1; }
 .isl .txt small { display: block; font-weight: 500; color: rgba(255,255,255,.6); font-size: 12px; }
 .isl .ib { flex: none; border: 0; border-radius: 18px; padding: 8px 14px; font-size: 15px; font-weight: 600; background: rgba(255,255,255,.16); color: #fff; }

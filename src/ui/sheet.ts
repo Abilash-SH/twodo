@@ -1,6 +1,8 @@
 /* Twodo · sheets: iOS card modals with drag-to-dismiss. One at a time; opening another replaces it. */
 import type { ReactNode } from 'react';
 import { islandStore, hideIsland } from './island';
+import { MS } from '@/lib/motion';
+import { isTouch } from '@/lib/util';
 import { createStore } from './store';
 import { navState } from './nav';
 
@@ -14,6 +16,12 @@ export const Sheet = { ignorePop: false };
 let seq = 0;
 const current = () => { const l = sheetStore.get().filter(s => !s.closing); return l[l.length - 1]; };
 export const sheetOpen = (): boolean => !!current();
+/** Put the cursor in a sheet's first field once the sheet has finished rising, on a computer only. On a phone the
+    keyboard should only come up when you tap the field yourself (never by surprise, never mid-animation). */
+export function focusWhenOpen(el: HTMLElement | null): void {
+  if (!el || isTouch()) return;
+  setTimeout(() => { if (el.isConnected && el.closest('.sheet.open')) el.focus({ preventScroll: true }); }, MS.sheet + 40);
+}
 
 export function openSheet(desc: SheetDesc): void {
   (document.activeElement as HTMLElement | null)?.blur?.();

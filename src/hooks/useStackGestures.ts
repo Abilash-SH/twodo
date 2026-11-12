@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { haptic } from '@/lib/feedback';
 import { flushDeferred, renderGate } from '@/lib/render';
+import { EASE, MS } from '@/lib/motion';
 import { isTouch } from '@/lib/util';
 import { NO_SWIPE, SLOP, Velocity, flung, touchById } from './swipe';
 import { Menu, menuOpen } from '@/ui/menu';
@@ -14,7 +15,7 @@ import { deleteTask, toggleDone } from '@/ui/tasks';
 import { openTaskMenu } from '@/components/views/taskMenus';
 
 interface RowG { kind: 'row'; row: HTMLElement; ti: HTMLElement; id: string; x0: number; y0: number; base: number; cur: number; mode: null | 'swipe' | 'scroll' | 'lp'; pid: number; touch: boolean; v: Velocity; vx: number; lp?: ReturnType<typeof setTimeout>; armed?: boolean; full?: boolean }
-interface PageG { kind: 'edge' | 'pan'; pid: number; touch: boolean; x0: number; y0: number; top: HTMLElement; prev: HTMLElement; w: number; dx: number; active: boolean; v: Velocity }
+interface PageG { kind: 'edge' | 'pan'; pid: number; touch: boolean; x0: number; y0: number; top: HTMLElement; prev: HTMLElement; w: number; dx: number; base: number; active: boolean; v: Velocity }
 type Gest = RowG | PageG;
 export const Gesture = { g: null as Gest | null, suppressClickUntil: 0, openRow: null as HTMLElement | null, openOffset: 0 };
 renderGate.busy = () => Nav.dragging || (!!Gesture.g && Gesture.g.kind === 'row' && Gesture.g.mode === 'swipe');
@@ -40,14 +41,14 @@ function setSwipe(g: RowG, x: number) {
 }
 export function settleRow(row: HTMLElement, x: number, cb?: () => void) {
   const ti = row.querySelector<HTMLElement>('.ti'); if (!ti) return;
-  ti.style.transition = 'transform .45s var(--spring)';
+  ti.style.transition = `transform ${MS.page}ms ${EASE.ios}`;
   ti.style.transform = `translateX(${x}px)`;
   row.style.setProperty('--sw', Math.max(0, -x) + 'px');
   setTimeout(() => {
     ti.style.transition = '';
     if (x === 0) { ti.style.transform = ''; delete row.dataset.dir; row.classList.remove('armed', 'full'); }
     if (cb) cb();
-  }, 460);
+  }, MS.page + 20);
 }
 export function closeOpenRow() { const r = Gesture.openRow; if (r) { if (r.isConnected) settleRow(r, 0); Gesture.openRow = null; } }
 function endSwipe(g: RowG, cancelled: boolean) {
@@ -56,7 +57,7 @@ function endSwipe(g: RowG, cancelled: boolean) {
   if (cancelled) { settleRow(row, 0); if (Gesture.openRow === row) Gesture.openRow = null; return; }
   if (v > 100 || (v > 40 && g.vx > 0.45)) { settleRow(row, 0); if (Gesture.openRow === row) Gesture.openRow = null; toggleDone(id); return; }
   if (g.full) {
-    ti.style.transition = 'transform .3s var(--spring)'; ti.style.transform = `translateX(${-w}px)`;
+    ti.style.transition = `transform ${MS.standard}ms ${EASE.ios}`; ti.style.transform = `translateX(${-w}px)`;
     row.style.setProperty('--sw', w + 'px');
     Gesture.openRow = null; setTimeout(() => deleteTask(id), 220); return;
   }
@@ -71,10 +72,13 @@ function moveEdge(G: PageG, p: Pt): boolean {
   if (!G.active) {
     if (dx < 4 && Math.abs(dy) < SLOP) return false;
     if (Math.abs(dy) > dx * 1.5) { Gesture.g = null; return false; } // scrolling down the edge of the page: let it
+    // catch the screen wherever it is, even halfway through opening or closing (interruptible, no jump)
+    const m = getComputedStyle(G.top).transform;
+    G.base = m && m !== 'none' ? Math.max(0, new DOMMatrixReadOnly(m).m41) : 0;
     G.active = true; G.x0 = p.x - Math.min(dx, 6); document.getElementById('stack')!.classList.add('dragging'); Nav.dragging = true;
   }
   G.v.add(p.x, p.y);
-  G.dx = Math.max(0, p.x - G.x0);
+  G.dx = Math.max(0, G.base + p.x - G.x0);
   const k = Math.min(1, G.dx / G.w);
   G.top.style.transform = `translate3d(${G.dx}px,0,0)`;
   G.prev.style.transform = `translate3d(${-28 * (1 - k)}%,0,0)`;
@@ -99,7 +103,7 @@ export function useStackGestures(stackRef: React.RefObject<HTMLDivElement | null
     const pageG = (kind: 'edge' | 'pan', p: Pt): PageG | null => {
       const live = liveEntries(); if (live.length < 2) return null;
       const top = viewEl(live[live.length - 1].id), prev = viewEl(live[live.length - 2].id); if (!top || !prev) return null;
-      const g: PageG = { kind, pid: p.id, touch: p.touch, x0: p.x, y0: p.y, top, prev, w: stackEl.offsetWidth, dx: 0, active: false, v: new Velocity() };
+      const g: PageG = { kind, pid: p.id, touch: p.touch, x0: p.x, y0: p.y, top, prev, w: stackEl.offsetWidth, dx: 0, base: 0, active: false, v: new Velocity() };
       g.v.add(p.x, p.y); return g;
     };
     // a finger or the mouse went down: work out what it might become
