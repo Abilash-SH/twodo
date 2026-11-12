@@ -1,6 +1,6 @@
 # Twodo: migration from plain JavaScript to Next.js + React + TypeScript
 
-This is a migration, not a redesign. The app looks and behaves like v3.6. With the same data loaded, every main screen differs from the original only by the icon glyph pixels (tested at phone and desktop sizes). The original plain-JavaScript app stays on `main` (tag `v3-vanilla`) until this branch is merged.
+This is a migration, not a redesign. The app looks and behaves like v3.6. With the same data loaded, every main screen differs from the original only by the icon glyph pixels (tested at phone and desktop sizes). The original plain-JavaScript app stays on `main` until this branch is merged, and is also kept on the branch `backup/v3-vanilla`.
 
 ## 1. Original architecture (v3.6)
 - **Front end:** one `index.html` plus 25 classic `<script>` files that share one global scope (about 4,700 lines of JS). Plus `styles.css` and `chat.css` (about 1,400 lines). No build step.
