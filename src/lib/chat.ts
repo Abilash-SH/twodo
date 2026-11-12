@@ -35,6 +35,7 @@ export const chatEvents = {
   onMessages: (_fresh: Msg[], _initial: boolean): void => {},
   onState: (): void => {},
   onPartnerReaction: (_m: Msg, _r: string): void => {},
+  onReadElsewhere: (): void => {}, // another of your devices read further than this one
 };
 
 export const Chat = {
@@ -45,6 +46,7 @@ export const Chat = {
   typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0,
   lastPxD: null as string | null, lastMxD: null as string | null, typingT: undefined as ReturnType<typeof setTimeout> | undefined,
   presence: null as Presence | null, xAt: 0, xPending: false, saveT: undefined as ReturnType<typeof setTimeout> | undefined,
+  readT: undefined as ReturnType<typeof setTimeout> | undefined,
 
   partnerUid(): string | null { const p = D.people && D.people[partnerKey()]; return (p && p.uid) || (L.pair && L.pair.uid) || null; },
   ready(): boolean { return Sync.enabled() && !!Sync.key && !!Sync.space && !!(L.pair && L.pair.status === 'paired') && !!this.partnerUid(); },
@@ -166,7 +168,7 @@ export const Chat = {
     if (mv && mv.d !== this.lastMxD) {
       this.lastMxD = mv.d || null;
       const mx = await this.dec<{ read?: number }>(mv);
-      if (mx && cNum(mx.read) > this.read) { this.read = cNum(mx.read); this.saveSoon(); this.updateBadge(); }
+      if (mx && cNum(mx.read) > this.read) { this.read = cNum(mx.read); this.saveSoon(); this.updateBadge(); chatEvents.onReadElsewhere(); }
     }
     if (this.xPending) { this.xPending = false; void this.writeX(); }
     const before = this.rx, rx: Record<string, Record<string, string>> = {};
@@ -259,10 +261,16 @@ export const Chat = {
   },
   beat() { if (this.ready() && !document.hidden && Date.now() - this.xAt > 40e3) void this.writeX(); },
   lastPartnerTs(): number { const me = L.auth && L.auth.uid; let t = 0; for (const m of Object.values(this.msgs)) if (m.f !== me && m.ts > t) t = m.ts; return t; },
-  markRead() {
-    const last = this.lastPartnerTs(); if (!last || last <= this.read) return;
-    this.read = last; this.bump(); this.saveSoon(); void this.writeX(); this.updateBadge();
-    const pu = this.partnerUid(); // cancel a pending "new message" push, we've seen it
+  /** Everything from your partner up to `upTo` (default: the latest message) has been on your screen.
+   *  The chat screen decides what that is; reading in older history must not mark newer messages as seen. */
+  markRead(upTo?: number) {
+    const last = this.lastPartnerTs(), to = upTo === undefined ? last : Math.min(upTo, last);
+    if (!to || to <= this.read) return;
+    this.read = to; this.bump(); this.saveSoon(); this.updateBadge();
+    // one receipt for a burst of reading (scrolling through several new messages)
+    clearTimeout(this.readT); this.readT = setTimeout(() => { void this.writeX(); }, 250);
+    if (to < last) return;
+    const pu = this.partnerUid(); // cancel a pending "new message" push, we've seen it all
     if (pu && CFG.vapidPublicKey) dbPatch(`rem/${Sync.space}`, { ['chat_' + pu]: null }).catch(() => {});
   },
   unread(): number { const me = L.auth && L.auth.uid; return Object.values(this.msgs).filter(m => m.f !== me && !m.del && m.ts > this.read).length; },

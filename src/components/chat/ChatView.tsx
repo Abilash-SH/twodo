@@ -103,7 +103,7 @@ const MessageRow = memo(function MessageRow({ m, cls }: { m: Msg; cls: string; r
   && a.m.t === b.m.t && a.m.del === b.m.del && a.m.fx === b.m.fx && a.m.f === b.m.f && a.m.ts === b.m.ts
   && a.m.rp === b.m.rp && a.m.task === b.m.task && a.revision === b.revision && a.cls === b.cls && a.photo === b.photo);
 
-interface Item { k: string; cls: string; node?: React.ReactNode; id?: string; m?: Msg; revision?: string; photo?: string }
+interface Item { k: string; cls: string; node?: React.ReactNode; id?: string; m?: Msg; revision?: string; photo?: string; role?: 'separator' }
 function items(): Item[] {
   const me = L.auth!.uid, sorted = Object.values(Chat.msgs).sort((a, b) => (a.id < b.id ? -1 : 1));
   // reading older messages? new ones mustn't push rows out of the top (that would make the page jump)
@@ -123,11 +123,14 @@ function items(): Item[] {
   }
   const out: Item[] = []; let prev: Msg | null = null;
   const lastMine = [...ms].reverse().find(m => m.f === me && !m.del), last = ms[ms.length - 1];
+  // the "New messages" line: above the first message from your partner that hadn't been on screen when you came back
+  const mark = ChatCtl.divider, firstNew = mark === null ? undefined : ms.find(m => m.f !== me && !m.del && m.ts > mark);
   ms.forEach((m, i) => {
     const next = ms[i + 1], brk = !prev || m.ts - prev.ts > 3600e3;
     if (brk) out.push({ k: 't' + m.id, cls: 'c-time', node: <ChatTime ts={m.ts} /> });
-    const start = brk || prev!.f !== m.f || m.ts - prev!.ts > 120e3 || prev!.del || m.del;
-    const end = !next || next.f !== m.f || next.ts - m.ts > 120e3 || next.del || m.del;
+    if (m === firstNew) out.push({ k: 'new', cls: 'c-new', role: 'separator', node: 'New messages' });
+    const start = brk || m === firstNew || prev!.f !== m.f || m.ts - prev!.ts > 120e3 || prev!.del || m.del;
+    const end = !next || next === firstNew || next.f !== m.f || next.ts - m.ts > 120e3 || next.del || m.del;
     const mine = m.f === me, side = mine ? 'me' : 'them';
     const hasTb = Object.keys(Chat.rx[m.id] || {}).length > 0;
     out.push({ k: m.id, id: m.id, m: { ...m }, photo: person(partnerKey()).photo,
@@ -388,7 +391,17 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
   const typingShown = useRef(false), moreT = useRef(0), drawnV = useRef(-1);
   const [, force] = useState(0);
   useBubbleGestures(list);
-  useLayoutEffect(() => { ChatCtl.view = ref.current; return () => { if (ChatCtl.view === ref.current) ChatCtl.view = null; }; }, []);
+  useLayoutEffect(() => { ChatCtl.view = ref.current; return () => { if (ChatCtl.view === ref.current) { ChatCtl.view = null; ChatCtl.here = false; } }; }, []);
+  useEffect(() => { // back from another app: a new visit (where the unread messages start), then read what's on screen
+    const vis = () => {
+      if (ChatCtl.presence()) { renderNow(); return; }
+      if (document.hidden) return;
+      if (ChatCtl.landing) { ChatCtl.landing = false; if (ChatCtl.pinned) ChatCtl.land(); }
+      ChatCtl.readVisible();
+    };
+    document.addEventListener('visibilitychange', vis);
+    return () => document.removeEventListener('visibilitychange', vis);
+  }, []);
   useEffect(() => { Chat.ensure(); }, []);
   useEffect(() => { // every 15 s: say we're here, refresh "last seen"
     const t = setInterval(() => { Chat.beat(); if (ChatCtl.shown()) renderNow(); }, 15000);
@@ -416,11 +429,13 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
   }, []);
   // after every render: scroll/animate for what just happened, or simply stay at the bottom
   useLayoutEffect(() => {
+    if (ChatCtl.presence()) { renderNow(); return; } // a visit just started and the "New messages" line moved: draw it first
     const op = ChatCtl.pending; ChatCtl.pending = null;
     // Only new content needs pinning. A navigation re-render (the chat sliding under a page) must not read
     // scrollHeight: that forces a full layout of the page being pushed, inside the tap (~20 ms on a phone).
     const fresh = drawnV.current !== v; drawnV.current = v;
     if (op) ChatCtl.afterDraw(op);
+    else if (ChatCtl.landing) { ChatCtl.landing = false; if (ChatCtl.pinned) ChatCtl.land(); } // start where the unread messages start
     else if (fresh && ChatCtl.pinned && body.current) body.current.scrollTop = body.current.scrollHeight;
     const typing = !!(paired && Chat.partnerTyping());
     if (typing && !typingShown.current) {
@@ -428,18 +443,20 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
       const bd = body.current!; if (bd.scrollHeight - bd.scrollTop - bd.clientHeight < 140) bd.scrollTo({ top: bd.scrollHeight, behavior: 'smooth' });
     }
     typingShown.current = typing;
-    if (ChatCtl.isOpen()) Chat.markRead();
+    ChatCtl.readVisible(); // only what is actually on screen counts as read
   });
 
   // rebuilt only when the data changes, not when the chat merely slides under a page
   const its = useMemo(items, [v, paired]); // eslint-disable-line react-hooks/exhaustive-deps
+  const unread = paired ? Chat.unread() : 0;
   return (
     <section ref={ref} className={`${cls} chatview${paired ? '' : ' nopair'}`} data-vid={entry.id}>
       <div ref={body} className="chatbody" onScroll={e => {
         const b = e.currentTarget, gap = b.scrollHeight - b.scrollTop - b.clientHeight;
         ChatCtl.pinned = gap < 80;
-        if (gap < 140 && ChatCtl.jumpShown) { ChatCtl.jumpShown = false; force(n => n + 1); }
-        if (gap < 140) Chat.markRead();
+        const far = gap >= 140;
+        if (far !== ChatCtl.far) { ChatCtl.far = far; force(n => n + 1); } // the "new messages" pill comes and goes
+        ChatCtl.readVisible();
         ref.current!.querySelector('.chat-nav')!.classList.toggle('scrolled', b.scrollTop > 2);
         if (b.scrollTop < 400 && ChatCtl.total > ChatCtl.limit && !moreT.current) moreT.current = requestAnimationFrame(() => { // load older messages, keeping your place
           moreT.current = 0;
@@ -463,12 +480,12 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
           ChatCtl.lastTap = { id: row.dataset.id || null, t: now };
           if (card) setTimeout(() => { if (ChatCtl.lastTap.id === row.dataset.id && D.tasks[card.dataset.task!]) openTaskSheet(card.dataset.task!); }, 330);
         }}>
-          {its.map(it => it.m ? <MessageRow key={it.k} m={it.m} cls={it.cls} revision={it.revision!} photo={it.photo} /> : <div key={it.k} className={it.cls}>{it.node}</div>)}
+          {its.map(it => it.m ? <MessageRow key={it.k} m={it.m} cls={it.cls} revision={it.revision!} photo={it.photo} /> : <div key={it.k} className={it.cls} role={it.role}>{it.node}</div>)}
         </div>
         <div className="c-typing">{paired && Chat.partnerTyping() ? <div className="msg-row them start end"><span className="c-av"><Avatar k={partnerKey()} /></span><div className="bwrap"><div className="bub them typing"><i /><i /><i /></div></div></div> : null}</div>
       </div>
       <ChatHeader />
-      <button className="c-jump" type="button" hidden={!ChatCtl.jumpShown} onClick={() => body.current!.scrollTo({ top: body.current!.scrollHeight, behavior: 'smooth' })}><Icon name="chevD" cls="xs" /> New message</button>
+      <button className="c-jump" type="button" hidden={!(ChatCtl.far && unread > 0)} onClick={() => ChatCtl.jumpNew()}><Icon name="chevD" cls="xs" /> {unread > 1 ? `${unread} new messages` : 'New message'}</button>
       <ChatBar />
     </section>
   );
