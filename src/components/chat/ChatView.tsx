@@ -19,6 +19,7 @@ import { navTo, type Entry } from '@/ui/nav';
 import { viewPhoto } from '@/ui/photos';
 import { useStore } from '@/ui/store';
 import { toggleDone } from '@/ui/tasks';
+import { takeDraft, updateStore } from '@/ui/update';
 import { openTaskSheet } from '../sheets/TaskSheet';
 import { openInviteSheet } from '../settings/AccountSheets';
 import { openSettings } from '../settings/Settings';
@@ -218,9 +219,10 @@ function ChatHeader() {
     const el = subRef.current; if (!el) return; el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
   }, [sub]);
   const setWarn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
+  const update = useStore(updateStore).ready;
   return (
     <header className="chat-nav">
-      <button className="fab-btn" type="button" aria-label="Settings" onClick={() => openSettings()}><Icon name="gear" /><i className="fab-dot warn" hidden={!setWarn} /></button>
+      <button className="fab-btn" type="button" aria-label="Settings" onClick={() => openSettings()}><Icon name="gear" /><i className={`fab-dot${setWarn ? ' warn' : ''}`} hidden={!setWarn && !update} /></button>
       <div className="ch-who">
         <div className={`lovebar${on ? ' live' : ''}`}>
           <button className="lb-av pt" type="button" aria-label="View photo" onClick={e => (paired ? viewPhoto(pk, e.currentTarget.querySelector('.av')) : openInviteSheet())}>
@@ -255,6 +257,10 @@ function ChatBar() {
     const t = setTimeout(() => setBarState(s => (s === 'out' ? 'hidden' : s)), 240);
     return () => clearTimeout(t);
   }, [r, pop]);
+  useLayoutEffect(() => { // what you were typing before an update is back in the box
+    const el = input.current, draft = takeDraft('chat');
+    if (el && draft && !el.value) { el.value = draft; autosize(el); }
+  }, []);
   useTapKeep(send, () => { if (held.current) { held.current = false; return; } ChatCtl.sendNow(input.current!.value); }, input);
   useTapKeep(heart, () => ChatCtl.sendNow('❤️', 'love'), input);
   useTapKeep(plus, () => openShare(plus.current!), input);

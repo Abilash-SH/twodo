@@ -1,6 +1,7 @@
 'use client';
 /* Twodo · the task composer: type naturally, see what it understood (chips), tap pills to add details, send */
 import { useEffect, useRef, useState } from 'react';
+import { takeDraft } from '@/ui/update';
 import { blip, haptic } from '@/lib/feedback';
 import { KIND_LABEL, parseTask, type ChipKind } from '@/lib/parse';
 import { renderNow, scheduleRender } from '@/lib/render';
@@ -77,6 +78,10 @@ export function Composer({ hidden }: { hidden: boolean }) {
   useStore(composerState);
   const el = useRef<HTMLDivElement>(null), ta = useRef<HTMLTextAreaElement>(null), send = useRef<HTMLButtonElement>(null), ctxRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState(''), [focus, setFocus] = useState(false), [ignored, setIgnored] = useState<Set<string>>(new Set()), [ph, setPh] = useState(0);
+  useEffect(() => { // what you were typing before an update is back in the box
+    const draft = takeDraft('task');
+    if (draft && ta.current && !ta.current.value) { ta.current.value = draft; setText(draft); }
+  }, []);
   const blurT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
   const parsed = lines.length === 1 ? parseTask(lines[0], ignored) : null;
