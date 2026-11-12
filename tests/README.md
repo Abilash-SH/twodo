@@ -9,19 +9,13 @@ pip install playwright                         # and a Chrome/Chromium; set CHRO
 python3 tests/mock_firebase.py &               # fake Firebase on 127.0.0.1:9000
 sh scripts/build-test.sh                       # test build → .test-out/
 python3 -m http.server 8003 --directory .test-out &
-python3 tests/e2e/test_1_pair_and_chat.py      # creates both accounts and pairs them (run this first)
-python3 tests/e2e/test_2_todos.py
-python3 tests/e2e/test_3_desktop_focus_signout.py
-python3 tests/e2e/test_5_service_worker_responsive.py
-python3 tests/e2e/test_6_secret_gestures_keyboard.py
-python3 tests/e2e/test_7_native_regressions.py
-python3 tests/e2e/test_8_keyboard_layers_motion_settings.py
-python3 tests/e2e/test_9_navigation_fullscreen.py
+python3 tests/e2e/test_1_pair_and_chat.py      # creates both accounts and pairs them (run this first, on a freshly started mock)
+for t in $(ls tests/e2e/test_*.py | sort -t_ -k2 -n | tail -n +2); do python3 "$t" || break; done   # every other test, in order
 node tests/velocity.cjs
 ```
 `test_4_offline_onboarding.py` needs a build without Firebase settings (no accounts), served on port 8004:
 `NEXT_PUBLIC_FIREBASE_API_KEY= NEXT_PUBLIC_FIREBASE_DATABASE_URL= NEXT_PUBLIC_BASE_PATH= npm run build`.
-Each test prints what it checked and ends with `ERRORS: NONE` when the page logged no errors.
+Each test prints what it checked and ends with `ERRORS: NONE` when the page logged no errors. The first lines of each test file say what it covers.
 
 Tests 6 and 7 require both online (8003) and offline (8004) builds. Test 7 asserts
 geometry, focus retention, encrypted long-passcode round trips and changes, overlay

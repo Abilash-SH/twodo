@@ -21,6 +21,7 @@ export const Gesture = { g: null as Gest | null, suppressClickUntil: 0, openRow:
 renderGate.busy = () => Nav.dragging || (!!Gesture.g && Gesture.g.kind === 'row' && Gesture.g.mode === 'swipe');
 
 const EDGE = 32; // px from the left edge where a swipe always means "back"
+const SYSTEM_EDGE = 48; // px from the left edge where iOS may start its own back swipe as well
 const shade = () => document.querySelector<HTMLElement>('#stack > .shade');
 
 function setSwipe(g: RowG, x: number) {
@@ -101,7 +102,8 @@ function endEdge(G: PageG, cancelled = false) {
   G.prev.style.transition = G.top.style.transition;
   G.top.style.transform = ''; G.prev.style.transform = '';
   setTimeout(() => { G.top.style.transition = ''; G.prev.style.transition = ''; }, ms + 20);
-  if (go) { Gesture.suppressClickUntil = performance.now() + 400; haptic('light'); popView(); }
+  // only a finger that started at the screen edge can also have set off the phone's own back gesture
+  if (go) { Gesture.suppressClickUntil = performance.now() + 400; haptic('light'); popView({ systemToo: G.touch && G.x0 <= SYSTEM_EDGE }); }
   else { const sh = shade(); if (sh) sh.style.opacity = '.12'; }
   flushDeferred();
 }
