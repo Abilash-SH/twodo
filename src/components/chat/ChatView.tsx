@@ -1,6 +1,6 @@
 'use client';
 /* Twodo · Home is your chat: the two of you on top, the conversation, and a floating message box */
-import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Chat, REACTS, type Msg, type TaskRef } from '@/lib/chat';
 import { haptic } from '@/lib/feedback';
 import { Ink, playBubbleFx } from '@/lib/fx';
@@ -8,7 +8,7 @@ import { renderNow } from '@/lib/render';
 import { D, L, SMART, fmtDue, liveTasks, makeTask, partnerKey, person, ptName, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
 import { parseTask } from '@/lib/parse';
-import { copyText, dayDiff, firstWord, isTouch, todayStr, ymd } from '@/lib/util';
+import { copyText, dayDiff, firstWord, isTouch, reducedMotion, todayStr, ymd } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { useTapKeep } from '@/hooks/useTapKeep';
 import { Velocity, touchById } from '@/hooks/swipe';
@@ -87,7 +87,22 @@ export function MessageInner({ m, mine }: { m: Msg; mine: boolean }) {
 }
 
 /* ---------- the list, as keyed rows ---------- */
-interface Item { k: string; cls: string; node: React.ReactNode; id?: string }
+// The data layer mutates status/reactions in place. Capture a primitive revision at render time;
+// object identity alone would miss acknowledgements, unsends, quotes and live shared-task edits.
+const MessageRow = memo(function MessageRow({ m, cls }: { m: Msg; cls: string; revision: string; photo?: string }) {
+  const mine = m.f === L.auth!.uid;
+  return <div className={cls} data-id={m.id}>{m.del
+    ? <div className="unsent">{mine ? 'You' : firstWord(ptName())} unsent a message</div>
+    : <>
+      {m.status === 'failed' ? <button className="c-fail" data-retry={m.id} type="button" aria-label="Retry sending">!</button> : null}
+      {mine ? null : <span className="c-av">{cls.includes(' end') ? <Avatar k={partnerKey()} /> : null}</span>}
+      <MessageInner m={m} mine={mine} />
+    </>}</div>;
+}, (a, b) => a.m.id === b.m.id && a.m.status === b.m.status && a.m._u === b.m._u
+  && a.m.t === b.m.t && a.m.del === b.m.del && a.m.fx === b.m.fx && a.m.f === b.m.f && a.m.ts === b.m.ts
+  && a.m.rp === b.m.rp && a.m.task === b.m.task && a.revision === b.revision && a.cls === b.cls && a.photo === b.photo);
+
+interface Item { k: string; cls: string; node?: React.ReactNode; id?: string; m?: Msg; revision?: string; photo?: string }
 function items(): Item[] {
   const me = L.auth!.uid, sorted = Object.values(Chat.msgs).sort((a, b) => (a.id < b.id ? -1 : 1));
   // reading older messages? new ones mustn't push rows out of the top (that would make the page jump)
@@ -113,21 +128,19 @@ function items(): Item[] {
     const start = brk || prev!.f !== m.f || m.ts - prev!.ts > 120e3 || prev!.del || m.del;
     const end = !next || next.f !== m.f || next.ts - m.ts > 120e3 || next.del || m.del;
     const mine = m.f === me, side = mine ? 'me' : 'them';
-    if (m.del) out.push({ k: m.id, id: m.id, cls: `msg-row ${side} start end`, node: <div className="unsent">{mine ? 'You' : firstWord(ptName())} unsent a message</div> });
-    else {
-      const hasTb = Object.keys(Chat.rx[m.id] || {}).length > 0;
-      out.push({ k: m.id, id: m.id, cls: `msg-row ${side}${start ? ' start' : ''}${end ? ' end' : ''}${hasTb ? ' has-tb' : ''}`, node: <>
-        {m.status === 'failed' ? <button className="c-fail" data-retry={m.id} type="button" aria-label="Retry sending">!</button> : null}
-        {mine ? null : <span className="c-av">{end ? <Avatar k={partnerKey()} /> : null}</span>}
-        <MessageInner m={m} mine={mine} /></> });
-    }
-    // ♡ sent · ♥ seen (filled) · faint while sending
+    const hasTb = Object.keys(Chat.rx[m.id] || {}).length > 0;
+    out.push({ k: m.id, id: m.id, m: { ...m }, photo: person(partnerKey()).photo,
+      cls: `msg-row ${side}${start ? ' start' : ''}${end ? ' end' : ''}${hasTb ? ' has-tb' : ''}`,
+      revision: JSON.stringify([Chat.rx[m.id], m.task ? D.tasks[m.task.id]?.updatedAt : null,
+        m.rp ? ChatCtl.previewOf(Chat.msgs[m.rp.id] || m) : null,
+        L.auth!.uid, partnerKey(), person(partnerKey()).name, person(partnerKey()).color]) });
+    // One heart delivered, two overlapping hearts seen; faint while sending.
     if (m === lastMine && (m === last || m.status !== 'sent')) {
       const heart = <svg className="hs" viewBox="0 0 24 24" aria-hidden="true"><path d={HEART} /></svg>;
       out.push(m.status === 'failed' ? { k: 's' + m.id, cls: 'c-status fail', node: 'Not delivered' }
         : m.status === 'sending' ? { k: 's' + m.id, cls: 'c-status sending', node: heart }
-        : Chat.partnerRead >= m.ts ? { k: 's' + m.id, cls: 'c-status seen', node: <>{heart}<span className="sr">Seen</span></> }
-        : { k: 's' + m.id, cls: 'c-status sent', node: <>{heart}<span className="sr">Sent</span></> });
+        : Chat.partnerRead >= m.ts ? { k: 's' + m.id, cls: 'c-status seen', node: <>{heart}{heart}<span className="sr">Seen</span></> }
+        : { k: 's' + m.id, cls: 'c-status sent', node: <>{heart}<span className="sr">Delivered</span></> });
     }
     prev = m;
   });
@@ -139,6 +152,7 @@ function quickHeart(row: HTMLElement) {
   const id = row.dataset.id!, m = Chat.msgs[id]; if (!m || m.del) return;
   void Chat.react(id, '❤️'); haptic('success');
   const w = row.querySelector('.bwrap')!, h = document.createElement('div'); h.className = 'c-pop-heart'; h.textContent = '❤️'; w.appendChild(h);
+  if (reducedMotion.matches) { h.remove(); return; }
   h.animate([{ transform: 'translate(-50%,-50%) scale(.2)', opacity: 0 }, { transform: 'translate(-50%,-50%) scale(1.4)', opacity: 1, offset: 0.4 }, { transform: 'translate(-50%,-90%) scale(1)', opacity: 0 }],
     { duration: 800, easing: 'cubic-bezier(.34,1.56,.64,1)' }).onfinish = () => h.remove();
 }
@@ -168,7 +182,7 @@ function openBubbleMenu(row: HTMLElement | null) {
       if (k === 'retry') return Chat.retry(id);
       if (k === 'unsend') {
         const el = ChatCtl.el(id);
-        if (el) el.animate([{ transform: 'none', opacity: 1, filter: 'blur(0)' }, { transform: 'scale(.6)', opacity: 0, filter: 'blur(6px)' }], { duration: 350, easing: 'ease-in', fill: 'forwards' });
+        if (el && !reducedMotion.matches) el.animate([{ transform: 'none', opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], { duration: 350, easing: 'ease-in', fill: 'forwards' });
         setTimeout(() => Chat.unsend(id), 330); return;
       }
       if (k === 'task') {
@@ -223,6 +237,11 @@ function ChatHeader() {
 }
 
 /* ---------- the message box ---------- */
+function CancelReply({ input }: { input: React.RefObject<HTMLTextAreaElement | null> }) {
+  const button = useRef<HTMLButtonElement>(null);
+  useTapKeep(button, () => { ChatCtl.clearReply(); haptic('light'); }, input);
+  return <button ref={button} className="rb-x" type="button" aria-label="Cancel reply"><Icon name="x" /></button>;
+}
 function ChatBar() {
   const input = useRef<HTMLTextAreaElement>(null), send = useRef<HTMLButtonElement>(null), heart = useRef<HTMLButtonElement>(null), plus = useRef<HTMLButtonElement>(null);
   const { r, pop } = useStore(replyStore);
@@ -243,7 +262,7 @@ function ChatBar() {
       <div className={`cb-reply${barState === 'in' ? ' in' : ''}${barState === 'out' ? ' out' : ''}`} hidden={barState === 'hidden'} key={barState === 'in' ? 'in' + pop : 'bar'}>
         <span className="rb-ic"><Icon name="reply" /></span>
         <div className="rb-t"><b>{r ? (r.f === L.auth!.uid ? 'Replying to yourself' : 'Replying to ' + firstWord(ptName())) : ''}</b><span>{r ? r.q || 'Message' : ''}</span></div>
-        <button className="rb-x" type="button" aria-label="Cancel reply" onClick={() => { ChatCtl.clearReply(); haptic('light'); }}><Icon name="x" /></button>
+        <CancelReply input={input} />
       </div>
       <div className="cb-row">
         <button ref={plus} className="cb-plus" type="button" aria-label="Share a to-do"><Icon name="plus" /></button>
@@ -293,7 +312,6 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
         if (Math.abs(mx) < 6 && Math.abs(my) < 6) return false;
         if (mx > 0 && mx > Math.abs(my) * 0.85) { // sideways-ish to the right: it's a reply swipe
           G.lock = 'x'; clearTimeout(ChatCtl.lp); ChatCtl.suppressUntil = performance.now() + 700;
-          G.x0 = x - Math.min(mx, 6); // no jump: start following from here
           G.hint = document.createElement('span'); G.hint.className = 'rp-hint';
           G.hint.append(replyIcon());
           G.row.append(G.hint); G.row.classList.add('swiping'); G.row.style.transition = 'none';
@@ -304,7 +322,7 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       const t = Math.min(96, G.dx < TH ? G.dx : TH + (G.dx - TH) * 0.25);
       G.row.style.transform = `translate3d(${t}px,0,0)`;
       const p = Math.min(1, G.dx / TH);
-      G.hint!.style.opacity = String(Math.min(1, p * 1.4)); G.hint!.style.scale = String(0.5 + 0.5 * p);
+      G.hint!.style.opacity = String(Math.min(1, p * 1.4)); G.hint!.style.transform = `scale(${0.5 + 0.5 * p})`;
       if (G.dx >= TH && !G.hit) { G.hit = true; G.hint!.classList.add('hit'); haptic('medium'); }
       else if (G.dx < TH - 8 && G.hit) { G.hit = false; G.hint!.classList.remove('hit'); }
       return true;
@@ -314,9 +332,9 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       const { vx } = G.v.get(), last = G.dx + G.x0 - G.sx; // how far the finger really travelled
       const go = fire && (G.hit || (last > 24 && vx > 0.3)); // reached the arrow, or flicked toward it
       const row = G.row, hint = G.hint;
-      row.style.transition = 'transform .42s cubic-bezier(.34,1.56,.64,1)'; row.style.transform = '';
+      row.style.transition = reducedMotion.matches ? 'none' : 'transform .42s cubic-bezier(.34,1.56,.64,1)'; row.style.transform = '';
       setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, 440);
-      if (go) { if (!G.hit) haptic('medium'); ChatCtl.setReply(G.m); }
+      if (go) { if (!G.hit) haptic('medium'); ChatCtl.setReply(G.m, false); }
     };
     // touch
     const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(false); return; } const t = e.touches[0]; begin(e.target as HTMLElement, t.clientX, t.clientY, t.identifier, true); };
@@ -431,7 +449,7 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
           ChatCtl.lastTap = { id: row.dataset.id || null, t: now };
           if (card) setTimeout(() => { if (ChatCtl.lastTap.id === row.dataset.id && D.tasks[card.dataset.task!]) openTaskSheet(card.dataset.task!); }, 330);
         }}>
-          {its.map(it => <div key={it.k} className={it.cls} data-id={it.id}>{it.node}</div>)}
+          {its.map(it => it.m ? <MessageRow key={it.k} m={it.m} cls={it.cls} revision={it.revision!} photo={it.photo} /> : <div key={it.k} className={it.cls}>{it.node}</div>)}
         </div>
         <div className="c-typing">{paired && Chat.partnerTyping() ? <div className="msg-row them start end"><span className="c-av"><Avatar k={partnerKey()} /></span><div className="bwrap"><div className="bub them typing"><i /><i /><i /></div></div></div> : null}</div>
       </div>

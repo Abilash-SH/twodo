@@ -15,15 +15,13 @@ export function haptic(kind: HapticKind = 'light'): void {
   } catch { /* ignore */ }
 }
 // The switch lives in <head> for one click, so it is never rendered and can never take focus (a rendered one did,
-// which closed the keyboard after every message). If focus moves anyway, it goes straight back.
+// which closed the keyboard after every message). Activation does not focus the input.
 function iosTick(): void {
-  const keep = document.activeElement as HTMLElement | null;
   const label = document.createElement('label'), input = document.createElement('input');
   label.setAttribute('aria-hidden', 'true'); label.style.display = 'none';
   input.type = 'checkbox'; input.setAttribute('switch', ''); input.tabIndex = -1;
   label.append(input); document.head.append(label);
   try { label.click(); } finally { label.remove(); }
-  if (keep && keep !== document.activeElement && keep.isConnected && keep.matches('input, textarea, [contenteditable]')) keep.focus({ preventScroll: true });
 }
 
 /* ---------- Sounds ---------- */

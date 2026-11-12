@@ -1,7 +1,7 @@
 'use client';
 /* Twodo · sheets: card modals that slide up, and close with Done, a tap outside, a drag down or a swipe right */
 import { useEffect, useRef, useState } from 'react';
-import { clamp } from '@/lib/util';
+import { clamp, reducedMotion } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { NO_SWIPE, SLOP, Velocity, flung, touchById } from '@/hooks/swipe';
 import { closeSheet, sheetStore, type SheetEntry } from '@/ui/sheet';
@@ -13,12 +13,16 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = sh.current; if (!el) return;
     const head = el.querySelector<HTMLElement>('.sheet-head')!, body = el.querySelector<HTMLElement>('.sheet-body')!;
+    let settling = false;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (fn: () => void, ms: number) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); };
     let S: { id: number; x0: number; y0: number; axis: null | 'x' | 'y'; d: number; v: Velocity; canDown: boolean } | null = null;
     const apply = (d: number, axis: 'x' | 'y') => {
       el.style.transform = axis === 'y' ? `translate3d(0,${d}px,0)` : `translate3d(${d}px,0,0)`;
       document.body.style.setProperty('--sp', String(clamp(1 - d / (axis === 'y' ? el.offsetHeight : el.offsetWidth), 0, 1)));
     };
     const begin = (id: number, x: number, y: number, target: HTMLElement) => {
+      if (settling) return;
       if (target.closest('button') && head.contains(target)) return;
       const inHead = head.contains(target);
       if (!inHead && target.closest(NO_SWIPE)) return;
@@ -31,7 +35,7 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
       if (!G.axis) {
         if (Math.abs(dx) < SLOP && Math.abs(dy) < SLOP) return false;
         if (G.canDown && dy > 0 && dy >= Math.abs(dx)) G.axis = 'y';
-        else if (!mouse && dx > 0 && dx > Math.abs(dy)) G.axis = 'x';
+        else if (!mouse && dx > 0 && dx > Math.abs(dy) * .85) G.axis = 'x';
         else { S = null; return false; }
         document.body.classList.add('sheet-drag'); el.style.transition = 'none';
       }
@@ -44,20 +48,19 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
       const G = S; S = null; if (!G || !G.axis) return;
       document.body.classList.remove('sheet-drag');
       const { vx, vy } = G.v.get();
-      if (G.axis === 'y') {
-        el.style.transition = ''; el.style.transform = '';
-        if (!cancel && (G.d > 130 || vy > 0.5)) closeSheet(); else document.body.style.setProperty('--sp', '1');
-        return;
+      const go = !cancel && (G.axis === 'y' ? flung(G.d, vy, el.offsetHeight) : flung(G.d, vx, el.offsetWidth));
+      settling = true;
+      el.style.transition = reducedMotion.matches ? 'none' : go ? 'transform .26s cubic-bezier(.2,.8,.2,1)' : 'transform .42s cubic-bezier(.34,1.4,.64,1)';
+      if (go) {
+        apply((G.axis === 'y' ? el.offsetHeight : el.offsetWidth) + 40, G.axis);
+        later(() => {
+          const back = G.axis === 'x' && el.querySelector<HTMLElement>('.sheet-bar [data-back]');
+          if (back) back.click(); else closeSheet();
+        }, reducedMotion.matches ? 0 : 260);
+      } else {
+        el.style.transform = ''; document.body.style.setProperty('--sp', '1');
+        later(() => { el.style.transition = ''; settling = false; }, reducedMotion.matches ? 0 : 430);
       }
-      if (!cancel && vx > -0.15 && flung(G.d, vx, el.offsetWidth)) { // swiped away: keep going off to the right
-        el.style.transition = 'transform .26s cubic-bezier(.2,.8,.2,1)'; apply(el.offsetWidth + 40, 'x');
-        const back = el.querySelector<HTMLElement>('.sheet-bar [data-back]'); // a page inside Settings goes back to Settings
-        if (back) back.click(); else closeSheet();
-        return;
-      }
-      el.style.transition = 'transform .42s cubic-bezier(.34,1.4,.64,1)'; el.style.transform = '';
-      document.body.style.setProperty('--sp', '1');
-      setTimeout(() => { el.style.transition = ''; }, 430);
     };
     const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(true); return; } const t = e.touches[0]; begin(t.identifier, t.clientX, t.clientY, e.target as HTMLElement); };
     const tMove = (e: TouchEvent) => {
@@ -79,6 +82,7 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
     head.addEventListener('pointerdown', pDown); head.addEventListener('pointermove', pMove);
     head.addEventListener('pointerup', pUp); head.addEventListener('pointercancel', pUp);
     return () => {
+      timers.forEach(clearTimeout); document.body.classList.remove('sheet-drag');
       el.removeEventListener('touchstart', tStart); el.removeEventListener('touchmove', tMove);
       el.removeEventListener('touchend', tEnd); el.removeEventListener('touchcancel', tEnd);
       head.removeEventListener('pointerdown', pDown); head.removeEventListener('pointermove', pMove);

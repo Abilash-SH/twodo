@@ -57,6 +57,13 @@ export const ChatCtl = {
   animateSent(id: string, from?: DOMRect) {
     const el = this.el(id), m = Chat.msgs[id]; if (!el || !m) return;
     this.animUntil = Date.now() + 900;
+    if (!reducedMotion.matches) {
+      const heart = document.createElement('span'); heart.className = 'c-send-heart'; heart.setAttribute('aria-hidden', 'true');
+      el.append(heart);
+      heart.animate([{ transform: 'translateY(0) scale(.4)', opacity: 0 },
+        { transform: 'translateY(-8px) scale(1)', opacity: 1, offset: .35 },
+        { transform: 'translateY(-22px) scale(.7)', opacity: 0 }], { duration: 520, easing: 'ease-out' }).onfinish = () => heart.remove();
+    }
     if (m.fx && FX.isBubble(m.fx) && m.fx !== 'ink') { playBubbleFx(el, m.fx, this.body()); this.animUntil = Date.now() + 2700; }
     else if (from && !reducedMotion.matches) {
       const to = el.getBoundingClientRect();
@@ -125,10 +132,7 @@ export const ChatCtl = {
     const m = Chat.send({ t: text.slice(0, 20000), fx, task, rp });
     Chat.played[m.id] = 1;
     if (rp) this.clearReply();
-    // keep the keyboard up for the next message: the field is focused, or lost focus to this very tap
-    const typing = document.activeElement === input || performance.now() - this.blurAt < 400;
     if (!task) { input.value = ''; autosize(input); }
-    if (typing) input.focus({ preventScroll: true }); // the keyboard stays up for the next message
     this.draw({ sentId: m.id, fromRect: from });
     setTimeout(() => { if (m.status === 'sending') renderNow(); }, 950);
     chatSound('send'); haptic('light');
@@ -139,11 +143,11 @@ export const ChatCtl = {
 
   /* ---------- reply ---------- */
   previewOf(m: Msg): string { return String(m.del ? 'Unsent message' : m.task ? '📋 ' + m.task.title : m.t || '').replace(/\s+/g, ' ').trim().slice(0, 120); },
-  setReply(m: Msg | undefined) {
+  setReply(m: Msg | undefined, withHaptic = true) {
     if (!this.view || !m || m.del) return;
     replyStore.set(s => ({ r: { id: m.id, f: m.f, q: this.previewOf(m) }, pop: s.pop + 1 }));
     this.input()?.focus({ preventScroll: true });
-    haptic('light');
+    if (withHaptic) haptic('light');
   },
   clearReply() { replyStore.set(s => ({ ...s, r: null })); },
   // scroll to the message a reply quotes, and let it glow for a moment

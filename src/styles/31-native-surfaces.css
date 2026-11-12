@@ -1,0 +1,72 @@
+/* One steady scene: no animated pixels behind glass, and no shell snapshot/shrink during a sheet. */
+.chatview::before { animation: none; will-change: auto; inset: 0; }
+#app, body.sheet-open #app, body.kb-anim #app { transform: none; border-radius: 0; transition: none; }
+#layer, body.kb-anim #layer { transition: none; }
+/* Replace the old focus-based standalone override: blur is earlier than keyboard dismissal. */
+body :is(#app, #layer) { top: var(--vvt, 0px); height: var(--vvh, 100%); }
+body.ios-fullscreen :is(#app, #layer) { top: 0; height: 100lvh; }
+
+/* Blur allowlist: only the top-level navigation bar on ordinary screens. All pills, rows and overlays
+   have opaque tinted fills. In particular chat never changes compositing strategy as the keyboard moves. */
+*, *::before, *::after { transition-property: transform, opacity !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.nav.scrolled { -webkit-backdrop-filter: blur(20px) saturate(160%) !important; backdrop-filter: blur(20px) saturate(160%) !important; }
+body.sheet-open .nav.scrolled { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.chat-nav::before, body.kb-anim .chat-nav::before {
+  opacity: 1; background: linear-gradient(var(--bg) 72%, transparent);
+  -webkit-mask-image: none; mask-image: none; transition: none;
+}
+.fab-btn, .cb-plus, .cb-pill, .cb-reply, .rp-hint, .c-time, .hub-card, .cbox, .tcard:not(.me):not(.them) {
+  background: var(--glass-sheen), var(--bg2);
+}
+.ch-pill { background: var(--glass-sheen), color-mix(in srgb, var(--pt-c) 16%, var(--bg2)); }
+.sheet, .alert { background-color: var(--sheet); }
+.mlist, [data-theme="dark"] .mlist { background-color: var(--bg2); }
+.tapb span { background: var(--glass-sheen), var(--bg2); }
+.pv-bg, .fxp-bg, #focus, .mbg { background: var(--bg); }
+.chatbar, .cb-pill, .nav, .keypad button, .pin-dots i, .fxp-row, .fxp-go, .mpal.tbp button { transition-property: transform, opacity; }
+.cb-pill:not(.has) .cb-heart, .lovebar.live .lb-line, .c-sub.online::before { animation: none; }
+/* Avoid nested/staggered entrances. NavStack assigns a single budget of six across each screen. */
+.view.enter :is(.hub-card, .group, .sec-h, .task, .hub-done, .cell) { animation: none; }
+.view.enter .entrance-item { animation: riseIn .4s var(--spring) both; animation-delay: var(--entrance-delay, 0ms); }
+
+/* Keep every stop in a bounded luminance range, including the blush at the opposite person's edge.
+   Colours inherit on the bubble itself so changes to either profile colour always reach its tail too. */
+:root {
+  --bub-ink: #241d2b; --bub-them-text: #241d2b;
+  --bub-me-top: color-mix(in srgb, var(--me-c) 30%, #fff);
+  --bub-me-end: color-mix(in srgb, var(--me-c) 46%, #fff);
+  --bub-them: color-mix(in srgb, var(--pt-c) 22%, #fff);
+  --bub-me-tip: color-mix(in srgb, var(--pt-c) 30%, #fff);
+  --bub-them-tip: color-mix(in srgb, var(--me-c) 38%, #fff);
+}
+[data-theme="dark"] {
+  --bub-ink: #fff; --bub-them-text: #fff;
+  --bub-me-top: color-mix(in srgb, var(--me-c) 28%, #18151f);
+  --bub-me-end: color-mix(in srgb, var(--me-c) 22%, #18151f);
+  --bub-them: color-mix(in srgb, var(--pt-c) 22%, #18151f);
+  --bub-me-tip: color-mix(in srgb, var(--pt-c) 38%, #18151f);
+  --bub-them-tip: color-mix(in srgb, var(--me-c) 38%, #18151f);
+}
+.msg-row .bub.me { background: linear-gradient(110deg, var(--bub-me-tip), var(--bub-me-top) 48%, var(--bub-me-end)); }
+.msg-row .bub.them { background: linear-gradient(250deg, var(--bub-them-tip), var(--bub-them) 56%); }
+/* Solid quote fills keep their small text as readable as the message. */
+.msg-row .bub .rq { color: inherit; background: var(--bub-them); }
+.msg-row .bub .rq b, .msg-row .bub .rq span { color: inherit; opacity: 1; }
+.msg-row.me.end .bub::after, .msg-row.them.end .bub::after { rotate: none; transform: none; animation: none; }
+.rp-hint { scale: 1; }
+.bwrap.ly-on .bub, .bwrap.ly-on .tcard { animation: seenPop .6s var(--bounce); }
+.c-status.seen .hs + .hs { margin-left: -6px; }
+.c-status.sent .hs { fill: var(--me-c); }
+.c-send-heart { position: absolute; right: 3px; top: -5px; width: 14px; height: 14px; pointer-events: none;
+  background: var(--pt-c); -webkit-mask: var(--heart-mask) center / contain no-repeat; mask: var(--heart-mask) center / contain no-repeat; }
+/* All fixed overlay controls stay inside the same visible box, including landscape safe areas. */
+.pv, .fxp, #focus { top: var(--vvt, 0px); bottom: auto; height: var(--vvh, 100%); }
+body.ios-fullscreen :is(.pv, .fxp, #focus) { top: 0; height: 100lvh; }
+.pv-main { max-height: 100%; padding: calc(20px + var(--safe-top)) calc(20px + var(--safe-right)) calc(20px + var(--safe-bottom)) calc(20px + var(--safe-left)); }
+.vault-password { width: 100%; max-width: 300px; text-align: left; font-size: 14px; }
+.vault-password input { display: block; width: 100%; margin-top: 8px; padding: 12px; font-size: 17px; border: 1px solid var(--sep); border-radius: 12px; background: var(--bg2); color: var(--label); user-select: text; }
+.vault-pad > button[hidden] { display: none; }
+.vault-code-kind { margin-top: 18px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0s !important; }
+}
