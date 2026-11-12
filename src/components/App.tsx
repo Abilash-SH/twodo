@@ -17,7 +17,8 @@ import { alertOpen } from '@/ui/alert';
 import { boot, gateStore, showGate, showOnboarding } from '@/ui/gate';
 import { focusOpen, island, showLive } from '@/ui/island';
 import { closeMenu, menuOpen } from '@/ui/menu';
-import { Nav, armTrap, bootNav, depth, navState, onHistoryBack, openSearch, popView, topSpec } from '@/ui/nav';
+import { Nav, armTrap, bootNav, depth, navState, onHistoryBack, openSearch, popView, pushView, topSpec } from '@/ui/nav';
+import { resume, watchUpdates } from '@/ui/update';
 import { PhotoView } from '@/ui/photos';
 import { checkReminders } from '@/ui/reminders';
 import { seedTasks } from '@/ui/seed';
@@ -54,6 +55,10 @@ function hideSplash() {
 function runBoot() {
   ensureBasics();
   bootNav();
+  // straight after an update: back on the screen you were on (your typing returns in ChatBar / Composer)
+  const back = resume();
+  for (const spec of back.stack) pushView(spec);
+  if (back.updated) setTimeout(() => island({ e: '✨', text: 'Twodo is up to date', ms: 2200 }), 1700);
   if (!Sync.live) void startCloud();
   if (L.focus && L.focus.running) showLive();
   checkReminders();
@@ -131,19 +136,14 @@ function useGlobalEvents() {
 function useServiceWorker() {
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production' || !('serviceWorker' in navigator) || !/^https?:/.test(location.protocol)) return;
-    let reg: ServiceWorkerRegistration | null = null;
-    const vis = () => { if (!document.hidden) reg?.update().catch(() => {}); }; // look for a new version whenever the app comes back to the screen
-    navigator.serviceWorker.register(asset('sw.js'), { scope: asset(''), updateViaCache: 'none' }).then(r => { reg = r; document.addEventListener('visibilitychange', vis); })
-      .catch(err => console.warn('sw', err));
+    // A new version waits until you tap "Update" or reopen the app (src/ui/update.ts): the app never reloads by itself
+    navigator.serviceWorker.register(asset('sw.js'), { scope: asset(''), updateViaCache: 'none' }).then(watchUpdates).catch(err => console.warn('sw', err));
     const msg = (e: MessageEvent) => {
-      const d = e.data as { open?: string; reload?: string } | null;
+      const d = e.data as { open?: string } | null;
       if (d && d.open === 'chat' && Auth.user()) ChatCtl.open();
-      if (d && typeof d.reload === 'string' && !sessionStorage.getItem('twodo:reloaded:' + d.reload)) {
-        sessionStorage.setItem('twodo:reloaded:' + d.reload, '1'); location.reload(); // a new version just took over
-      }
     };
     navigator.serviceWorker.addEventListener('message', msg);
-    return () => { navigator.serviceWorker.removeEventListener('message', msg); document.removeEventListener('visibilitychange', vis); };
+    return () => navigator.serviceWorker.removeEventListener('message', msg);
   }, []);
 }
 

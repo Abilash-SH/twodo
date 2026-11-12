@@ -62,13 +62,14 @@ export const Chat = {
     for (const m of Object.values(this.msgs)) if (m.status === 'sending') m.status = 'failed';
     this.space = Sync.space; this.loaded = false; this.bump();
   },
-  saveSoon() {
+  saveSoon() { clearTimeout(this.saveT); this.saveT = setTimeout(() => this.saveNow(), 300); },
+  /** write the local cache now (before the app reloads or goes away) */
+  saveNow() {
     clearTimeout(this.saveT);
-    this.saveT = setTimeout(() => {
-      const ids = Object.keys(this.msgs).sort().slice(-600), msgs: Record<string, Msg> = {};
-      ids.forEach(id => { msgs[id] = this.msgs[id]; }); this.msgs = msgs;
-      try { localStorage.setItem(CHAT_KEY, JSON.stringify({ space: this.space, msgs, rx: this.rx, played: this.played, read: this.read })); } catch { /* full */ }
-    }, 300);
+    if (!this.space) return;
+    const ids = Object.keys(this.msgs).sort().slice(-600), msgs: Record<string, Msg> = {};
+    ids.forEach(id => { msgs[id] = this.msgs[id]; }); this.msgs = msgs;
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify({ space: this.space, msgs, rx: this.rx, played: this.played, read: this.read })); } catch { /* full */ }
   },
   clearLocal() { this.stop(); this.msgs = {}; this.rx = {}; this.played = {}; this.read = 0; localStorage.removeItem(CHAT_KEY); this.bump(); this.updateBadge(); },
 
@@ -297,5 +298,5 @@ if (typeof window !== 'undefined') {
     if (document.hidden) { Chat.typingOn = false; void Chat.writeX({ off: true }); return; }
     Chat.ensure(); void Chat.writeX();
   });
-  addEventListener('pagehide', () => { void Chat.writeX({ off: true }); });
+  addEventListener('pagehide', () => { Chat.saveNow(); void Chat.writeX({ off: true }); }); // a message sent a moment ago is kept
 }

@@ -22,6 +22,8 @@ import { openTips } from '@/ui/nav';
 import { pickPhoto, viewPhoto } from '@/ui/photos';
 import { sysNotify } from '@/ui/reminders';
 import { closeSheet, openSheet } from '@/ui/sheet';
+import { useStore } from '@/ui/store';
+import { applyUpdate, updateStore } from '@/ui/update';
 import { Avatar, colorVar, Sq } from '../ui/Avatar';
 import { BusyButton } from '../ui/Busy';
 import { Icon } from '../ui/Icon';
@@ -142,9 +144,15 @@ function Switch({ k, label, c, i }: { k: 'haptics' | 'sounds' | 'confetti' | 'no
 
 function SettingsBody() {
   useApp();
+  const update = useStore(updateStore);
   const s = L.settings;
   const notifyNote = isIOS() && !standalone() ? 'On iPhone, reminders need Twodo on your Home Screen.' : 'In-app reminders show while Twodo is open.';
   return (<>
+    {update.ready ? <>
+      <div className="group"><button className="cell" type="button" id="applyUpdate" disabled={update.applying} onClick={() => { void applyUpdate(); }}>
+        <Sq c="blue" i="download" /><span className="grow">{update.applying ? 'Updating…' : 'Update Twodo'}</span><span className="val">New version ready</span></button></div>
+      <p className="note-s">Takes a second. Everything is saved first and what you’re typing comes back. Secret lists lock, as they do whenever Twodo restarts.</p>
+    </> : null}
     <Profile />
     {Auth.user() ? null : <div className="group"><div className="cell"><Sq c="gray" i="phone" /><span className="grow">I am</span>
       <Segmented name="me" opts={[['a', shortName(person('a').name)], ['b', shortName(person('b').name)]]} value={L.me} onChange={v => { L.me = v as PersonKey; save(); applyTheme(); renderNow(); }} /></div></div>}

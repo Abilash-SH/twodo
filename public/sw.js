@@ -3,33 +3,32 @@
 const VERSION = 'twodo-dev';
 const SHELL = ['./'];
 
-// Always fetch the new version's files from the server: the browser's own HTTP cache may still hold the old ones.
+/* Updates. A new version downloads into its OWN cache and then waits: it never takes over a running app by itself,
+   because someone may be typing, editing a task or entering a passcode. The app shows "Update ready" and sends
+   SKIP_WAITING when the person agrees; if they never do, the new version starts the next time the app is opened from
+   closed. Each version's cache is complete and is never changed afterwards, so the app always starts offline with
+   files that belong together. */
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
+  // always from the server (the browser's own HTTP cache may hold old files); all files or none
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))));
 });
-// When this replaces an older version, reload the open app once so the update shows right away.
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
     const keys = await caches.keys();
-    const updating = keys.some(k => k !== VERSION && k.startsWith('twodo-'));
-    await Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)));
-    await self.clients.claim();
-    if (!updating) return;
-    for (const c of await self.clients.matchAll({ type: 'window' })) {
-      if ('navigate' in c) c.navigate(c.url).catch(() => c.postMessage({ reload: VERSION }));
-      else c.postMessage({ reload: VERSION });
-    }
+    await Promise.all(keys.filter(k => k !== VERSION && k.startsWith('twodo-')).map(k => caches.delete(k)));
+    await self.clients.claim(); // the app that asked for the update reloads itself (see src/ui/update.ts)
   })());
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return; // never touch sync traffic
   e.respondWith(caches.open(VERSION).then(async cache => {
+    // this version's own files, as downloaded together; anything else (not part of the app shell) from the network
     const hit = await cache.match(e.request, { ignoreSearch: true });
-    // fast + offline: answer from the cache, and refresh it from the server (checking, not trusting the HTTP cache)
-    const net = fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
-      .then(res => { if (res.ok) cache.put(e.request, res.clone()); return res; }).catch(() => hit);
-    return hit || net;
+    return hit || fetch(e.request);
   }));
 });
 
