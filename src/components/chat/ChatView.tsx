@@ -1,6 +1,6 @@
 'use client';
 /* Twodo · Home is your chat: the two of you on top, the conversation, and a floating message box */
-import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Chat, REACTS, type Msg, type TaskRef } from '@/lib/chat';
 import { haptic } from '@/lib/feedback';
 import { Ink, playBubbleFx } from '@/lib/fx';
@@ -297,12 +297,12 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = list.current; if (!el) return;
     const TH = 48;
-    interface S { row: HTMLElement; m: Msg; sx: number; x0: number; y0: number; id: number; touch: boolean; lock: null | 'x'; hint: HTMLElement | null; dx: number; hit: boolean; v: Velocity }
+    interface S { row: HTMLElement; m: Msg; sx: number; x0: number; y0: number; id: number; touch: boolean; lock: null | 'x'; hint: HTMLElement | null; dx: number; hit: boolean; buzzed: boolean; v: Velocity }
     let S: S | null = null;
     const begin = (target: HTMLElement, x: number, y: number, id: number, touch: boolean) => {
       const row = target.closest<HTMLElement>('.msg-row[data-id]'); if (!row || target.closest('a, button')) return;
       const m = Chat.msgs[row.dataset.id!]; if (!m || m.del) return;
-      S = { row, m, sx: x, x0: x, y0: y, id, touch, lock: null, hint: null, dx: 0, hit: false, v: new Velocity() };
+      S = { row, m, sx: x, x0: x, y0: y, id, touch, lock: null, hint: null, dx: 0, hit: false, buzzed: false, v: new Velocity() };
       S.v.add(x, y);
     };
     // returns true once the swipe is ours
@@ -324,7 +324,7 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       G.row.style.transform = `translate3d(${t}px,0,0)`;
       const p = Math.min(1, G.dx / TH);
       G.hint!.style.opacity = String(Math.min(1, p * 1.4)); G.hint!.style.transform = `scale(${0.5 + 0.5 * p})`;
-      if (G.dx >= TH && !G.hit) { G.hit = true; G.hint!.classList.add('hit'); haptic('medium'); }
+      if (G.dx >= TH && !G.hit) { G.hit = true; G.hint!.classList.add('hit'); if (!G.buzzed) { G.buzzed = true; haptic('medium'); } } // one catch per swipe
       else if (G.dx < TH - 8 && G.hit) { G.hit = false; G.hint!.classList.remove('hit'); }
       return true;
     };
@@ -335,7 +335,7 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       const row = G.row, hint = G.hint;
       row.style.transition = reducedMotion.matches ? 'none' : `transform ${MS.page}ms ${EASE.bounce}`; row.style.transform = '';
       setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, MS.page + 20);
-      if (go) { if (!G.hit) haptic('medium'); ChatCtl.setReply(G.m, false); }
+      if (go) { if (!G.buzzed) haptic('medium'); ChatCtl.setReply(G.m, false); }
     };
     // touch
     const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(false); return; } const t = e.touches[0]; begin(e.target as HTMLElement, t.clientX, t.clientY, t.identifier, true); };
@@ -382,10 +382,10 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
 }
 
 export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
-  useApp();
+  const v = useApp();
   const ref = useRef<HTMLElement>(null), body = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null);
   const paired = !!(L.pair && L.pair.status === 'paired');
-  const typingShown = useRef(false), moreT = useRef(0);
+  const typingShown = useRef(false), moreT = useRef(0), drawnV = useRef(-1);
   const [, force] = useState(0);
   useBubbleGestures(list);
   useLayoutEffect(() => { ChatCtl.view = ref.current; return () => { if (ChatCtl.view === ref.current) ChatCtl.view = null; }; }, []);
@@ -417,8 +417,11 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
   // after every render: scroll/animate for what just happened, or simply stay at the bottom
   useLayoutEffect(() => {
     const op = ChatCtl.pending; ChatCtl.pending = null;
+    // Only new content needs pinning. A navigation re-render (the chat sliding under a page) must not read
+    // scrollHeight: that forces a full layout of the page being pushed, inside the tap (~20 ms on a phone).
+    const fresh = drawnV.current !== v; drawnV.current = v;
     if (op) ChatCtl.afterDraw(op);
-    else if (ChatCtl.pinned && body.current) body.current.scrollTop = body.current.scrollHeight;
+    else if (fresh && ChatCtl.pinned && body.current) body.current.scrollTop = body.current.scrollHeight;
     const typing = !!(paired && Chat.partnerTyping());
     if (typing && !typingShown.current) {
       const b = ref.current!.querySelector<HTMLElement>('.c-typing .bwrap'); if (b) playBubbleFx(b, 'pop');
@@ -428,7 +431,8 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
     if (ChatCtl.isOpen()) Chat.markRead();
   });
 
-  const its = items();
+  // rebuilt only when the data changes, not when the chat merely slides under a page
+  const its = useMemo(items, [v, paired]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <section ref={ref} className={`${cls} chatview${paired ? '' : ' nopair'}`} data-vid={entry.id}>
       <div ref={body} className="chatbody" onScroll={e => {

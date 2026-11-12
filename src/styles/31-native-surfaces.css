@@ -2,9 +2,12 @@
 .chatview::before { animation: none; will-change: auto; inset: 0; }
 #app, body.sheet-open #app, body.kb-anim #app { transform: none; border-radius: 0; transition: none; }
 #layer, body.kb-anim #layer { transition: none; }
-/* Replace the old focus-based standalone override: blur is earlier than keyboard dismissal. */
+/* With the keyboard up, the app fits the visible area above it. At rest on the Home Screen it fills the layout viewport
+   exactly (inset: 0). Never 100lvh/100vh: on iOS 26.1+ and 27 those units measure from the top of the glass while the
+   web app starts below the status bar (WebKit bug 301994), so the app came out ~60 px taller than the screen and the
+   message bar was cut in half. */
 body :is(#app, #layer) { top: var(--vvt, 0px); height: var(--vvh, 100%); }
-body.ios-fullscreen :is(#app, #layer) { top: 0; height: 100lvh; }
+body.ios-fullscreen :is(#app, #layer) { top: 0; bottom: 0; height: auto; }
 
 /* Blur allowlist: only the top-level navigation bar on ordinary screens. All pills, rows and overlays
    have opaque tinted fills. In particular chat never changes compositing strategy as the keyboard moves. */
@@ -61,7 +64,7 @@ body.sheet-open .nav.scrolled { -webkit-backdrop-filter: none !important; backdr
   background: var(--pt-c); -webkit-mask: var(--heart-mask) center / contain no-repeat; mask: var(--heart-mask) center / contain no-repeat; }
 /* All fixed overlay controls stay inside the same visible box, including landscape safe areas. */
 .pv, .fxp, #focus { top: var(--vvt, 0px); bottom: auto; height: var(--vvh, 100%); }
-body.ios-fullscreen :is(.pv, .fxp, #focus) { top: 0; height: 100lvh; }
+body.ios-fullscreen :is(.pv, .fxp, #focus) { top: 0; bottom: 0; height: auto; }
 .pv-main { max-height: 100%; padding: calc(20px + var(--safe-top)) calc(20px + var(--safe-right)) calc(20px + var(--safe-bottom)) calc(20px + var(--safe-left)); }
 .vault-password { width: 100%; max-width: 300px; text-align: left; font-size: 14px; }
 .vault-password input { display: block; width: 100%; margin-top: 8px; padding: 12px; font-size: 17px; border: 1px solid var(--sep); border-radius: 12px; background: var(--bg2); color: var(--label); user-select: text; }

@@ -17,6 +17,9 @@ export function applyTheme(): void {
     if (ph) root.style.setProperty('--ph-' + k, `url("${ph}")`); else root.style.removeProperty('--ph-' + k);
   }
   const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (meta) meta.content = document.body.classList.contains('launching') ? '#E98BB1' : dark ? '#0D0C10' : '#FAF8FB';
+  // the status bar area matches the app's own background (on iOS versions that don't draw the app behind it,
+  // the system fills it with this colour)
+  const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+  if (meta) meta.content = document.body.classList.contains('launching') ? '#E98BB1' : bg || (dark ? '#000000' : '#F2F2F7');
 }
 if (typeof window !== 'undefined') matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);

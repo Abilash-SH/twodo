@@ -8,13 +8,6 @@ body.kb-anim .cb-pill, body.kb-anim .cb-plus, body.kb-anim .cb-reply, body.kb-an
 body.kb-anim .chat-nav::before { background: color-mix(in srgb, var(--bg) 90%, transparent); }
 body.kb-anim .ch-pill, body.kb-anim .cb-pill, body.kb-anim .cb-reply { background-color: var(--bg2); }
 
-/* iPhone home-screen app with nothing being typed: always the whole screen, even when iOS under-reports the
-   height after the keyboard closes (Android resizes the page itself, so it keeps the measured height) */
-@supports (-webkit-touch-callout: none) {
-  @media (display-mode: standalone) {
-    body:not(.kb):not(:has(:is(input, textarea, select, [contenteditable]):focus)) :is(#app, #layer) { top: 0; height: 100lvh; }
-  }
-}
 
 /* ---------- Secret lists: lock screen and passcode keypad ---------- */
 .vault-gate .vault-lock { width: 84px; height: 84px; border-radius: 28px; display: inline-grid; place-items: center; font-size: 0;

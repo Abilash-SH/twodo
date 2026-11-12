@@ -16,6 +16,7 @@ python3 tests/e2e/test_5_service_worker_responsive.py
 python3 tests/e2e/test_6_secret_gestures_keyboard.py
 python3 tests/e2e/test_7_native_regressions.py
 python3 tests/e2e/test_8_keyboard_layers_motion_settings.py
+python3 tests/e2e/test_9_navigation_fullscreen.py
 node tests/velocity.cjs
 ```
 `test_4_offline_onboarding.py` needs a build without Firebase settings (no accounts), served on port 8004:
@@ -27,3 +28,8 @@ geometry, focus retention, encrypted long-passcode round trips and changes, over
 swipes, and text contrast for every palette pair. Test 6 refreshes bubble geometry
 after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
+
+Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
+the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
+1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be
+fully on screen), simulated keyboard sizing, and Reduce Motion.

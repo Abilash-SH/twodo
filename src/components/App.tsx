@@ -17,13 +17,13 @@ import { alertOpen } from '@/ui/alert';
 import { boot, gateStore, showGate, showOnboarding } from '@/ui/gate';
 import { focusOpen, island, showLive } from '@/ui/island';
 import { closeMenu, menuOpen } from '@/ui/menu';
-import { Nav, bootNav, depth, doPop, navState, openSearch, popView, topSpec } from '@/ui/nav';
+import { Nav, armTrap, bootNav, depth, navState, onHistoryBack, openSearch, popView, topSpec } from '@/ui/nav';
 import { PhotoView } from '@/ui/photos';
 import { checkReminders } from '@/ui/reminders';
 import { seedTasks } from '@/ui/seed';
 import { Sheet, closeSheet, sheetOpen } from '@/ui/sheet';
 import { useStore } from '@/ui/store';
-import { ChatCtl } from './chat/chatCtl';
+import { ChatCtl, fxPickerStore } from './chat/chatCtl';
 import { FxPicker, fxPickerOpen } from './chat/FxPicker';
 import { LoveYou } from './chat/LoveYou';
 import { Composer } from './composer/Composer';
@@ -78,17 +78,19 @@ function init() {
 
 function useGlobalEvents() {
   useEffect(() => {
+    // Back (browser button, Android gesture, iPhone edge swipe): exactly one thing closes per Back
     const onPop = (e: PopStateEvent) => {
-      if (Nav.ignorePops > 0) { Nav.ignorePops--; const f = Nav.afterPop; Nav.afterPop = null; if (f) f(); return; } // we already animated this one
-      PhotoView.close?.();
+      if (Nav.ignoreNextPop) { Nav.ignoreNextPop = false; return; } // removing our own history entry
       if (Sheet.ignorePop) { Sheet.ignorePop = false; return; }
-      if (sheetOpen()) { closeSheet({ history: false }); return; }
-      closeMenu();
-      const d = (e.state && e.state.d) || 1;
-      if (d > depth()) { history.replaceState({ d: depth() }, ''); return; } // no "forward"
-      // the iPhone's own edge swipe already animated the page away: switch without a second animation
-      const instant = !!(e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition || performance.now() - Nav.edgeCancelAt < 2500;
-      while (depth() > Math.max(1, d)) doPop({ instant });
+      if (sheetOpen()) { closeSheet({ history: false }); return; } // that Back used the sheet's own entry
+      // a photo, menu, timer or effects picker on top: close just that (the Back used the screen's entry: re-arm it)
+      const overlay = PhotoView.close || menuOpen() || focusOpen.get() || fxPickerOpen();
+      if (overlay) {
+        if (PhotoView.close) PhotoView.close(); else if (menuOpen()) closeMenu(); else if (focusOpen.get()) closeFocus(); else fxPickerStore.set(null);
+        Nav.trap = false; if (depth() > 1) armTrap();
+        return;
+      }
+      onHistoryBack(e);
     };
     const onKey = (e: KeyboardEvent) => {
       const tag = ((e.target as HTMLElement).tagName || '').toLowerCase(), typing = ['input', 'textarea', 'select'].includes(tag);

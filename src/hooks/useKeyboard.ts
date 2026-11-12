@@ -34,7 +34,7 @@ export function useKeyboard(): void {
       const root = document.documentElement.style;
       root.setProperty('--vvh', `${height}px`);
       root.setProperty('--vvt', `${top}px`);
-      // A standalone iPhone's layout viewport can stay short after dismissal; CSS uses 100lvh at rest.
+      // At rest the standalone app fills the layout viewport itself (CSS inset: 0), never a viewport unit.
       document.body.classList.toggle('ios-fullscreen', isIOS() && standalone() && !covered && !focused);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
