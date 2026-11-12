@@ -1,0 +1,6 @@
+/* Twodo · reading position in the chat: the "New messages" line, and the pill that takes you to it.
+   The line is tinted with your partner's colour (they wrote what's below it); the text keeps 4.5:1 on every palette. */
+.c-new { display: flex; align-items: center; gap: 10px; margin: 16px 18px 4px; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  color: color-mix(in srgb, var(--pt-c) 38%, var(--label)); }
+.c-new::before, .c-new::after { content: ""; flex: 1; height: 1.5px; border-radius: 1px; background: color-mix(in srgb, var(--pt-c) 34%, transparent); }
+.c-new + .msg-row { margin-top: 2px; }
