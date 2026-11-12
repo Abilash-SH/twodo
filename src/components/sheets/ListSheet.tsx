@@ -9,6 +9,8 @@ import { confirmDialog } from '@/ui/alert';
 import { island } from '@/ui/island';
 import { openList, popView, topSpec } from '@/ui/nav';
 import { closeSheet, openSheet } from '@/ui/sheet';
+import { Vault } from '@/lib/vault';
+import { openVault } from '../vault/VaultUI';
 import { colorVar, Sq } from '../ui/Avatar';
 
 interface St { name: string; emoji: string; color: Color; priv: boolean }
@@ -22,25 +24,29 @@ function ListEditor({ id }: { id: string | null }) {
   const save = () => {
     const name = (nameRef.current?.value || '').trim().slice(0, 40);
     if (!name) { nameRef.current?.focus(); haptic('warn'); return; }
+    // a list only becomes secret behind the lock: unlock first (or make the passcode right after)
+    if (st.priv && !(ex && ex.private) && Vault.locked()) { closeSheet(); setTimeout(() => openVault('unlock'), 350); island({ e: '🔒', text: 'Unlock secret lists first', sub: 'Then make this list secret' }); return; }
+    const needPin = st.priv && !Vault.exists();
     if (ex) {
       const privChanged = ex.private !== st.priv;
       Object.assign(ex, { name, emoji: st.emoji, color: st.color, private: st.priv }); commit(ex);
-      if (privChanged) liveTasks().filter(t => t.listId === ex.id).forEach(t => commit(t, { silent: true })); // retract from / re-share with partner
+      if (privChanged) liveTasks({ secret: true }).filter(t => t.listId === ex.id).forEach(t => commit(t, { silent: true })); // retract from / re-share with partner
       closeSheet();
+      if (needPin) setTimeout(() => openVault('create'), 350);
     } else {
       const l = mkList({ name, emoji: st.emoji, color: st.color, private: st.priv });
       D.lists[l.id] = l; commit(l);
-      closeSheet(); setTimeout(() => openList(l.id), 350);
+      closeSheet(); setTimeout(() => (needPin ? openVault('create', () => openList(l.id)) : openList(l.id)), 350);
     }
     haptic('success');
   };
   listForm.save = save;
   const del = async () => {
     if (!ex) return;
-    const n = liveTasks().filter(t => t.listId === ex.id).length;
+    const n = liveTasks({ secret: true }).filter(t => t.listId === ex.id).length;
     if (!(await confirmDialog({ title: `Delete “${ex.name}”?`, message: n ? `This also deletes its ${n} task${n === 1 ? '' : 's'}.` : 'This can’t be undone.', ok: 'Delete', destructive: true }))) return;
     ex.deleted = true; commit(ex);
-    liveTasks().filter(t => t.listId === ex.id).forEach(t => { t.deleted = true; commit(t, { silent: true }); });
+    liveTasks({ secret: true }).filter(t => t.listId === ex.id).forEach(t => { t.deleted = true; commit(t, { silent: true }); });
     closeSheet();
     const s = topSpec(); if (s.type === 'list' && s.id === ex.id) setTimeout(popView, 300);
     island({ e: '🗑️', text: `Deleted ${ex.name}` }); scheduleRender();
@@ -59,7 +65,7 @@ function ListEditor({ id }: { id: string | null }) {
     {!ex || ex.id !== 'inbox' ? (<>
       <div className="group"><div className="cell"><Sq c="purple" i="lock" /><span className="grow">Secret list</span>
         <input type="checkbox" className="switch" checked={st.priv} aria-label="Secret list" onChange={e => { const v = e.target.checked; setSt(s => ({ ...s, priv: v })); haptic('light'); }} /></div></div>
-      <p className="note-s">Secret lists stay on this phone and never sync — perfect for planning surprises 🎁</p>
+      <p className="note-s">Secret lists are locked with a passcode, encrypted on this phone and never synced — perfect for planning surprises 🎁</p>
     </>) : null}
     {ex && ex.id !== 'inbox' ? <div className="group"><button className="cell red" type="button" onClick={() => void del()}>Delete List</button></div> : null}
   </>);

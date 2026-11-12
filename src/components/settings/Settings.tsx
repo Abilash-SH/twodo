@@ -9,7 +9,8 @@ import { Auth } from '@/lib/firebase';
 import { Pair } from '@/lib/pair';
 import { Push } from '@/lib/push';
 import { renderNow, scheduleRender } from '@/lib/render';
-import { D, L, cleanMap, cleanRecord, commit, ensureBasics, person, ptName, save, setPeopleRec } from '@/lib/store';
+import { D, L, cleanMap, cleanRecord, commit, ensureBasics, person, ptName, publicData, save, setPeopleRec } from '@/lib/store';
+import { Vault } from '@/lib/vault';
 import { Inbox, Sync } from '@/lib/sync';
 import { applyTheme } from '@/lib/theme';
 import type { List, PeopleRec, PersonKey, Task } from '@/lib/types';
@@ -25,6 +26,7 @@ import { Avatar, colorVar, Sq } from '../ui/Avatar';
 import { BusyButton } from '../ui/Busy';
 import { Icon } from '../ui/Icon';
 import { Segmented } from '../ui/Segmented';
+import { VaultSettings } from '../vault/VaultUI';
 import { openAuthSheet, openInviteSheet, openUsernameSheet, openVapidSheet } from './AccountSheets';
 
 // Your profile: only you can change your photo, name and colour. Your colour is the app's accent and your bubbles.
@@ -144,21 +146,23 @@ function SettingsBody() {
         <Segmented name="dmy" opts={[['dmy', '5 Dec'], ['mdy', 'May 12']]} value={s.dmy ? 'dmy' : 'mdy'} onChange={v => { L.settings.dmy = v === 'dmy'; save(); }} /></div>
     </div>
     <p className="note-s">{notifyNote}</p>
+    <VaultSettings />
     <div className="sec-h sub">Backup</div>
     <div className="group">
       <button className="cell" type="button" onClick={() => {
-        downloadFile(`twodo-backup-${todayStr()}.json`, 'application/json', JSON.stringify({ app: 'twodo', version: 1, exportedAt: new Date().toISOString(), data: D }, null, 2));
+        // secret lists never leave this phone, not even in a backup file
+        downloadFile(`twodo-backup-${todayStr()}.json`, 'application/json', JSON.stringify({ app: 'twodo', version: 1, exportedAt: new Date().toISOString(), data: publicData() }, null, 2));
         island({ e: '💾', text: 'Backup saved' });
       }}><Sq c="green" i="download" /><span className="grow">Export backup</span></button>
       <button className="cell" type="button" onClick={() => document.getElementById('importFile')?.click()}><Sq c="blue" i="upload" /><span className="grow">Import backup</span></button>
       <button className="cell red" type="button" onClick={async () => {
         if (!(await confirmDialog({ title: 'Erase everything?', message: 'This removes all tasks and settings from this phone. Synced data stays in your shared space.', ok: 'Erase', destructive: true }))) return;
         Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {});
-        ['twodo:chat', 'twodo:data', 'twodo:local'].forEach(k => localStorage.removeItem(k)); location.reload();
+        ['twodo:chat', 'twodo:data', 'twodo:local', 'twodo:vault'].forEach(k => localStorage.removeItem(k)); location.reload();
       }}>Erase everything on this phone</button>
     </div>
     <div className="group"><button className="cell" type="button" onClick={() => { closeSheet(); setTimeout(() => openTips(), 350); }}><Sq c="yellow" i="bulb" /><span className="grow">Tips &amp; tricks</span><Icon name="chevR" cls="chev" /></button></div>
-    <div className="foot">Twodo 4.0 · made for two 💞</div>
+    <div className="foot">Twodo 5.0 · made for two 💞</div>
   </>);
 }
 export function openSettings(): void { openSheet({ title: 'Settings', tall: true, body: <SettingsBody /> }); }
@@ -170,10 +174,13 @@ export async function importBackup(f: File): Promise<void> {
     const j = JSON.parse(await f.text()), d = j && typeof j === 'object' ? (j.data || j) : null;
     if (!d || typeof d.tasks !== 'object') throw new Error('bad');
     let n = 0;
-    for (const [id, t] of Object.entries(cleanMap<Task>(d.tasks))) if (!D.tasks[id] || (t.updatedAt || 0) > (D.tasks[id].updatedAt || 0)) { D.tasks[id] = t; commit(t, { silent: true }); n++; }
-    for (const [id, l] of Object.entries(cleanMap<List>(d.lists))) if (!D.lists[id] || (l.updatedAt || 0) > (D.lists[id].updatedAt || 0)) { D.lists[id] = l; commit(l, { silent: true }); n++; }
+    const lists = cleanMap<List>(d.lists), tasks = cleanMap<Task>(d.tasks);
+    // secret lists from an old backup can only go behind the lock while it's open
+    const skip = Vault.locked() ? new Set(Object.values(lists).filter(l => l.private).map(l => l.id)) : new Set<string>();
+    for (const [id, l] of Object.entries(lists)) if (!skip.has(id) && (!D.lists[id] || (l.updatedAt || 0) > (D.lists[id].updatedAt || 0))) { D.lists[id] = l; commit(l, { silent: true }); n++; }
+    for (const [id, t] of Object.entries(tasks)) if (!skip.has(t.listId) && (!D.tasks[id] || (t.updatedAt || 0) > (D.tasks[id].updatedAt || 0))) { D.tasks[id] = t; commit(t, { silent: true }); n++; }
     const pp = d.people ? cleanRecord(d.people) as PeopleRec | null : null;
     if (pp && pp.kind === 'people' && (!D.people || (pp.updatedAt || 0) > (D.people.updatedAt || 0))) { setPeopleRec(pp); commit(D.people!, { silent: true }); }
-    ensureBasics(); applyTheme(); scheduleRender(); island({ e: '📦', text: `Imported ${n} item${n === 1 ? '' : 's'}` });
+    ensureBasics(); applyTheme(); scheduleRender(); island({ e: '📦', text: `Imported ${n} item${n === 1 ? '' : 's'}`, sub: skip.size ? 'Unlock secret lists and import again for the secret ones' : undefined, ms: skip.size ? 4500 : undefined });
   } catch { island({ e: '⚠️', text: 'That file isn’t a Twodo backup' }); }
 }

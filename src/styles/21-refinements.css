@@ -61,5 +61,6 @@ input.me-name:focus { background: var(--fill); }
 .me-hint { margin: 12px 0 0; font-size: 13px; color: var(--label2); }
 
 /* the app follows the keyboard as it slides (see main.js → keyboard) */
-body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .4s cubic-bezier(.22,.9,.28,1), top .4s cubic-bezier(.22,.9,.28,1); }
-body.kb-anim #layer { transition: height .4s cubic-bezier(.22,.9,.28,1), top .4s cubic-bezier(.22,.9,.28,1); }
+/* only the height glides; the top follows iOS's own scroll at once, so the header never slides out of view */
+body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .4s cubic-bezier(.22,.9,.28,1); }
+body.kb-anim #layer { transition: height .4s cubic-bezier(.22,.9,.28,1); }

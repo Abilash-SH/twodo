@@ -16,6 +16,7 @@ import { SearchView } from '../views/SearchView';
 import { TaskListView } from '../views/TaskListView';
 import { TipsView } from '../views/TipsView';
 import { openViewMenu } from '../views/taskMenus';
+import { vaultBlocks } from '../vault/VaultUI';
 
 export const NavFx = { lastAction: 'boot' as 'boot' | 'push' | 'pop' };
 
@@ -39,7 +40,8 @@ function PageView({ entry, prev, cls }: { entry: Entry; prev: Entry | null; cls:
   } else if (spec.type === 'tips') body = <TipsView viewRef={ref} />;
   else if (isSearch) body = <SearchView q={q} setQ={setQ} />;
   else {
-    right = <button className="nav-btn" type="button" aria-label="More options" onClick={e => openViewMenu(e.currentTarget, spec)}><Icon name="more" /></button>;
+    right = spec.type === 'list' && vaultBlocks(spec.id) ? null // nothing to edit while it's locked
+      : <button className="nav-btn" type="button" aria-label="More options" onClick={e => openViewMenu(e.currentTarget, spec)}><Icon name="more" /></button>;
     body = <TaskListView spec={spec} />;
   }
   return (
@@ -77,7 +79,7 @@ export function NavStack() {
       navState.set(s => ({ entries: s.entries.map(e => (e.phase === 'in' ? { ...e, phase: 'idle' } : e)) }));
     }
     if (Nav.noAnim.size) { // an instant switch (the phone already animated it): no transition this time
-      Nav.noAnim.forEach(id => { const el = st.querySelector<HTMLElement>(`:scope > [data-vid="${id}"]`); if (el) { void el.offsetWidth; el.style.transition = ''; } });
+      Nav.noAnim.forEach(id => { const el = st.querySelector<HTMLElement>(`:scope > [data-vid="${id}"]`); if (el) { el.style.transition = 'none'; void el.offsetWidth; el.style.transition = ''; } });
       Nav.noAnim.clear();
     }
     const sh = shadeRef.current;
@@ -116,19 +118,13 @@ export function NavStack() {
         const prev = liveIdx > 0 ? live[liveIdx - 1] : e.phase === 'out' && live.length ? live[live.length - 1] : null;
         const showShade = entries.length > 1 && e === top;
         const view = e.spec.type === 'home' && homeIsChat() ? <ChatView entry={e} cls={cls} /> : <PageView entry={e} prev={prev} cls={cls} />;
-        const noAnim = Nav.noAnim.has(e.id);
         return (
           <Fragment key={e.id}>
             {showShade ? <div ref={shadeRef} className="shade" /> : null}
-            {noAnim ? <NoAnim id={e.id}>{view}</NoAnim> : view}
+            {view}
           </Fragment>
         );
       })}
     </div>
   );
-}
-// renders its child, then turns its transition off for this one frame (an instant page switch)
-function NoAnim({ id, children }: { id: number; children: React.ReactNode }) {
-  useLayoutEffect(() => { const el = document.querySelector<HTMLElement>(`#stack > [data-vid="${id}"]`); if (el) el.style.transition = 'none'; });
-  return <>{children}</>;
 }

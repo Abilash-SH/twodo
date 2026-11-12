@@ -11,8 +11,19 @@ export function haptic(kind: HapticKind = 'light'): void {
     const ua = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
     if (ua && !ua.hasBeenActive) return; // browsers ignore (and complain about) vibration before the first tap
     if (navigator.vibrate) navigator.vibrate({ light: 8, medium: 14, heavy: 22, success: [8, 50, 12], warn: [14, 40, 14] }[kind] || 8);
-    else document.getElementById('haptic')?.click();
+    else iosTick();
   } catch { /* ignore */ }
+}
+// The switch lives in <head> for one click, so it is never rendered and can never take focus (a rendered one did,
+// which closed the keyboard after every message). If focus moves anyway, it goes straight back.
+function iosTick(): void {
+  const keep = document.activeElement as HTMLElement | null;
+  const label = document.createElement('label'), input = document.createElement('input');
+  label.setAttribute('aria-hidden', 'true'); label.style.display = 'none';
+  input.type = 'checkbox'; input.setAttribute('switch', ''); input.tabIndex = -1;
+  label.append(input); document.head.append(label);
+  try { label.click(); } finally { label.remove(); }
+  if (keep && keep !== document.activeElement && keep.isConnected && keep.matches('input, textarea, [contenteditable]')) keep.focus({ preventScroll: true });
 }
 
 /* ---------- Sounds ---------- */

@@ -20,7 +20,7 @@ import { BusyButton } from '../ui/Busy';
 import { Icon } from '../ui/Icon';
 import { openSettings } from './Settings';
 
-const BackToSettings = () => <button className="nav-btn" type="button" onClick={() => openSettings()}><Icon name="chevL" />Settings</button>;
+const BackToSettings = () => <button className="nav-btn" type="button" data-back="" onClick={() => openSettings()}><Icon name="chevL" />Settings</button>;
 const fail = (e: unknown, ms = 4500) => { island({ e: '⚠️', text: (e as Error).message, ms }); haptic('warn'); };
 const delayFocus = (r: React.RefObject<HTMLInputElement | null>) => { if (!isTouch()) setTimeout(() => r.current?.focus(), 350); };
 

@@ -9,6 +9,7 @@ import { alertsOn, specKey, viewPrefs, viewTitle, type Spec } from '@/ui/nav';
 import { Icon } from '../ui/Icon';
 import { Segmented } from '../ui/Segmented';
 import { openSettings } from '../settings/Settings';
+import { VaultGate, vaultBlocks } from '../vault/VaultUI';
 import { Empty, TaskGroup, type Group, type RowCtx } from './TaskRow';
 
 function buildGroups(spec: Spec, tasks: Task[], sortMode: string): Group[] {
@@ -77,7 +78,8 @@ export function TaskListView({ spec }: { spec: Spec }) {
   const key = specKey(spec), vp = viewPrefs(key);
   const who = vp.who || 'all', showDone = !!vp.showDone, isDone = spec.key === 'done';
   let color: string, heading: string, sub: React.ReactNode = '', base: Task[], doneSet: Task[] = [];
-  const live = liveTasks().filter(t => isDone ? (who === 'all' || t.doneBy === (who === 'me' ? L.me : partnerKey()) || (who === 'both' && t.assignee === 'both')) : whoMatch(t, who));
+  if (spec.type === 'list' && vaultBlocks(spec.id)) return <VaultGate />;
+  const live = liveTasks({ secret: spec.type === 'list' }).filter(t => isDone ? (who === 'all' || t.doneBy === (who === 'me' ? L.me : partnerKey()) || (who === 'both' && t.assignee === 'both')) : whoMatch(t, who));
   if (spec.type === 'list') {
     const l = D.lists[spec.id!];
     if (!l || l.deleted) return <Empty e="🤷" h="This list is gone" p="It was deleted." />;

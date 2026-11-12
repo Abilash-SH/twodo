@@ -87,12 +87,22 @@ export function load(): void {
     }
   } catch (e) { console.warn('load local', e); }
 }
+/** The secret vault (lib/vault.ts) registers here: once it exists, secret lists are only ever saved encrypted */
+export const vaultHooks = { active: (): boolean => false, changed: (): void => {} };
+/** Everything except secret lists and their to-dos (what's saved in plain text, and what a backup contains) */
+export function publicData(): Data {
+  const lists: Record<string, List> = {}, tasks: Record<string, Task> = {};
+  for (const [id, l] of Object.entries(D.lists)) if (!l.private) lists[id] = l;
+  for (const [id, t] of Object.entries(D.tasks)) if (!isSecret(t)) tasks[id] = t;
+  return { tasks, lists, people: D.people };
+}
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 export function save(): void { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 150); }
 export function saveNow(): void {
   clearTimeout(saveTimer);
-  try { localStorage.setItem(KD, JSON.stringify(D)); localStorage.setItem(KL, JSON.stringify(L)); }
+  try { localStorage.setItem(KD, JSON.stringify(vaultHooks.active() ? publicData() : D)); localStorage.setItem(KL, JSON.stringify(L)); }
   catch (e) { console.warn('save', e); }
+  vaultHooks.changed();
 }
 if (typeof window !== 'undefined') {
   addEventListener('pagehide', saveNow);
@@ -142,7 +152,7 @@ export function seedLists(): void {
   addSecretList();
 }
 export function addSecretList(): void {
-  if (lists().some(l => l.private)) return;
+  if (vaultHooks.active() || lists().some(l => l.private)) return; // a locked vault already holds the secret lists
   const l = mkList({ id: 'secret-' + uid(), name: 'Secret', emoji: '🎁', color: 'purple', private: true, order: 99 });
   D.lists[l.id] = l; commit(l, { silent: true });
 }
@@ -152,7 +162,9 @@ export const listOf = (t: Task): List => { const l = D.lists[t.listId]; return l
 export const normName = (s: unknown): string => String(s || '').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
 
 /* ---------- Tasks ---------- */
-export const liveTasks = (): Task[] => Object.values(D.tasks).filter(t => !t.deleted && t.title !== undefined);
+/** A to-do in a secret list. Those only ever show inside their own list (never in Today, search, counts…) */
+export const isSecret = (t: Task): boolean => { const l = D.lists[t.listId]; return !!(l && l.private); };
+export const liveTasks = (o: { secret?: boolean } = {}): Task[] => Object.values(D.tasks).filter(t => !t.deleted && t.title !== undefined && (o.secret || !isSecret(t)));
 export function makeTask(p: Partial<Task>): Task {
   const t: Task = {
     kind: 'task', id: uid(), title: '', notes: '', listId: 'inbox', due: null, time: null, priority: 0, tags: [],

@@ -49,6 +49,7 @@ function TaskDetails({ id }: { id: string }) {
   const title = useRef<HTMLTextAreaElement>(null), notes = useRef<HTMLTextAreaElement>(null), tags = useRef<HTMLInputElement>(null);
   const timers = useRef<{ t?: ReturnType<typeof setTimeout>; n?: ReturnType<typeof setTimeout> }>({});
   useEffect(() => { requestAnimationFrame(() => { autosize(title.current); autosize(notes.current); }); }, []);
+  useEffect(() => { if (!D.tasks[id]) closeSheet(); }); // e.g. a secret to-do that just locked
   const t = D.tasks[id];
   if (!t) return null;
   const l = listOf(t);

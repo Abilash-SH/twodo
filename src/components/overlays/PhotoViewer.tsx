@@ -1,5 +1,5 @@
 'use client';
-/* Twodo · photo viewer: the picture flies up from where you tapped it; drag down or tap outside to close */
+/* Twodo · photo viewer: the picture flies up from where you tapped it; drag it away or tap outside to close */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { L, person } from '@/lib/store';
 import { reducedMotion } from '@/lib/util';
@@ -12,7 +12,7 @@ const ease = 'cubic-bezier(.32,.72,0,1)';
 export function PhotoViewer() {
   const cur = useStore(photoStore);
   const [on, setOn] = useState(false);
-  const img = useRef<HTMLDivElement>(null), bg = useRef<HTMLDivElement>(null), closing = useRef(false), drag = useRef<{ y0: number; id: number; dy: number } | null>(null);
+  const img = useRef<HTMLDivElement>(null), bg = useRef<HTMLDivElement>(null), closing = useRef(false), drag = useRef<{ x0: number; y0: number; id: number; d: number } | null>(null);
   const fromT = () => {
     const el = cur && cur.from, i = img.current;
     if (!el || !el.isConnected || !i) return 'scale(.6)';
@@ -43,12 +43,12 @@ export function PhotoViewer() {
   return (
     <div className={`pv${on ? ' on' : ''}`} role="dialog" aria-label={p.name}
       onClick={e => { if (!(e.target as HTMLElement).closest('.pv-acts, .pv-img, .pv-x')) close(); }}
-      onPointerDown={e => { if (!(e.target as HTMLElement).closest('button')) drag.current = { y0: e.clientY, id: e.pointerId, dy: 0 }; }}
-      onPointerMove={e => {
+      onPointerDown={e => { if (!(e.target as HTMLElement).closest('button')) drag.current = { x0: e.clientX, y0: e.clientY, id: e.pointerId, d: 0 }; }}
+      onPointerMove={e => { // drag it away in any direction (down, or right like going back)
         const d = drag.current; if (!d || e.pointerId !== d.id || !img.current) return;
-        d.dy = Math.max(0, e.clientY - d.y0);
-        img.current.style.transform = `translateY(${d.dy}px) scale(${1 - Math.min(d.dy, 300) / 1200})`;
-        if (bg.current) bg.current.style.opacity = String(1 - Math.min(d.dy, 300) / 400);
+        const x = e.clientX - d.x0, y = e.clientY - d.y0; d.d = Math.hypot(x, y);
+        img.current.style.transform = `translate(${x}px, ${y}px) scale(${1 - Math.min(d.d, 300) / 1200})`;
+        if (bg.current) bg.current.style.opacity = String(1 - Math.min(d.d, 300) / 400);
       }}
       onPointerUp={e => endDrag(e.pointerId)} onPointerCancel={e => endDrag(e.pointerId)}>
       <div ref={bg} className="pv-bg" />
@@ -62,9 +62,9 @@ export function PhotoViewer() {
   );
   function endDrag(id: number) {
     const d = drag.current; if (!d || id !== d.id) return;
-    const dy = d.dy; drag.current = null;
+    const dist = d.d; drag.current = null;
     const i = img.current; if (!i) return;
-    if (dy > 90) { i.style.transform = ''; close(); return; }
+    if (dist > 80) { i.style.transform = ''; close(); return; }
     i.style.transition = 'transform .35s cubic-bezier(.34,1.56,.64,1)'; i.style.transform = ''; if (bg.current) bg.current.style.opacity = '';
     setTimeout(() => { i.style.transition = ''; }, 360);
   }

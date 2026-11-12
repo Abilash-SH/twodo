@@ -8,6 +8,7 @@ import { Auth } from '@/lib/firebase';
 import { scheduleRender } from '@/lib/render';
 import { L, ensureBasics, load, save } from '@/lib/store';
 import { Sync } from '@/lib/sync';
+import '@/lib/vault'; // registers with the store before the first save
 import { applyTheme } from '@/lib/theme';
 import { reducedMotion, todayStr } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
@@ -35,6 +36,7 @@ import { IslandHost } from './overlays/IslandHost';
 import { MenuHost } from './overlays/MenuHost';
 import { PhotoViewer } from './overlays/PhotoViewer';
 import { SheetHost } from './overlays/SheetHost';
+import { vaultBlocks } from './vault/VaultUI';
 import { importBackup } from './settings/Settings';
 
 /* ---------- launch animation: let the intro finish, then zoom through into the app ---------- */
@@ -45,7 +47,7 @@ function hideSplash() {
   setTimeout(() => {
     el.classList.add('out');
     document.body.classList.add('landing'); document.body.classList.remove('launching'); applyTheme();
-    setTimeout(() => { el.hidden = true; document.body.classList.remove('landing'); }, 800);
+    setTimeout(() => { el.style.display = 'none'; el.hidden = true; document.body.classList.remove('landing'); }, 800);
   }, wait);
 }
 
@@ -154,14 +156,14 @@ export default function App() {
   useStore(navState);
   if (!ready) return null;
   const top = topSpec(), noEntries = !navState.get().entries.length;
-  const composerHidden = noEntries || !L.onboarded || top.type === 'search' || top.type === 'tips' || (top.type === 'home' && cloudReady() && !!Auth.user());
+  const composerHidden = noEntries || !L.onboarded || top.type === 'search' || top.type === 'tips' || (top.type === 'home' && cloudReady() && !!Auth.user())
+    || (top.type === 'list' && vaultBlocks(top.id));
   return (<>
     <div id="app"><NavStack /><Composer hidden={composerHidden} /></div>
     <SheetHost />
     <MenuHost />
     <IslandHost />
     <FocusOverlay />
-    <label id="haptic" aria-hidden="true"><input type="checkbox" {...{ switch: '' }} tabIndex={-1} /></label>
     <input type="file" id="importFile" accept="application/json,.json" hidden onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) void importBackup(f); }} />
     <AlertHost />
     <PhotoViewer />

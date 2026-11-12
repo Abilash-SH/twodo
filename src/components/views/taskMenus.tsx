@@ -91,7 +91,7 @@ export function openViewMenu(btn: HTMLElement, spec: Spec): void {
       else if (m === 'editlist') openListSheet(spec.id!);
       else if (m === 'sharelist') void shareList(spec.id!);
       else if (m === 'cleardone') {
-        const done = liveTasks().filter(t => t.done && (isList ? listOf(t).id === spec.id : true));
+        const done = liveTasks({ secret: isList }).filter(t => t.done && (isList ? listOf(t).id === spec.id : true));
         if (!done.length) return island({ e: '🧹', text: 'Nothing to clear', ms: 1400 });
         if (await confirmDialog({ title: `Clear ${done.length} completed?`, message: isList ? 'They’ll be removed from this list.' : 'This clears completed tasks in every list.', ok: 'Clear', destructive: true })) {
           done.forEach(t => { t.deleted = true; commit(t, { silent: true }); });

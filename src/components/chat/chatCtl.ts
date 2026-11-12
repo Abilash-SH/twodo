@@ -23,7 +23,7 @@ let seq = 0;
 
 export const ChatCtl = {
   view: null as HTMLElement | null, pending: null as DrawOp | null, pinned: true, limit: 120, total: 0, animUntil: 0, jumpShown: false,
-  lastTap: { id: null as string | null, t: 0 }, suppressUntil: 0, lp: undefined as ReturnType<typeof setTimeout> | undefined,
+  lastTap: { id: null as string | null, t: 0 }, suppressUntil: 0, blurAt: -1e9, lp: undefined as ReturnType<typeof setTimeout> | undefined,
 
   body(): HTMLElement | null { return this.view && this.view.querySelector('.chatbody'); },
   shown(): boolean { const t = topEntry(); return !!t && t.spec.type === 'home' && !!this.view && this.view.isConnected; },
@@ -125,7 +125,8 @@ export const ChatCtl = {
     const m = Chat.send({ t: text.slice(0, 20000), fx, task, rp });
     Chat.played[m.id] = 1;
     if (rp) this.clearReply();
-    const typing = document.activeElement === input;
+    // keep the keyboard up for the next message: the field is focused, or lost focus to this very tap
+    const typing = document.activeElement === input || performance.now() - this.blurAt < 400;
     if (!task) { input.value = ''; autosize(input); }
     if (typing) input.focus({ preventScroll: true }); // the keyboard stays up for the next message
     this.draw({ sentId: m.id, fromRect: from });

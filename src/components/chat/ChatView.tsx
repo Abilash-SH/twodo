@@ -11,6 +11,7 @@ import { parseTask } from '@/lib/parse';
 import { copyText, dayDiff, firstWord, isTouch, todayStr, ymd } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { useTapKeep } from '@/hooks/useTapKeep';
+import { Velocity, touchById } from '@/hooks/swipe';
 import { island } from '@/ui/island';
 import { showMenu } from '@/ui/menu';
 import { navTo, type Entry } from '@/ui/nav';
@@ -227,6 +228,7 @@ function ChatBar() {
   const { r, pop } = useStore(replyStore);
   const [barState, setBarState] = useState<'hidden' | 'in' | 'shown' | 'out'>('hidden');
   const held = useRef(false), holdT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const paired = !!(L.pair && L.pair.status === 'paired');
   useEffect(() => {
     if (r) { setBarState(pop ? 'in' : 'shown'); return; }
     setBarState(s => (s === 'hidden' ? s : 'out'));
@@ -245,9 +247,9 @@ function ChatBar() {
       </div>
       <div className="cb-row">
         <button ref={plus} className="cb-plus" type="button" aria-label="Share a to-do"><Icon name="plus" /></button>
-        <div className="cb-pill"><textarea ref={input} className="cb-in" rows={1} placeholder="Message" aria-label="Message" enterKeyHint={isTouch() ? 'enter' : 'send'} maxLength={20000}
+        <div className="cb-pill"><textarea ref={input} className="cb-in" rows={1} placeholder={paired ? `Message ${firstWord(ptName())}…` : 'Message'} aria-label="Message" enterKeyHint={isTouch() ? 'enter' : 'send'} maxLength={20000}
           onInput={e => { autosize(e.currentTarget); Chat.setTyping(!!e.currentTarget.value.trim()); }}
-          onBlur={() => Chat.setTyping(false)}
+          onBlur={() => { ChatCtl.blurAt = performance.now(); Chat.setTyping(false); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch()) { e.preventDefault(); ChatCtl.sendNow(e.currentTarget.value); } }} />
           <button ref={heart} className="cb-heart" type="button" aria-label="Send a heart">❤️</button>
           {/* tap = send, hold = "Send with effect" */}
@@ -268,45 +270,74 @@ function replyIcon(): SVGSVGElement {
   return svg;
 }
 
-/* ---------- swipe a message to the right to reply (mouse drag works too; the long-press menu has Reply as well) ---------- */
+/* ---------- swipe a message to the right to reply (mouse drag works too; the long-press menu has Reply as well) ----------
+   Like other messengers: it picks up within a few pixels of sideways movement (even at a slight angle), and a short
+   quick flick is enough. Touch uses touch events, so the list can't start scrolling halfway through the swipe. */
 function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = list.current; if (!el) return;
-    const TH = 56;
-    const swipe = (e: PointerEvent) => {
-      if (e.pointerType === 'mouse' && e.button !== 0) return;
-      const row = (e.target as HTMLElement).closest<HTMLElement>('.msg-row[data-id]'); if (!row || (e.target as HTMLElement).closest('a, button')) return;
+    const TH = 48;
+    interface S { row: HTMLElement; m: Msg; sx: number; x0: number; y0: number; id: number; touch: boolean; lock: null | 'x'; hint: HTMLElement | null; dx: number; hit: boolean; v: Velocity }
+    let S: S | null = null;
+    const begin = (target: HTMLElement, x: number, y: number, id: number, touch: boolean) => {
+      const row = target.closest<HTMLElement>('.msg-row[data-id]'); if (!row || target.closest('a, button')) return;
       const m = Chat.msgs[row.dataset.id!]; if (!m || m.del) return;
-      const x0 = e.clientX, y0 = e.clientY, pid = e.pointerId; let lock: null | 'x' = null, hint: HTMLElement | null = null, dx = 0, hit = false;
-      const move = (ev: PointerEvent) => {
-        if (ev.pointerId !== pid) return;
-        const mx = ev.clientX - x0, my = ev.clientY - y0;
-        if (lock === null) {
-          if (Math.abs(my) > 9 || mx < -9) return end(false);
-          if (mx > 9 && mx > Math.abs(my) * 1.3) {
-            lock = 'x'; clearTimeout(ChatCtl.lp); ChatCtl.suppressUntil = performance.now() + 700;
-            hint = document.createElement('span'); hint.className = 'rp-hint';
-            hint.append(replyIcon());
-            row.append(hint); row.classList.add('swiping'); row.style.transition = 'none';
-          } else return;
-        }
-        dx = Math.max(0, mx);
-        const t = Math.min(88, dx < TH ? dx : TH + (dx - TH) * 0.22);
-        row.style.transform = `translateX(${t}px)`;
-        const p = Math.min(1, dx / TH);
-        hint!.style.opacity = String(Math.min(1, p * 1.3)); hint!.style.scale = String(0.5 + 0.5 * p);
-        if (dx >= TH && !hit) { hit = true; hint!.classList.add('hit'); haptic('medium'); }
-        else if (dx < TH && hit) { hit = false; hint!.classList.remove('hit'); }
+      S = { row, m, sx: x, x0: x, y0: y, id, touch, lock: null, hint: null, dx: 0, hit: false, v: new Velocity() };
+      S.v.add(x, y);
+    };
+    // returns true once the swipe is ours
+    const track = (x: number, y: number): boolean => {
+      const G = S; if (!G) return false;
+      const mx = x - G.x0, my = y - G.y0;
+      if (G.lock === null) {
+        if (Math.abs(mx) < 6 && Math.abs(my) < 6) return false;
+        if (mx > 0 && mx > Math.abs(my) * 0.85) { // sideways-ish to the right: it's a reply swipe
+          G.lock = 'x'; clearTimeout(ChatCtl.lp); ChatCtl.suppressUntil = performance.now() + 700;
+          G.x0 = x - Math.min(mx, 6); // no jump: start following from here
+          G.hint = document.createElement('span'); G.hint.className = 'rp-hint';
+          G.hint.append(replyIcon());
+          G.row.append(G.hint); G.row.classList.add('swiping'); G.row.style.transition = 'none';
+        } else { S = null; return false; } // scrolling, or a swipe to the left
+      }
+      G.v.add(x, y);
+      G.dx = Math.max(0, x - G.x0);
+      const t = Math.min(96, G.dx < TH ? G.dx : TH + (G.dx - TH) * 0.25);
+      G.row.style.transform = `translate3d(${t}px,0,0)`;
+      const p = Math.min(1, G.dx / TH);
+      G.hint!.style.opacity = String(Math.min(1, p * 1.4)); G.hint!.style.scale = String(0.5 + 0.5 * p);
+      if (G.dx >= TH && !G.hit) { G.hit = true; G.hint!.classList.add('hit'); haptic('medium'); }
+      else if (G.dx < TH - 8 && G.hit) { G.hit = false; G.hint!.classList.remove('hit'); }
+      return true;
+    };
+    const finish = (fire: boolean) => {
+      const G = S; S = null; if (!G || G.lock !== 'x') return;
+      const { vx } = G.v.get(), last = G.dx + G.x0 - G.sx; // how far the finger really travelled
+      const go = fire && (G.hit || (last > 24 && vx > 0.3)); // reached the arrow, or flicked toward it
+      const row = G.row, hint = G.hint;
+      row.style.transition = 'transform .42s cubic-bezier(.34,1.56,.64,1)'; row.style.transform = '';
+      setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, 440);
+      if (go) { if (!G.hit) haptic('medium'); ChatCtl.setReply(G.m); }
+    };
+    // touch
+    const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(false); return; } const t = e.touches[0]; begin(e.target as HTMLElement, t.clientX, t.clientY, t.identifier, true); };
+    const tMove = (e: TouchEvent) => {
+      if (!S || !S.touch) return;
+      if (e.touches.length > 1) return finish(false);
+      const t = touchById(e, S.id); if (!t) return;
+      if (track(t.clientX, t.clientY) && e.cancelable) e.preventDefault();
+    };
+    const tEnd = (e: TouchEvent) => { if (S && S.touch && touchById(e, S.id)) finish(e.type === 'touchend'); };
+    // mouse
+    const pDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      begin(e.target as HTMLElement, e.clientX, e.clientY, e.pointerId, false); if (!S) return;
+      const move = (ev: PointerEvent) => { if (S && ev.pointerId === S.id) track(ev.clientX, ev.clientY); };
+      const end = (ev: PointerEvent) => {
+        if (S && ev.pointerId !== S.id) return;
+        removeEventListener('pointermove', move); removeEventListener('pointerup', end); removeEventListener('pointercancel', end);
+        finish(ev.type === 'pointerup');
       };
-      const end = (fire: boolean) => {
-        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel);
-        if (lock !== 'x') return;
-        row.style.transition = 'transform .42s cubic-bezier(.34,1.56,.64,1)'; row.style.transform = '';
-        setTimeout(() => { row.style.transition = ''; row.classList.remove('swiping'); if (hint) hint.remove(); }, 440);
-        if (fire && hit) ChatCtl.setReply(m);
-      };
-      const up = (ev: PointerEvent) => { if (ev.pointerId === pid) end(true); }, cancel = (ev: PointerEvent) => { if (ev.pointerId === pid) end(false); };
-      addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', cancel);
+      addEventListener('pointermove', move); addEventListener('pointerup', end); addEventListener('pointercancel', end);
     };
     // long-press = reactions + menu
     const press = (e: PointerEvent) => {
@@ -320,8 +351,14 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       addEventListener('pointermove', cancel); addEventListener('pointerup', stop); addEventListener('pointercancel', stop);
     };
     const ctx = (e: MouseEvent) => { const row = (e.target as HTMLElement).closest<HTMLElement>('.msg-row'); if (!row) return; e.preventDefault(); if (!isTouch()) openBubbleMenu(row); };
-    el.addEventListener('pointerdown', swipe); el.addEventListener('pointerdown', press); el.addEventListener('contextmenu', ctx);
-    return () => { el.removeEventListener('pointerdown', swipe); el.removeEventListener('pointerdown', press); el.removeEventListener('contextmenu', ctx); };
+    el.addEventListener('touchstart', tStart, { passive: true }); el.addEventListener('touchmove', tMove, { passive: false });
+    el.addEventListener('touchend', tEnd); el.addEventListener('touchcancel', tEnd);
+    el.addEventListener('pointerdown', pDown); el.addEventListener('pointerdown', press); el.addEventListener('contextmenu', ctx);
+    return () => {
+      el.removeEventListener('touchstart', tStart); el.removeEventListener('touchmove', tMove);
+      el.removeEventListener('touchend', tEnd); el.removeEventListener('touchcancel', tEnd);
+      el.removeEventListener('pointerdown', pDown); el.removeEventListener('pointerdown', press); el.removeEventListener('contextmenu', ctx);
+    };
   }, [list]);
 }
 

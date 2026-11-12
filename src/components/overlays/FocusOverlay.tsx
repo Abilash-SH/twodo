@@ -1,6 +1,7 @@
 'use client';
 /* Twodo · focus timer (Pomodoro), with a live activity in the island when minimised */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSwipeAway } from '@/hooks/swipe';
 import { blip, haptic } from '@/lib/feedback';
 import { D, L, save, updateTask } from '@/lib/store';
 import { pad } from '@/lib/util';
@@ -50,6 +51,8 @@ export function focusTick(): void { const f = L.focus; if (f && f.running && foc
 export function FocusOverlay() {
   const open = useStore(focusOpen);
   const [, tick] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+  useSwipeAway(ref, { onClose: () => closeFocus(), down: true, scroller: () => ref.current, enabled: open }); // swipe right or down = Minimise
   useEffect(() => { if (!open) return; const t = setInterval(() => tick(n => n + 1), 250); return () => clearInterval(t); }, [open]);
   const f = L.focus;
   const t = f && f.taskId ? D.tasks[f.taskId] : null;
@@ -75,7 +78,7 @@ export function FocusOverlay() {
     save(); tick(n => n + 1);
   };
   return (
-    <div id="focus" className={open ? 'on' : ''} aria-hidden={!open}>
+    <div ref={ref} id="focus" className={open ? 'on' : ''} aria-hidden={!open}>
       {f ? (<>
         <div className="f-top"><button className="nav-btn" type="button" onClick={() => act('min')}><Icon name="chevD" /><span>&nbsp;Minimise</span></button>
           <button className="nav-btn" type="button" onClick={() => act('stop')}>End</button></div>

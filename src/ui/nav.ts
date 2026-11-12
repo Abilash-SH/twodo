@@ -32,7 +32,7 @@ export function viewTitle(spec: Spec): string {
   if (spec.type === 'search') return 'Search';
   if (spec.type === 'tips') return 'Tips';
   if (spec.type === 'todos') return 'To-dos';
-  if (spec.type === 'list') { const l = D.lists[spec.id!]; return l ? l.name : 'List'; }
+  if (spec.type === 'list') { const l = D.lists[spec.id!]; return l ? l.name : 'Secret'; } // a locked secret list isn't loaded
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
   return SMART[spec.key!].title;
 }

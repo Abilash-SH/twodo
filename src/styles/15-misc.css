@@ -1,6 +1,5 @@
 /* ---------- Misc ---------- */
 #confetti { position: fixed; inset: 0; z-index: 290; pointer-events: none; }
-#haptic { position: fixed; left: -200px; top: 0; opacity: 0; pointer-events: none; }
 .hl-row { animation: flash 1.4s ease; }
 
 @media (prefers-reduced-motion: reduce) {

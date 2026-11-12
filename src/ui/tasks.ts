@@ -98,7 +98,7 @@ export function quickDue(id: string, v: string | undefined): void {
 }
 export async function shareList(id: string): Promise<void> {
   const l = D.lists[id]; if (!l) return;
-  const ts = sortTasks(liveTasks().filter(t => listOf(t).id === id && !t.done));
+  const ts = sortTasks(liveTasks({ secret: true }).filter(t => listOf(t).id === id && !t.done));
   const text = `${l.emoji} ${l.name}\n` + ts.map(t => `☐ ${t.title}${t.due ? ` (${fmtDue(t.due, t.time)})` : ''}`).join('\n');
   if (navigator.share) { try { await navigator.share({ title: l.name, text }); return; } catch (e) { if ((e as Error).name === 'AbortError') return; } }
   if (await copyText(text)) island({ e: '📋', text: 'List copied', ms: 1600 });

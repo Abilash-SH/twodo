@@ -1,0 +1,82 @@
+/* Twodo v5 · calmer keyboard, full screen, swipe feedback, secret lists and "made for two" bubbles */
+
+/* While the keyboard glides, iPhones can drop glass (backdrop blur) for a frame and leave the header blank.
+   For that half second the header uses a plain tinted wash instead; nobody can tell the difference mid-motion. */
+body.kb-anim .chat-nav::before, body.kb-anim .ch-pill, body.kb-anim .chat-nav .nav-btn,
+body.kb-anim .cb-pill, body.kb-anim .cb-plus, body.kb-anim .cb-reply, body.kb-anim .nav {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+body.kb-anim .chat-nav::before { background: color-mix(in srgb, var(--bg) 90%, transparent); }
+body.kb-anim .ch-pill, body.kb-anim .cb-pill, body.kb-anim .cb-reply { background-color: var(--bg2); }
+
+/* iPhone home-screen app with nothing being typed: always the whole screen, even when iOS under-reports the
+   height after the keyboard closes (Android resizes the page itself, so it keeps the measured height) */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: standalone) {
+    body:not(.kb):not(:has(:is(input, textarea, select, [contenteditable]):focus)) :is(#app, #layer) { top: 0; height: 100lvh; }
+  }
+}
+
+/* ---------- Secret lists: lock screen and passcode keypad ---------- */
+.vault-gate .vault-lock { width: 84px; height: 84px; border-radius: 28px; display: inline-grid; place-items: center; font-size: 0;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--c-purple) 22%, var(--bg2)), color-mix(in srgb, var(--c-pink) 16%, var(--bg2)));
+  color: var(--c-purple); box-shadow: 0 10px 30px color-mix(in srgb, var(--c-purple) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.5); }
+.vault-gate .vault-lock .i { width: 38px; height: 38px; stroke-width: 2; }
+.vault-acts { display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-width: 280px; margin: 22px auto 0; }
+.vault-acts .btn .i { vertical-align: -3px; margin-right: 4px; }
+.secret-h { display: flex; justify-content: space-between; align-items: baseline; }
+.secret-h .link-btn { font-size: 14px; } .secret-h .link-btn .i { vertical-align: -1px; }
+.secret-group .cell .val { color: var(--c-purple); }
+
+.vault-pad { display: flex; flex-direction: column; align-items: center; padding: 8px 20px 12px; text-align: center; user-select: none; -webkit-user-select: none; }
+.vault-ic { width: 52px; height: 52px; border-radius: 18px; display: grid; place-items: center; color: var(--c-purple);
+  background: color-mix(in srgb, var(--c-purple) 14%, transparent); margin: 4px 0 12px; }
+.vault-ic.big { width: 76px; height: 76px; border-radius: 26px; margin-top: 24px; } .vault-ic.big .i { width: 40px; height: 40px; }
+.vault-h { margin: 0 0 16px; font-size: 19px; font-weight: 650; letter-spacing: -.2px; }
+.vault-p { margin: 12px 0 18px; min-height: 20px; font-size: 14px; color: var(--label2); line-height: 1.4; max-width: 300px; }
+.vault-p.warn { color: var(--c-red); }
+.vault-pad > .btn { width: 100%; max-width: 300px; margin-top: 8px; }
+.pin-dots { display: flex; gap: 16px; height: 16px; }
+.pin-dots i { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid color-mix(in srgb, var(--label) 45%, transparent); transition: background-color .15s, transform .2s var(--bounce, ease), border-color .15s; }
+.pin-dots i.on { background: var(--c-purple); border-color: var(--c-purple); transform: scale(1.12); }
+.pin-dots.busy i.on { animation: pinBusy 1s ease-in-out infinite; }
+.pin-dots.busy i:nth-child(2) { animation-delay: .1s; } .pin-dots.busy i:nth-child(3) { animation-delay: .2s; } .pin-dots.busy i:nth-child(4) { animation-delay: .3s; }
+.pin-dots.busy i:nth-child(5) { animation-delay: .4s; } .pin-dots.busy i:nth-child(6) { animation-delay: .5s; }
+@keyframes pinBusy { 50% { opacity: .35; } }
+.pin-dots.shake { animation: pinShake .42s cubic-bezier(.36,.07,.19,.97); }
+@keyframes pinShake { 15%, 55% { transform: translateX(-10px); } 35%, 75% { transform: translateX(10px); } 90% { transform: translateX(-3px); } }
+.keypad { display: grid; grid-template-columns: repeat(3, 76px); gap: 14px 26px; justify-content: center; }
+.keypad button { width: 76px; height: 76px; border-radius: 50%; border: 0; font-size: 30px; font-weight: 400; color: var(--label);
+  background: var(--fill); display: grid; place-items: center; font-variant-numeric: tabular-nums; transition: background-color .25s, transform .12s; }
+.keypad button:active { background: color-mix(in srgb, var(--c-purple) 28%, var(--fill)); transform: scale(.94); transition: none; }
+.keypad button:disabled { opacity: .35; }
+.keypad .kp-fn { background: none; color: var(--label2); }
+.keypad .kp-fn .i { width: 28px; height: 28px; }
+.vault-forgot { margin-top: 18px; font-size: 14px; color: var(--label2); font-weight: 500; }
+@media (max-height: 640px) { .keypad { grid-template-columns: repeat(3, 66px); gap: 10px 22px; } .keypad button { width: 66px; height: 66px; font-size: 26px; } }
+@media (prefers-reduced-motion: reduce) { .pin-dots.shake, .pin-dots.busy i.on { animation: none; } }
+
+/* ---------- "Made for two" bubbles ----------
+   Each bubble blushes with the other person's colour on the side that faces them, so every message leans toward
+   the one it's for, and the last bubble of each turn ends in a little heart instead of the usual hook. */
+:root {
+  --bub-me-tip: color-mix(in srgb, var(--bub-me-top) 62%, var(--pt-c));
+  --bub-them-tip: color-mix(in srgb, var(--bub-them) 72%, var(--me-c));
+  --heart-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21.2s-8.3-5-10.1-10.2C.6 7.3 3.1 3.6 6.8 3.6c2.2 0 4 1.2 5.2 3.1 1.2-1.9 3-3.1 5.2-3.1 3.7 0 6.2 3.7 4.9 7.4-1.8 5.2-10.1 10.2-10.1 10.2z'/%3E%3C/svg%3E");
+}
+[data-theme="dark"] { --bub-me-tip: color-mix(in srgb, var(--bub-me-top) 66%, var(--pt-c)); --bub-them-tip: color-mix(in srgb, var(--bub-them) 70%, var(--me-c)); }
+.msg-row .bub.me { background: linear-gradient(128deg, var(--bub-me-tip) 0%, var(--bub-me-top) 40%, var(--bub-me-end) 100%);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--me-c) 60%, transparent), inset 0 1px 0 rgba(255,255,255,.35); }
+.msg-row .bub.them { background: linear-gradient(232deg, var(--bub-them-tip) 0%, var(--bub-them) 46%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+[data-theme="dark"] .msg-row .bub.me, [data-theme="dark"] .msg-row .bub.them { box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+/* the heart tail: your colour on your side, theirs on theirs */
+.msg-row.end .bub::after { content: ""; position: absolute; bottom: -7px; width: 17px; height: 17px; pointer-events: none;
+  -webkit-mask: var(--heart-mask) center / contain no-repeat; mask: var(--heart-mask) center / contain no-repeat;
+  animation: heartTail .55s var(--bounce) both; }
+.msg-row.me.end .bub::after { right: -10px; background: color-mix(in srgb, var(--me-c) 50%, var(--bub-me-end)); rotate: 22deg; }
+.msg-row.them.end .bub::after { left: -10px; background: color-mix(in srgb, var(--pt-c) 45%, var(--bub-them)); rotate: -22deg; }
+.msg-row.me.end .bub { border-bottom-right-radius: 15px; }
+.msg-row.them.end .bub { border-bottom-left-radius: 15px; }
+.msg-row.end .bub.ink::after, .mprev .bub::after { display: none; }
+@keyframes heartTail { 0% { scale: 0; opacity: 0; } 60% { scale: 1.25; opacity: 1; } 100% { scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .msg-row.end .bub::after { animation: none; } }

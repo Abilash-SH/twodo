@@ -4,13 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { haptic } from '@/lib/feedback';
 import { FX, Ink, playBubbleFx, playScreenFx } from '@/lib/fx';
 import { useStore } from '@/ui/store';
+import { useSwipeAway } from '@/hooks/swipe';
 import { Icon } from '../ui/Icon';
 import { Segmented } from '../ui/Segmented';
 import { ChatCtl, fxPickerStore } from './chatCtl';
 
 function Picker({ text, close }: { text: string; close: (send?: string) => void }) {
   const [tab, setTab] = useState<'bubble' | 'screen'>('bubble'), [sel, setSel] = useState<string | null>(null), [on, setOn] = useState(false);
-  const prev = useRef<HTMLDivElement>(null), bub = useRef<HTMLDivElement>(null), seq = useRef(0);
+  const prev = useRef<HTMLDivElement>(null), bub = useRef<HTMLDivElement>(null), seq = useRef(0), root = useRef<HTMLDivElement>(null);
+  useSwipeAway(root, { onClose: () => close(), down: true }); // swipe right or down to cancel
   useEffect(() => { const r = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(r); }, []);
   const pick = (k: string) => {
     setSel(k); haptic('light'); seq.current++;
@@ -22,7 +24,7 @@ function Picker({ text, close }: { text: string; close: (send?: string) => void 
   };
   const rows = useMemo(() => FX[tab], [tab]);
   return (
-    <div className={`fxp${on ? ' on' : ''}`}>
+    <div ref={root} className={`fxp${on ? ' on' : ''}`}>
       <div className="fxp-bg" onClick={() => close()} />
       <div className="fxp-top"><h3>Send with effect</h3>
         <Segmented name="fxtab" opts={[['bubble', 'Bubble'], ['screen', 'Screen']]} value={tab} onChange={v => { setTab(v as 'bubble' | 'screen'); setSel(null); haptic('light'); }} /></div>
