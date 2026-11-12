@@ -23,7 +23,7 @@ Twodo is a private to-do list + chat PWA for two people. In tests the partner is
 - Layers use the `--z-*` scale in `01-tokens.css`; don't invent new z-index numbers.
 - Fixed elements respect `env(safe-area-inset-*)`; the status bar is translucent.
 - Size full-screen layers with `inset: 0` or the measured `--vvh`/`--vvt`, never `100vh`/`100lvh`/`100dvh`: in Home Screen apps on iOS 26.1+ those units are taller than the visible screen (WebKit bug 301994) and push the message bar off the bottom.
-- Back navigation has one owner, `src/ui/nav.ts`: while any screen is open there is exactly one history "trap" entry, and every `popstate` (Back button, Android back, iOS edge swipe) closes exactly one thing. Gestures call `popView()`; they never call `history.back()` themselves. Gestures check `Nav.seq` so one that started before a navigation can't navigate again.
+- Back navigation has one owner, `src/ui/nav.ts`: while any screen is open there is exactly one history "trap" entry, and every `popstate` (Back button, Android back, iOS edge swipe) closes exactly one thing. Gestures call `popView()`; they never call `history.back()` themselves. Gestures check `Nav.seq` so one that started before a navigation can't navigate again. Every gesture has one owner: see `docs/gesture-ownership.md` and keep it current.
 - Don't read layout (`offsetWidth`, `scrollHeight`, `getBoundingClientRect`) while a screen is being pushed; to start a CSS transition, flush styles only (`getComputedStyle(el).opacity`).
 
 ## Before every PR

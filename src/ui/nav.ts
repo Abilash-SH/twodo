@@ -22,12 +22,15 @@ export const navState = createStore<{ entries: Entry[] }>({ entries: [] });
    popstate and closes exactly one screen; the trap is then re-armed if screens remain. In-app back (our swipe, the
    ‹ button, Escape) never calls history.back() except to remove the trap when you arrive Home.
    seq changes on every navigation, so a gesture that started before one can't trigger another.
-   lastPopAt lets popstate recognise "the phone's back gesture fired together with ours" as the same navigation. */
+   echoUntil is set only by OUR touch swipe from the screen edge, the one gesture the phone's own back swipe may
+   answer as well: the single popstate that follows it is the same navigation, not a second one. Every other Back
+   counts, however quickly it is pressed. */
 export const Nav = {
   dragging: false, edgeCancelAt: -1e9, noAnim: new Set<number>(), entering: new Set<number>(),
-  seq: 0, trap: false, ignoreNextPop: false, lastPopAt: -1e9,
+  seq: 0, trap: false, ignoreNextPop: false, echoUntil: -1e9,
 };
 const ECHO_MS = 800;
+let echoT: ReturnType<typeof setTimeout> | undefined;
 export function armTrap(): void { if (!Nav.trap) { history.pushState({ d: 2, t: 1 }, ''); Nav.trap = true; } }
 // back to Home: remove the trap, unless the phone's own Back already did (never step back past Twodo's first entry)
 function dropTrap(): void {
@@ -35,18 +38,17 @@ function dropTrap(): void {
   Nav.trap = false;
   if (history.state && history.state.t) { Nav.ignoreNextPop = true; history.back(); }
 }
-// called after every in-app pop: history follows the screens, never the other way round
-function poppedLocally(): void { Nav.seq++; Nav.lastPopAt = performance.now(); if (depth() < 2) dropTrap(); }
-/** popstate: one Back = one screen. Returns true when it handled the event. */
+/** popstate: one Back = one screen */
 export function onHistoryBack(e: PopStateEvent): void {
   if (Nav.ignoreNextPop) { Nav.ignoreNextPop = false; return; } // the trap we removed ourselves
   Nav.trap = false; // whatever this Back was, it consumed the trap
-  // the phone's own back gesture fired together with ours: that's the same navigation, not a second one
-  const echo = performance.now() - Nav.lastPopAt < ECHO_MS;
+  // the phone's own back gesture answering our edge swipe: the same navigation, counted once
+  const echo = performance.now() < Nav.echoUntil;
+  Nav.echoUntil = -1e9; clearTimeout(echoT);
   if (!echo && depth() > 1) {
     // the iPhone's edge swipe already animated the page away: switch without a second animation
     const instant = !!(e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition || performance.now() - Nav.edgeCancelAt < 2500;
-    doPop({ instant }); Nav.seq++; Nav.lastPopAt = performance.now();
+    doPop({ instant }); Nav.seq++;
   }
   if (depth() > 1) armTrap(); // the next Back still belongs to the app
 }
@@ -75,7 +77,7 @@ export const viewEl = (id: number): HTMLElement | null => document.querySelector
 export function bootNav(): void {
   navState.set({ entries: [{ id: ++seq, spec: { type: 'home' }, phase: 'idle' }] });
   history.replaceState({ d: 1 }, '');
-  Nav.trap = false; Nav.ignoreNextPop = false;
+  Nav.trap = false; Nav.ignoreNextPop = false; Nav.echoUntil = -1e9; clearTimeout(echoT);
 }
 export function pushView(spec: Spec, { replace = false } = {}): number {
   closeMenu();
@@ -88,11 +90,16 @@ export function pushView(spec: Spec, { replace = false } = {}): number {
   setTimeout(() => { if (liveEntries().some(x => x.id === e.id)) haptic('light'); }, MS.page - 80);
   return e.id;
 }
-/** In-app back (swipe, ‹ button, Escape): closes exactly one screen */
-export function popView(): void {
+/** In-app back (swipe, ‹ button, Escape): closes exactly one screen.
+ *  systemToo: a touch swipe from the screen edge, which the phone's own back gesture may answer with a popstate too.
+ *  That popstate then removes the trap itself; only if none comes do we remove it (never two steps back). */
+export function popView({ systemToo = false } = {}): void {
   if (depth() < 2) return;
-  doPop();
-  poppedLocally();
+  doPop(); Nav.seq++;
+  if (!systemToo) { if (depth() < 2) dropTrap(); return; }
+  Nav.echoUntil = performance.now() + ECHO_MS;
+  clearTimeout(echoT);
+  echoT = setTimeout(() => { Nav.echoUntil = -1e9; if (depth() < 2) dropTrap(); }, ECHO_MS);
 }
 export function doPop({ instant = false } = {}): void {
   const live = liveEntries(); if (live.length < 2) return;
@@ -112,7 +119,7 @@ export function navTo(spec: Spec): void {
   if (spec.type === 'home') {
     if (N < 2) { const v = topEntry(); if (v) viewEl(v.id)?.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     while (depth() > 2) doPop({ instant: true });
-    doPop(); poppedLocally(); return;
+    popView(); return;
   }
   if (N > 1 && specKey(topSpec()) === specKey(spec)) return;
   if (N === 1) { pushView(spec); return; }

@@ -52,7 +52,7 @@ async def main():
         await P.wait_for_timeout(900)
         assert await P.evaluate(TITLES) == ['Chat', 'To-dos'], ('one swipe = one screen', await P.evaluate(TITLES))
         assert (await state(P))['t'] == 1, 'a screen is open: the Back trap must stay armed'
-        await swipe(P, cdp, 12, 300); await P.wait_for_timeout(900)
+        await swipe(P, cdp, 12, 300); await P.wait_for_timeout(1400)  # an edge swipe leaves the trap for ~0.8 s (see nav.ts)
         assert await P.evaluate(TITLES) == ['Chat'], await P.evaluate(TITLES)
         assert not (await state(P) or {}).get('t'), 'home: no Back trap left behind'
         print('PASS: completed swipes pop exactly one screen each; 1:1 tracking; release continues from the finger')
@@ -71,7 +71,7 @@ async def main():
         await swipe(P, cdp, 12, 260, steps=5, ms=8); await P.wait_for_timeout(120)
         await swipe(P, cdp, 12, 260, steps=5, ms=8); await P.wait_for_timeout(120)
         await swipe(P, cdp, 12, 260, steps=5, ms=8)  # a third swipe at Home must do nothing
-        await P.wait_for_timeout(1100)
+        await P.wait_for_timeout(1500)
         assert await P.evaluate(TITLES) == ['Chat'], ('rapid swipes', await P.evaluate(TITLES))
         assert not (await state(P) or {}).get('t')
         stale = await P.evaluate("[...document.querySelectorAll('#stack > .view')].filter(v => v.style.transform || v.style.transition).length")
@@ -86,6 +86,28 @@ async def main():
         await P.evaluate("history.back()"); await P.wait_for_timeout(900)
         assert await P.evaluate(TITLES) == ['Chat'], await P.evaluate(TITLES)
         print('PASS: browser Back pops one screen per press')
+
+        # ---------- rapid Back presses: every press counts, however quickly it follows the last navigation
+        await to_groceries(P)
+        await P.evaluate("history.back(); setTimeout(() => history.back(), 100)"); await P.wait_for_timeout(1300)
+        assert 'localhost:8003' in P.url and await P.evaluate(TITLES) == ['Chat'], ('two quick Backs = two screens', P.url, await P.evaluate(TITLES))
+        await to_groceries(P)  # Back straight after a swipe that began away from the edge
+        await swipe(P, cdp, 160, 220, steps=5, ms=8); await P.evaluate("history.back()"); await P.wait_for_timeout(1300)
+        assert await P.evaluate(TITLES) == ['Chat'], ('Back right after a swipe', await P.evaluate(TITLES))
+        await to_groceries(P)  # Back straight after the ‹ button
+        await P.evaluate("document.querySelector('.view:not(.under) .nav-btn.back').click(); history.back()"); await P.wait_for_timeout(1300)
+        assert await P.evaluate(TITLES) == ['Chat'], ('Back right after the back button', await P.evaluate(TITLES))
+        print('PASS: rapid Back presses each close one screen (after a Back, a swipe or the back button)')
+
+        # ---------- arriving Home by an edge swipe: with or without the phone's own back, never a step out of the app
+        for system_back in (True, False):
+            await P.click('.fab-btn[aria-label="To-dos and reminders"]'); await P.wait_for_timeout(1000)
+            await swipe(P, cdp, 10, 300)
+            if system_back: await P.evaluate("history.back()")
+            await P.wait_for_timeout(1500)
+            assert 'localhost:8003' in P.url, ('left the app', system_back, P.url)
+            assert await P.evaluate(TITLES) == ['Chat'] and not (await state(P) or {}).get('t'), (system_back, await P.evaluate(TITLES), await state(P))
+        print('PASS: an edge swipe Home never steps back past the app, with or without the system gesture')
 
         # ---------- a system back arriving during our own swipe (iOS edge swipe / Android) is the same navigation
         for when in ('before', 'after'):
