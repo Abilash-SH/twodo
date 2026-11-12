@@ -1,0 +1,16 @@
+/* ---------- Alert ---------- */
+.alert-wrap { position: fixed; inset: 0; z-index: 260; display: grid; place-items: center; background: rgba(0,0,0,.3); opacity: 0; transition: opacity .25s; }
+.alert-wrap.on { opacity: 1; }
+.alert {
+  width: 270px; border-radius: 14px; overflow: hidden; text-align: center; background: var(--menu);
+  -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+  transform: scale(1.15); transition: transform .4s var(--spring);
+}
+.alert-wrap.on .alert { transform: scale(1); }
+.alert h4 { margin: 18px 16px 2px; font-size: 17px; }
+.alert p { margin: 0 16px 18px; font-size: 13px; line-height: 1.4; }
+.alert .btns { display: flex; border-top: .5px solid var(--sep); }
+.alert .btns button { flex: 1; height: 44px; border: 0; background: none; color: var(--c-blue); font-size: 17px; }
+.alert .btns button + button { border-left: .5px solid var(--sep); }
+.alert .btns .b { font-weight: 600; }
+.alert .btns .red { color: var(--c-red); }

@@ -1,0 +1,71 @@
+/* ---------- Composer (Claude-style) ---------- */
+#composer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 30;
+  padding: 10px calc(12px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(12px + var(--safe-left));
+  background: linear-gradient(to top, var(--bg) 55%, color-mix(in srgb, var(--bg) 0%, transparent));
+  transition: transform .45s var(--spring), opacity .3s;
+}
+#composer.hide { transform: translateY(110%); opacity: 0; pointer-events: none; }
+#composer > * { max-width: 776px; margin-left: auto; margin-right: auto; }
+body.kb #composer { padding-bottom: 10px; }
+.pills {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 2px 0;
+  max-height: 0; opacity: 0; margin-bottom: 0; transition: max-height .4s var(--spring), opacity .25s, margin .4s var(--spring);
+}
+.pills::-webkit-scrollbar { display: none; }
+#composer.focus .pills { max-height: 52px; opacity: 1; margin-bottom: 10px; }
+#composer.focus { background: linear-gradient(to top, var(--bg) calc(100% - 14px), color-mix(in srgb, var(--bg) 0%, transparent)); }
+.pill {
+  flex: none; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 17px; height: 34px; padding: 0 13px;
+  font-size: 14px; font-weight: 500; background: var(--bg2); color: var(--label);
+  box-shadow: 0 0 0 .5px var(--sep), 0 2px 6px rgba(0,0,0,.05); transition: transform .25s var(--spring);
+}
+.pill:active { transform: scale(.93); }
+.pill .i { width: 15px; height: 15px; color: var(--c, var(--label2)); }
+.pill .av { width: 18px; height: 18px; line-height: 18px; font-size: 9px; }
+
+.cbox {
+  background: var(--bg2); border-radius: 26px; padding: 10px 10px 8px 16px;
+  box-shadow: 0 0 0 .5px var(--sep), 0 6px 24px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.04);
+  transition: box-shadow .3s, border-radius .3s;
+}
+#composer.focus .cbox { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, var(--sep)), 0 8px 30px rgba(0,0,0,.1); }
+[data-theme="dark"] .cbox { background: #2C2C2E; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips:not(:empty) { padding: 2px 0 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 13px; border: 0;
+  font-size: 13px; font-weight: 600; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent);
+  animation: pop .4s var(--bounce);
+}
+.chip .i { width: 13px; height: 13px; stroke-width: 2.4; }
+.chip.off { color: var(--label3); background: var(--fill); text-decoration: line-through; }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } }
+#cta {
+  display: block; width: 100%; border: 0; background: transparent; resize: none; font-size: 17px; line-height: 23px;
+  min-height: 25px; max-height: 168px; padding: 2px 0 6px; color: var(--label);
+}
+.crow { display: flex; align-items: center; gap: 8px; }
+.cplus {
+  width: 32px; height: 32px; border-radius: 50%; border: 0; display: grid; place-items: center;
+  background: var(--fill); color: var(--label2); transition: transform .4s var(--spring), background-color .2s;
+}
+.cplus .i { width: 18px; height: 18px; stroke-width: 2.4; }
+#composer.focus .cplus { transform: rotate(45deg); }
+.cctx { font-size: 13px; color: var(--label2); display: flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.cctx .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.chint { margin-left: auto; font-size: 12px; color: var(--label3); white-space: nowrap; }
+@media (hover: none) { .chint { display: none; } }
+.csend {
+  margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 0; display: grid; place-items: center; flex: none;
+  background: var(--fill2); color: var(--bg2); transition: background-color .25s, transform .35s var(--bounce);
+  position: relative;
+}
+@media (hover: hover) { .chint + .csend { margin-left: 8px; } }
+.csend .i { width: 19px; height: 19px; stroke-width: 2.6; color: #fff; }
+.csend.on { background: var(--accent); }
+.csend.on:active { transform: scale(.86); }
+.csend .badge {
+  position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
+  background: var(--label); color: var(--bg2); font-size: 11px; font-weight: 700; line-height: 18px;
+}

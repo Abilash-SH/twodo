@@ -1,0 +1,11 @@
+/* Twodo · global styles.
+   Tailwind supplies its theme tokens and utility classes (used for layout in the React components). Its "preflight"
+   reset is deliberately left out: the app has its own iOS-style design system (src/styles), kept rule-for-rule from
+   the original so the migrated app looks exactly the same. Those rules are unlayered, so they win over utilities.
+   Utilities carry a `tw:` prefix (e.g. `tw:flex`), so they can never collide with the design system's own class
+   names (it has its own .grow, .hidden, .on…). */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "../styles/legacy.css";
+@source "../";

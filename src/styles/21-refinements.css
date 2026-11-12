@@ -1,0 +1,65 @@
+/* ==========================================================================
+   Twodo look: soft, flat and rounded. No boxed tables — rows sit right on
+   the page, icons are soft tinted circles, headings use the rounded face.
+   ========================================================================== */
+:root {
+  --round: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
+  --bg: #FAF8FB; --bg2: #FFFFFF; --bg3: #F3F0F5; --cell: var(--bg); --sheet: #FFFFFF;
+  --bar: rgba(250,248,251,.82); --desk: #EDE9F0; --menu: rgba(255,255,255,.86);
+  --fill: rgba(115,100,140,.1); --fill2: rgba(115,100,140,.18);
+  --shadow: 0 1px 2px rgba(40,20,60,.04), 0 10px 26px -12px rgba(40,20,60,.16);
+}
+[data-theme="dark"] {
+  --bg: #0D0C10; --bg2: #1A191F; --bg3: #232229; --cell: var(--bg); --sheet: #17161B;
+  --bar: rgba(13,12,16,.82); --desk: #050506; --menu: rgba(36,35,42,.86);
+}
+.sheet, [data-theme="dark"] .sheet { --cell: var(--sheet); }
+
+.large-title, .nav-title, .sheet-bar h3, .sec-h, .empty h3, .hm-empty h3, .dr-names b, .alert h3, .ob-page h1, .tip-h, .big-title { font-family: var(--round); }
+.large-title { font-weight: 800; letter-spacing: 0; }
+.nav.scrolled { box-shadow: 0 .5px 0 color-mix(in srgb, var(--label) 7%, transparent); }
+
+/* rows straight on the page */
+.group, .sheet .group { margin: 0 8px 22px; background: none; border-radius: 0; box-shadow: none; overflow: visible; }
+.cell { border-radius: 14px; min-height: 50px; }
+.cell + .cell::before, .task + .task::before, .sub-row + .sub-row::before, .cell.noico + .cell::before, .cell.noico::before { display: none; }
+button.cell:active, .cell.tap:active { background: var(--fill); }
+.task, .ti { border-radius: 16px; }
+.sq { width: 32px; height: 32px; border-radius: 50%; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); }
+.sq .i { width: 17px; height: 17px; stroke-width: 2.2; }
+.sec-h.sub { text-transform: none; letter-spacing: 0; font: 650 15px/1.3 var(--round); color: var(--label2); padding: 2px 24px 6px; }
+.note-s { padding: 0 24px; }
+input.name-inp { background: var(--fill); border-radius: 16px; }
+.searchbar, .dr-search { border-radius: 14px; }
+.banner { border-radius: 20px; }
+.seg { border-radius: 12px; } .seg .thumb { border-radius: 10px; }
+.btn { border-radius: 16px; color: var(--me-ink, #fff); } .btn.ghost, .btn.tint { color: var(--accent); }
+.btn-s { color: var(--me-ink, #fff); } .btn-s.gray { color: var(--label); }
+.sheet { border-radius: 28px 28px 0 0; }
+@media (min-width: 700px) and (min-height: 600px) { .sheet { border-radius: 24px; } }
+
+/* menu */
+#drawer, [data-theme="dark"] #drawer { background: var(--bg2); }
+.dr-avs .av, [data-theme="dark"] .dr-avs .av { box-shadow: 0 0 0 2.5px var(--bg2); }
+.dr-h { text-transform: none; letter-spacing: 0; font: 650 14px/1.3 var(--round); }
+.dr-ic { color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); }
+.dr-row.on { background: color-mix(in srgb, var(--accent) 13%, transparent); }
+
+/* your profile (Settings) */
+.me-prof { display: flex; flex-direction: column; align-items: center; padding: 8px 24px 26px; text-align: center; }
+.me-prof .pc-photo { margin: 0; }
+.me-prof .pc-photo .av { width: 96px; height: 96px; line-height: 96px; font-size: 40px;
+  box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5.5px color-mix(in srgb, var(--me-c) 70%, transparent), 0 16px 32px -14px var(--me-c); }
+.me-prof .pc-cam { width: 30px; height: 30px; right: -1px; bottom: -1px; background: var(--me-c); color: var(--me-ink); box-shadow: 0 0 0 3px var(--sheet); }
+.me-prof .pc-cam .i { width: 15px; height: 15px; }
+input.me-name { margin-top: 14px; width: min(100%, 300px); border: 0; background: none; text-align: center; font: 750 24px/1.2 var(--round); color: var(--label); padding: 6px 10px; border-radius: 12px; transition: background-color .2s; }
+input.me-name:focus { background: var(--fill); }
+.me-handle { margin-top: 1px; font-size: 15px; color: var(--label2); }
+.me-colors { display: grid; grid-template-columns: repeat(5, 30px); justify-content: center; gap: 14px 18px; padding: 20px 0 0; }
+.me-colors button { width: 30px; height: 30px; }
+.me-colors button.on { box-shadow: 0 0 0 3px var(--sheet), 0 0 0 5px var(--c); }
+.me-hint { margin: 12px 0 0; font-size: 13px; color: var(--label2); }
+
+/* the app follows the keyboard as it slides (see main.js → keyboard) */
+body.kb-anim #app { transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s, height .4s cubic-bezier(.22,.9,.28,1), top .4s cubic-bezier(.22,.9,.28,1); }
+body.kb-anim #layer { transition: height .4s cubic-bezier(.22,.9,.28,1), top .4s cubic-bezier(.22,.9,.28,1); }

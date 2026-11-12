@@ -1,0 +1,34 @@
+/* ===================== Liquid glass ===================== */
+:root {
+  --glass: color-mix(in srgb, var(--bg2) 58%, transparent);
+  --glass-sheen: linear-gradient(135deg, rgba(255,255,255,.62) 0%, rgba(255,255,255,.08) 42%, rgba(255,255,255,.24) 100%);
+  --glass-edge: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(255,255,255,.28), inset 0 0 0 .5px rgba(255,255,255,.5), 0 10px 28px -12px rgba(50,40,90,.35);
+  --glass-blur: blur(24px) saturate(200%) brightness(1.04);
+}
+[data-theme="dark"] {
+  --glass: color-mix(in srgb, #2b2a33 50%, transparent);
+  --glass-sheen: linear-gradient(135deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,.03) 45%, rgba(255,255,255,.09) 100%);
+  --glass-edge: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(255,255,255,.06), inset 0 0 0 .5px rgba(255,255,255,.14), 0 10px 28px -12px rgba(0,0,0,.7);
+  --glass-blur: blur(24px) saturate(180%);
+}
+.fab-btn, .cb-plus, .cb-pill, .cb-reply, .rp-hint, .tcard:not(.me):not(.them) {
+  background: var(--glass-sheen), var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-edge); }
+.ch-pill { background: var(--glass-sheen), color-mix(in srgb, var(--pt-c) 16%, color-mix(in srgb, var(--bg2) 90%, transparent)); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-edge), 0 6px 18px -8px color-mix(in srgb, var(--pt-c) 55%, transparent); }
+.ch-pill::before { background: color-mix(in srgb, var(--pt-c) 16%, var(--bg2)); box-shadow: none; }
+.cb-pill:focus-within { box-shadow: var(--glass-edge), 0 0 0 1.5px color-mix(in srgb, var(--me-c) 55%, transparent); }
+.tapb span { background: var(--glass-sheen), color-mix(in srgb, var(--bg2) 62%, transparent); box-shadow: 0 0 0 1.5px var(--chat-bg), 0 4px 12px -3px rgba(40,30,70,.28), inset 0 1px 0 rgba(255,255,255,.7); }
+.tapb span.mine { background: var(--glass-sheen), color-mix(in srgb, var(--me-c) 32%, var(--bg2)); }
+.mlist, .alert, .hub-card, .cbox, .sheet {
+  background-image: var(--glass-sheen); box-shadow: var(--glass-edge), 0 16px 50px rgba(0,0,0,.16); }
+.mlist { background-color: color-mix(in srgb, var(--bg2) 62%, transparent); }
+[data-theme="dark"] .mlist { background-color: color-mix(in srgb, #2b2a33 70%, transparent); }
+.hub-card { -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.sheet { background-color: color-mix(in srgb, var(--sheet) 88%, transparent); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); }
+.cbox { -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); background-color: color-mix(in srgb, var(--bg2) 70%, transparent); }
+.nav.scrolled { background-image: var(--glass-sheen); }
+.c-time { background: var(--glass-sheen), var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); box-shadow: inset 0 1px 0 rgba(255,255,255,.55); }
+/* soft colour drifting behind the conversation gives the glass something to refract */
+.chatview::before { content: ""; position: absolute; inset: -25%; z-index: 0; pointer-events: none; will-change: transform; animation: orbDrift 26s ease-in-out infinite alternate;
+  background: radial-gradient(34% 28% at 22% 30%, color-mix(in srgb, var(--pt-c) 24%, transparent), transparent 70%), radial-gradient(36% 30% at 78% 68%, color-mix(in srgb, var(--me-c) 24%, transparent), transparent 70%); }
+@keyframes orbDrift { 0% { transform: translate3d(-4%, -3%, 0) rotate(0); } 50% { transform: translate3d(5%, 4%, 0) rotate(6deg); } 100% { transform: translate3d(-2%, 6%, 0) rotate(-5deg); } }

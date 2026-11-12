@@ -1,0 +1,45 @@
+/* ---------- Misc ---------- */
+#confetti { position: fixed; inset: 0; z-index: 290; pointer-events: none; }
+#haptic { position: fixed; left: -200px; top: 0; opacity: 0; pointer-events: none; }
+.hl-row { animation: flash 1.4s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* detail sheet check state */
+.d-head.checked .chk { background: var(--accent); border-color: var(--accent); }
+.d-head.checked .chk .i { opacity: 1; transform: scale(1); }
+.d-head.checked .d-tt { color: var(--label2); }
+.sub-add { color: var(--accent); }
+.sub-add .i { width: 20px; height: 20px; margin: 0 1px; }
+
+/* accounts */
+.spin { display: inline-block; width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.cell small.val { font-size: 13px; }
+.cell .grow b { font-weight: 600; }
+.status.live i, .status i { flex: none; }
+button.banner { font: inherit; cursor: pointer; }
+button.banner span { display: block; color: var(--label2); font-size: 14px; }
+/* toasts never block taps on what's underneath (only their button is tappable) */
+.isl.toast { pointer-events: none; }
+.isl.toast .ib { pointer-events: auto; }
+
+/* sign-in gate */
+.pw-wrap { position: relative; }
+.pw-wrap input { padding-right: 70px !important; }
+.pw-eye { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 0; background: var(--fill); color: var(--label2); border-radius: 9px; padding: 6px 10px; font-size: 14px; font-weight: 600; }
+.pw-wrap .at { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 19px; font-weight: 600; color: var(--label3); pointer-events: none; }
+.ob-page .err { margin: -8px 4px 14px; }
+
+/* partner requests */
+.fr-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; position: relative; }
+.fr-card + .fr-card { border-top: .5px solid var(--sep); }
+.fr-card .av { width: 44px; height: 44px; line-height: 44px; font-size: 18px; }
+.fr-t { flex: 1; min-width: 0; }
+.fr-t b { display: block; font-size: 17px; font-weight: 600; }
+.fr-t span { display: block; font-size: 13px; color: var(--label2); overflow: hidden; text-overflow: ellipsis; }
+.fr-a { display: flex; gap: 6px; flex: none; }
+.btn-s.gray { background: var(--fill); color: var(--label); }
+.btn-s .i { width: 13px; height: 13px; stroke-width: 3; vertical-align: -1px; }

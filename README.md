@@ -1,6 +1,6 @@
 # Twodo 💞 a to-do list made for two
 
-A fast, iPhone-style to-do app for you and your partner. It's a static site (plain HTML/CSS/JS, no build step) hosted free on **GitHub Pages**. It installs like a real app, works offline, and, once you add accounts, syncs between your two phones with **end-to-end encryption**, partner requests by **@username**, and **push reminders**. Everything runs on free tiers.
+A fast, iPhone-style to-do app for you and your partner. It's built with **Next.js, React and TypeScript** and exported as a static site, hosted free on **GitHub Pages** (a GitHub Action builds and publishes it on every push to `main`). It installs like a real app, works offline, and, once you add accounts, syncs between your two phones with **end-to-end encryption**, partner requests by **@username**, and **push reminders**. Everything runs on free tiers.
 
 Live at **https://abilash-sh.github.io/twodo/**
 
@@ -22,8 +22,8 @@ The first launch asks for both your names and a colour each. Without the steps b
 4. Copy two values:
    - the **database URL** at the top of the Realtime Database *Data* tab, e.g. `https://twodo-xxxx-default-rtdb.firebaseio.com`
    - the **Web API key** from ⚙️ **Project settings → General**. If it's missing, click **Add app → Web (</>)** to create one, then copy `apiKey`.
-5. In this GitHub repo, open [`config.js`](config.js) → ✏️ **Edit**, paste both values, and **Commit**. These values are public by design: they identify your project but don't grant access. Your login and the rules do that.
-6. Wait about a minute, then reopen Twodo on both phones (fully close and reopen the app; it may take two launches to pick up the update).
+5. In this GitHub repo, open [`.env.production`](.env.production) → ✏️ **Edit**, paste both values (`NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_DATABASE_URL`), and **Commit**. These values are public by design: they identify your project but don't grant access. Your login and the rules do that.
+6. Wait for the **Deploy to GitHub Pages** action to finish (repo **Actions** tab, about 2 minutes), then reopen Twodo on both phones (fully close and reopen the app; it may take two launches to pick up the update).
 7. On each phone: **Settings → Together → Create an account**, then pick a **username** (unique and case-insensitive, e.g. `@abilash`).
 8. One of you types the other's `@username` → **Invite**. The other gets a request (a banner on Home, or in Settings) → **Review**.
 9. **Compare the 8-digit safety code** on both screens. If it matches, tap **Accept**. You're paired 💞
@@ -41,7 +41,7 @@ The first launch asks for both your names and a colour each. Without the steps b
 Tasks with a date **and** a time can send a push notification to the phone of whoever the task is for (both of you for shared tasks). A free scheduled **GitHub Action** sends them. It only sees *when* each reminder is due; the title is encrypted and only your phones can read it.
 
 1. **Make the push keys.** In Twodo: Settings → Together → **Set up push reminders**. It generates a key pair on your phone.
-2. **Public key:** paste it into `config.js` as `vapidPublicKey` (commit), *and* keep it handy for step 4.
+2. **Public key:** paste it into [`.env.production`](.env.production) as `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (commit), *and* keep it handy for step 4.
 3. **Service account:** Firebase ⚙️ **Project settings → Service accounts → Generate new private key**. This downloads a JSON file. It's easier to do steps 3–4 on a computer.
 4. In GitHub: repo **Settings → Secrets and variables → Actions → New repository secret**. Add four secrets:
    | Name | Value |
@@ -49,7 +49,7 @@ Tasks with a date **and** a time can send a push notification to the phone of wh
    | `FIREBASE_SERVICE_ACCOUNT` | the whole JSON file's contents |
    | `FIREBASE_DB_URL` | your database URL |
    | `VAPID_PUBLIC_KEY` | the public key from step 1 |
-   | `VAPID_PRIVATE_KEY` | the private key from step 1 (never put this in config.js) |
+   | `VAPID_PRIVATE_KEY` | the private key from step 1 (never put this in `.env.production` or any `NEXT_PUBLIC_` variable: those end up in the app) |
 5. Repo **Actions** tab → enable workflows if asked → **Send reminders** → **Run workflow** once to check it goes green.
 6. On each iPhone (Home Screen app): Settings → Together → turn on **Push reminders** → **Allow**.
 
@@ -68,11 +68,11 @@ Reminders arrive within roughly **5–15 minutes** of the due time, because GitH
 | Database access | Rules allow only the two members of a space to read or write it. Usernames are first-come and can't be stolen. Requests can only be read by their recipient. |
 | Secret lists | Never leave the phone they're on. |
 | Push | The sender (GitHub Action) relays still-encrypted titles. Web Push adds another layer of encryption to each phone. It only sends to people in the same space and only to real push services, and it installs exact, checksummed versions of its code (`package-lock.json`, actions pinned to commits). |
-| The page itself | A Content Security Policy lets only this site's own scripts run and only lets the app talk to Firebase. Everything that arrives from sync (names, colours, emoji, photos, numbers, reactions) is checked before it's shown. |
+| The page itself | A Content Security Policy lets only this site's own scripts run (Next's few inline scripts are allowed by their exact SHA-256 hashes, computed at build time) and only lets the app talk to Firebase. The app never builds HTML from strings: React escapes everything. Everything that arrives from sync (names, colours, emoji, photos, numbers, reactions) is checked before it's shown. |
 
 **What's still visible:** Firebase can see your email, username, display name and colour, and *when* records change or reminders are due. It can't see what your tasks say.
 
-**What's public on purpose:** `config.js` holds your Firebase *web API key* and database address, and later the push *public* key. These identify your project; they don't unlock anything (the rules and your logins do). There are **no passwords, private keys or service accounts in this repository or its history.** The push *private* key and the Firebase service account live only in GitHub → Settings → Secrets.
+**What's public on purpose:** `.env.production` holds your Firebase *web API key* and database address, and later the push *public* key. These identify your project; they don't unlock anything (the rules and your logins do). There are **no passwords, private keys or service accounts in this repository or its history.** The push *private* key and the Firebase service account live only in GitHub → Settings → Secrets.
 
 **Five minutes in the Firebase / Google Cloud consoles (do these once):**
 1. **Republish the rules:** Realtime Database → Rules → paste [`firebase.rules.json`](firebase.rules.json) → Publish (they now also limit who reminders can go to and which push servers can be used).
@@ -91,7 +91,7 @@ Once you're signed in, **Home is your chat**, with the conversation taking up th
 - Tap either photo to see it big; only your own can be changed (Settings shows only your profile).
 - **Hold the send arrow** for *Send with effect*. **Bubble effects:** Slam, Loud, Gentle, Invisible Ink. **Screen effects:** Echo, Spotlight, Balloons, Confetti, Love, Lasers, Fireworks, Celebration.
 - Some phrases trigger effects automatically: “happy birthday” → balloons, “congrats” → confetti, “happy new year” → fireworks, “pew pew” → lasers, “love you” → hearts.
-- **Double-tap** a message to ❤️ it. **Long-press** for tapbacks (❤️ 👍 👎 😂 ‼️ ❓), Copy, **Make it a task**, or **Undo Send** (within 15 minutes).
+- **Double-tap** a message to ❤️ it. **Long-press** to react (❤️ 😂 😮 🥹 🔥 👍), **Reply**, Copy, **Make it a task**, or **Undo Send** (within 15 minutes). **Swipe a message right** to reply.
 - **＋** shares one of your tasks as a card your partner can tick off right from the chat. The ❤️ button sends a heart with the Love effect.
 
 Messages are encrypted with the same key as your tasks. The database rules only let the author edit or unsend a message, so neither of you can fake a message from the other. Only the latest 300 messages are downloaded; older ones stay on the phone that has them. If push reminders are set up, an unread message also triggers a push within about 5–15 minutes.
@@ -109,27 +109,34 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 - **Any screen:** phones (portrait or landscape), iPads and computers.
 - **💡 Tips & tricks:** every tip, with little animated demos, lives in Settings.
 
-## Updating
-After changing files, bump `VERSION` in `sw.js` so phones fetch the new version.
+## Developing & deploying
+Twodo is a Next.js 16 app (React 19, TypeScript, Tailwind CSS 4, Lucide icons, Zod), exported as static files. See [MIGRATION.md](MIGRATION.md) for how it was moved over from the original plain-JavaScript version.
+
+```sh
+npm ci                 # install exact versions (package-lock.json)
+npm run dev            # http://localhost:3000 (uses .env.local / .env.development if you add one)
+npm run typecheck      # TypeScript, strict
+npm run build          # static site in out/ (+ CSP hashes and the offline file list, scripts/postbuild.mjs)
+npm run preview        # serve out/ on http://localhost:3000
+```
+**Deploying:** push to `main`. The **Deploy to GitHub Pages** workflow type-checks, builds and publishes `out/`.
+**One-time switch** (when moving from the old plain-files site): repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Phones update themselves: the service worker's cache version is derived from the build's contents, so every deploy is picked up on the next launch.
 
 ## Files
 ```
-config.js              your public Firebase settings (edit this)
+.env.production        your public Firebase settings (edit this) · .env.example explains each value
 firebase.rules.json    database access rules (paste into Firebase)
+.github/workflows/pages.yml       builds + deploys the site (actions pinned to commits)
 .github/workflows/reminders.yml  + .github/reminders/send.mjs   free push sender (pinned by package-lock.json)
-index.html · styles.css · sw.js · manifest.webmanifest · icons/
-js/boot.js     runs first: theme before first paint, refuses to run inside other sites' frames
-js/keys.js     crypto: password KDF, ECDH pairing, safety code, key store
-js/cloud.js    Firebase Auth (REST), accounts, usernames
-js/live.js     live connections that reconnect instantly (and after the phone wakes up)
-js/sync.js     encrypted real-time sync + request inbox
-js/pair.js     partner requests, accept/decline, unpair
-js/push.js     push subscription + encrypted reminder index
-js/account.js  Together settings + account sheets
-js/gate.js     sign-in screen
-js/chat.js · js/chatui.js · js/effects.js · chat.css   Messages
-js/tips.js     the Tips & tricks screen
-js/menu.js     the ☰ menu (switched off for now; Settings and To-dos have their own buttons)
-js/*.js        the rest of the app (views, gestures, parser, focus timer…)
-PROMPT.md      the original prompt
+public/                sw.js (offline + push), boot.js (theme before first paint, refuses to run in other sites' frames), manifest, icons
+scripts/postbuild.mjs  Content-Security-Policy with script hashes; service-worker file list + version
+src/app/               layout (page shell + splash), page, globals.css
+src/lib/               the data layer, no React: store + checks on every record, natural-language parser, crypto,
+                       Firebase REST + live streams, encrypted sync, chat, pairing, push, effects, Zod schemas
+src/ui/                screen state: navigation stack, sheets, menus, toasts, alerts, task actions
+src/hooks/             gestures (swipes, long-press, swipe back), keyboard, buttons that keep the keyboard up
+src/components/        React components: chat, to-dos, composer, sheets, settings, sign-in gate, overlays
+src/styles/            the design system, one file per area (kept rule-for-rule from the original)
+PROMPT.md              the original prompt
 ```

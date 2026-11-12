@@ -1,0 +1,16 @@
+/* ---------- App shell ---------- */
+#app {
+  position: fixed; left: 0; right: 0; top: var(--vvt, 0px); height: var(--vvh, 100%);
+  max-width: 1240px; margin: 0 auto; overflow: hidden; background: var(--bg);
+  transform-origin: 50% 0;
+  transition: transform .5s var(--spring), border-radius .5s var(--spring), filter .5s;
+}
+@media (min-width: 1241px) {
+  #app { box-shadow: 0 0 0 .5px var(--sep), 0 30px 80px rgba(0,0,0,.12); }
+}
+body.sheet-open #app {
+  transform: translateY(calc((var(--safe-top) + 10px) * var(--sp, 1))) scale(calc(1 - .07 * var(--sp, 1)));
+  border-radius: calc(14px * var(--sp, 1));
+}
+body.sheet-drag #app { transition: none; }
+#stack { position: absolute; inset: 0; }

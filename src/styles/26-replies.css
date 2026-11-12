@@ -1,0 +1,27 @@
+/* ===================== Replies ===================== */
+.msg-row { touch-action: pan-y; }
+.msg-row.swiping { will-change: transform; }
+.rp-hint { position: absolute; left: -44px; top: 50%; width: 32px; height: 32px; margin-top: -16px; border-radius: 50%; display: grid; place-items: center; opacity: 0; scale: .5;
+  color: var(--label2); background: color-mix(in srgb, var(--bg2) 70%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 3px 10px -3px rgba(40,30,70,.25); transition: background-color .2s, color .2s; }
+.rp-hint .i { width: 17px; height: 17px; stroke-width: 2.2; }
+.rp-hint.hit { color: var(--me-ink); background: var(--me-c); animation: hintHit .4s var(--bounce); }
+@keyframes hintHit { 0% { transform: scale(.8); } 55% { transform: scale(1.3); } 100% { transform: none; } }
+.bub.has-rq { display: flex; flex-direction: column; align-items: flex-start; }
+.rq { display: block; width: 100%; max-width: 100%; margin: -1px 0 6px; padding: 5px 10px 6px 11px; border-radius: 12px; position: relative; overflow: hidden; cursor: pointer;
+  font-size: 13px; line-height: 17px; background: color-mix(in srgb, currentColor 9%, transparent); -webkit-tap-highlight-color: transparent; }
+.rq::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: currentColor; opacity: .55; border-radius: 2px; }
+.rq b { display: block; font-size: 12px; font-weight: 700; opacity: .75; }
+.rq span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; opacity: .85; white-space: normal; word-break: break-word; }
+.rq:active { opacity: .7; }
+.cb-reply { display: flex; align-items: center; gap: 10px; margin: 0 4px; padding: 8px 8px 8px 12px; border-radius: 18px; position: relative; overflow: hidden; }
+.cb-reply[hidden] { display: none; }
+.cb-reply::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 2px; background: var(--me-c); }
+.cb-reply.in { animation: rbIn .42s var(--bounce); } .cb-reply.out { animation: rbOut .22s ease-in forwards; }
+@keyframes rbIn { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+@keyframes rbOut { to { opacity: 0; transform: translateY(10px) scale(.97); } }
+.rb-ic { color: var(--me-c); display: grid; place-items: center; margin-left: 4px; } .rb-ic .i { width: 18px; height: 18px; stroke-width: 2.2; }
+.rb-t { flex: 1; min-width: 0; font-size: 13px; line-height: 17px; } .rb-t b { display: block; font-weight: 700; color: var(--label); }
+.rb-t span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--label2); }
+.rb-x { width: 28px; height: 28px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--label2); flex: none; } .rb-x .i { width: 14px; height: 14px; stroke-width: 2.6; }
+.bwrap.hl .bub, .bwrap.hl .tcard { animation: hlFlash 1.3s ease-out; }
+@keyframes hlFlash { 0%, 35% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--me-c) 55%, transparent), 0 0 24px color-mix(in srgb, var(--me-c) 45%, transparent); } 100% { box-shadow: 0 0 0 0 transparent; } }

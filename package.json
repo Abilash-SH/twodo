@@ -1,0 +1,37 @@
+{
+  "name": "twodo",
+  "version": "4.0.0",
+  "private": true,
+  "description": "A to-do list made for two: chat, shared lists and reminders, end-to-end encrypted.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node scripts/postbuild.mjs",
+    "typecheck": "tsc --noEmit",
+    "preview": "python3 -m http.server 3000 --directory out"
+  },
+  "dependencies": {
+    "lucide-react": "1.72.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.5",
+    "typescript": "5.9.3"
+  },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 121",
+    "safari >= 16.4",
+    "ios_saf >= 16.4"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}

@@ -1,0 +1,16 @@
+/* ===================== Home: greeting, today's reminders, chat box ===================== */
+.hm { padding: 6px 20px 18px; }
+.hm-hi { margin: 0; font-size: clamp(30px, 8.8vw, 38px); line-height: 1.1; font-weight: 800; letter-spacing: .2px; text-wrap: balance;
+  background: linear-gradient(115deg, var(--label) 35%, color-mix(in srgb, var(--accent) 85%, var(--label))); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hm-sub { margin: 6px 0 0; color: var(--label2); font-size: 15px; }
+.hm-empty { text-align: center; padding: 30px 24px 10px; color: var(--label2); }
+.hm-empty .e { font-size: 52px; display: inline-block; animation: float 3.4s ease-in-out infinite; }
+.hm-empty h3 { color: var(--label); margin: 10px 0 4px; font-size: 20px; }
+.hm-empty p { margin: 0 auto 18px; font-size: 15px; line-height: 1.45; max-width: 300px; }
+.hm-ideas { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.hm-ideas button { border: 0; border-radius: 18px; padding: 9px 14px; font-size: 14px; font-weight: 500; background: var(--bg2); color: var(--label); box-shadow: var(--shadow); transition: transform .25s var(--bounce); }
+.hm-ideas button:active { transform: scale(.94); }
+.hm-done { display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--label2); font-size: 13px; padding: 0 0 18px; }
+.menu-btn { position: relative; }
+.menu-btn .i { width: 27px; height: 27px; stroke-width: 2.2; }
+.chat-badge.dot { position: absolute; top: 9px; right: 5px; min-width: 10px; width: 10px; height: 10px; padding: 0; font-size: 0; }

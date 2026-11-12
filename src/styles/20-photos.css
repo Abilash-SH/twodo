@@ -1,0 +1,7 @@
+/* ===================== Profile photos ===================== */
+.av.ph { background-size: cover; background-position: center; }
+.pc-photo { position: relative; display: block; margin: 0 auto 8px; border: 0; background: none; padding: 0; border-radius: 50%; }
+.pc-photo .av { display: block; width: 60px; height: 60px; line-height: 60px; font-size: 24px; margin: 0; }
+.pc-cam { position: absolute; right: -3px; bottom: -3px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; box-shadow: 0 0 0 2.5px var(--cell); }
+.pc-cam .i { width: 13px; height: 13px; stroke-width: 2.4; }
+.person { padding-top: 32px; }

@@ -1,0 +1,33 @@
+/* ===================== Motion: everything answers your touch ===================== */
+:where(button, [role="button"], .chip, .pill, .hub-card) { transition: scale .32s var(--bounce); }
+:where(button:not(.mi):not(:disabled), [role="button"], .chip, .pill, .hub-card):active { scale: .94; }
+.mi:active, .cell:active, .seg button:active, .alert .btns button:active, .tabs button:active { scale: 1; }
+.fab-btn .i { transition: rotate .5s var(--bounce), scale .3s var(--bounce); }
+.fab-btn:active .i { rotate: 70deg; scale: 1.15; }
+.fab-btn[data-a="todos"]:active .i { rotate: -8deg; scale: 1.25; }
+.cb-heart { transition: transform .35s var(--bounce), opacity .2s, scale .3s var(--bounce); }
+.cb-heart:active { scale: 1.35; }
+.cb-pill:not(.has) .cb-heart { animation: heartIdle 3.2s ease-in-out infinite; }
+@keyframes heartIdle { 0%, 82%, 100% { transform: scale(1); } 88% { transform: scale(1.18); } 94% { transform: scale(1); } }
+.cb-plus { transition: transform .3s var(--bounce), rotate .4s var(--bounce); }
+.cb-plus:active { rotate: 90deg; }
+.cb-in:focus { caret-color: var(--me-c); }
+/* screens glide in, and their contents follow one after another */
+.view.enter .hub-card, .view.enter .group, .view.enter .sec-h, .view.enter .task, .view.enter .hub-done, .view.enter .cell { animation: riseIn .5s var(--spring) both; }
+.view.enter > *:nth-child(2) { animation-delay: .04s; } .view.enter > *:nth-child(3) { animation-delay: .08s; }
+.view.enter .hub-card:nth-child(1) { animation-delay: .03s; } .view.enter .hub-card:nth-child(2) { animation-delay: .07s; } .view.enter .hub-card:nth-child(3) { animation-delay: .11s; }
+.view.enter .hub-card:nth-child(4) { animation-delay: .15s; } .view.enter .hub-card:nth-child(5) { animation-delay: .19s; } .view.enter .hub-card:nth-child(6) { animation-delay: .23s; }
+.view.enter .task:nth-child(2) { animation-delay: .05s; } .view.enter .task:nth-child(3) { animation-delay: .09s; } .view.enter .task:nth-child(4) { animation-delay: .13s; } .view.enter .task:nth-child(5) { animation-delay: .17s; } .view.enter .task:nth-child(n+6) { animation-delay: .21s; }
+@keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+.c-jump:active { scale: .92; }
+.msg-row .bub, .msg-row .tcard { transition: transform .25s var(--bounce); }
+.msg-row .bwrap:active .bub { transform: scale(.985); }
+@media (prefers-reduced-motion: reduce) {
+  .chatview::before, .cb-pill:not(.has) .cb-heart, .c-sub.online::before { animation: none; }
+  .view.enter .hub-card, .view.enter .group, .view.enter .sec-h, .view.enter .task, .view.enter .hub-done, .view.enter .cell { animation: none; }
+}
+
+.bub.me .rq { background: color-mix(in srgb, var(--me-c) 26%, rgba(255,255,255,.4)); } .bub.me .rq::before { background: var(--me-c); opacity: 1; }
+.bub.them .rq { background: color-mix(in srgb, var(--pt-c) 20%, rgba(255,255,255,.45)); } .bub.them .rq::before { background: var(--pt-c); opacity: 1; }
+[data-theme="dark"] .bub.me .rq { background: color-mix(in srgb, var(--me-c) 24%, rgba(255,255,255,.08)); }
+[data-theme="dark"] .bub.them .rq { background: color-mix(in srgb, var(--pt-c) 20%, rgba(255,255,255,.07)); }
