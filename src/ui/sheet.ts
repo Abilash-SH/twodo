@@ -28,7 +28,6 @@ export function openSheet(desc: SheetDesc): void {
   if (islandStore.get().mode === 'toast') hideIsland();
   const replacing = sheetOpen();
   if (replacing) closeSheet({ history: false, keepApp: true });
-  document.body.style.setProperty('--sp', '1');
   document.body.classList.add('sheet-open');
   sheetStore.set(list => [...list, { id: ++seq, desc, closing: false }]);
   if (!replacing) history.pushState({ d: navState.get().entries.filter(e => e.phase !== 'out').length, s: 1 }, '');

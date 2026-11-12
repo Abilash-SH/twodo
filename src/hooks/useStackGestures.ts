@@ -15,7 +15,7 @@ import { deleteTask, toggleDone } from '@/ui/tasks';
 import { openTaskMenu } from '@/components/views/taskMenus';
 
 interface RowG { kind: 'row'; row: HTMLElement; ti: HTMLElement; id: string; x0: number; y0: number; base: number; cur: number; mode: null | 'swipe' | 'scroll' | 'lp'; pid: number; touch: boolean; v: Velocity; vx: number; lp?: ReturnType<typeof setTimeout>; armed?: boolean; full?: boolean }
-interface PageG { kind: 'edge' | 'pan'; pid: number; touch: boolean; x0: number; y0: number; top: HTMLElement; prev: HTMLElement; w: number; dx: number; base: number; active: boolean; v: Velocity }
+interface PageG { kind: 'edge' | 'pan'; pid: number; touch: boolean; x0: number; y0: number; top: HTMLElement; prev: HTMLElement; w: number; dx: number; base: number; active: boolean; v: Velocity; seq: number }
 type Gest = RowG | PageG;
 export const Gesture = { g: null as Gest | null, suppressClickUntil: 0, openRow: null as HTMLElement | null, openOffset: 0 };
 renderGate.busy = () => Nav.dragging || (!!Gesture.g && Gesture.g.kind === 'row' && Gesture.g.mode === 'swipe');
@@ -89,13 +89,18 @@ function endEdge(G: PageG, cancelled = false) {
   if (!G.active) return;
   document.getElementById('stack')!.classList.remove('dragging'); Nav.dragging = false;
   const { vx } = G.v.get();
-  const go = !cancelled && vx > -0.15 && flung(G.dx, vx, G.w);
+  // one swipe, one navigation: if anything navigated while the finger was down (e.g. the phone's own back gesture),
+  // or the screen is already gone, this swipe only settles back
+  const stale = Nav.seq !== G.seq || !G.top.isConnected;
+  const go = !cancelled && !stale && vx > -0.15 && flung(G.dx, vx, G.w);
   // Commit the dragged position before switching the CSS destination; release never restarts at zero.
   void G.top.offsetWidth;
-  G.top.style.transition = reducedMotion.matches ? 'none' : go ? 'transform .26s cubic-bezier(.2,.8,.2,1)' : 'transform .42s cubic-bezier(.34,1.4,.64,1)';
+  // finishing: the rest of the way at the finger's speed; cancelling: a restrained spring back
+  const ms = go ? Math.round(Math.max(160, Math.min(MS.page, (G.w - G.dx) / Math.max(Math.abs(vx), 0.8)))) : MS.page;
+  G.top.style.transition = reducedMotion.matches ? 'none' : go ? `transform ${ms}ms ${EASE.out}` : `transform ${ms}ms ${EASE.spring}`;
   G.prev.style.transition = G.top.style.transition;
   G.top.style.transform = ''; G.prev.style.transform = '';
-  setTimeout(() => { G.top.style.transition = ''; G.prev.style.transition = ''; }, 440);
+  setTimeout(() => { G.top.style.transition = ''; G.prev.style.transition = ''; }, ms + 20);
   if (go) { Gesture.suppressClickUntil = performance.now() + 400; haptic('light'); popView(); }
   else { const sh = shade(); if (sh) sh.style.opacity = '.12'; }
   flushDeferred();
@@ -107,7 +112,7 @@ export function useStackGestures(stackRef: React.RefObject<HTMLDivElement | null
     const pageG = (kind: 'edge' | 'pan', p: Pt): PageG | null => {
       const live = liveEntries(); if (live.length < 2) return null;
       const top = viewEl(live[live.length - 1].id), prev = viewEl(live[live.length - 2].id); if (!top || !prev) return null;
-      const g: PageG = { kind, pid: p.id, touch: p.touch, x0: p.x, y0: p.y, top, prev, w: stackEl.offsetWidth, dx: 0, base: 0, active: false, v: new Velocity() };
+      const g: PageG = { kind, pid: p.id, touch: p.touch, x0: p.x, y0: p.y, top, prev, w: stackEl.offsetWidth, dx: 0, base: 0, active: false, v: new Velocity(), seq: Nav.seq };
       g.v.add(p.x, p.y); return g;
     };
     // a finger or the mouse went down: work out what it might become

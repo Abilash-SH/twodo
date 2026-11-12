@@ -20,15 +20,20 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const later = (fn: () => void, ms: number) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); };
     let S: { id: number; x0: number; y0: number; axis: null | 'x' | 'y'; d: number; v: Velocity; canDown: boolean } | null = null;
+    const backdrop = el.previousElementSibling as HTMLElement | null;
+    let hW = 0, hH = 0; // measured once per drag, not on every move
+    const size = (axis: 'x' | 'y') => (axis === 'y' ? hH || (hH = el.offsetHeight) : hW || (hW = el.offsetWidth));
     const apply = (d: number, axis: 'x' | 'y') => {
       el.style.transform = axis === 'y' ? `translate3d(0,${d}px,0)` : `translate3d(${d}px,0,0)`;
-      document.body.style.setProperty('--sp', String(clamp(1 - d / (axis === 'y' ? el.offsetHeight : el.offsetWidth), 0, 1)));
+      // only the backdrop fades with the drag: setting this on <body> restyled the whole app on every finger move
+      backdrop?.style.setProperty('--sp', String(clamp(1 - d / size(axis), 0, 1)));
     };
     const begin = (id: number, x: number, y: number, target: HTMLElement) => {
       if (settling) return;
       if (target.closest('button') && head.contains(target)) return;
       const inHead = head.contains(target);
       if (!inHead && target.closest(NO_SWIPE)) return;
+      hW = hH = 0;
       S = { id, x0: x, y0: y, axis: null, d: 0, v: new Velocity(), canDown: inHead || body.scrollTop <= 0 };
       S.v.add(x, y);
     };
@@ -51,19 +56,19 @@ function useSheetDrag(sh: React.RefObject<HTMLDivElement | null>) {
       const G = S; S = null; if (!G || !G.axis) return;
       document.body.classList.remove('sheet-drag');
       const { vx, vy } = G.v.get();
-      const go = !cancel && (G.axis === 'y' ? flung(G.d, vy, el.offsetHeight) : flung(G.d, vx, el.offsetWidth));
-      const size = (G.axis === 'y' ? el.offsetHeight : el.offsetWidth) + 40;
-      const ms = speedMs(size - G.d, G.axis === 'y' ? vy : vx); // a fast flick finishes fast, a slow drag calmly
+      const go = !cancel && flung(G.d, G.axis === 'y' ? vy : vx, size(G.axis));
+      const far = size(G.axis) + 40;
+      const ms = speedMs(far - G.d, G.axis === 'y' ? vy : vx); // a fast flick finishes fast, a slow drag calmly
       settling = true;
       el.style.transition = reducedMotion.matches ? 'none' : go ? `transform ${ms}ms ${EASE.out}` : `transform ${MS.page}ms ${EASE.spring}`;
       if (go) {
-        apply(size, G.axis);
+        apply(far, G.axis);
         later(() => {
           const back = G.axis === 'x' && el.querySelector<HTMLElement>('.sheet-bar [data-back]');
           if (back) back.click(); else closeSheet();
         }, reducedMotion.matches ? 0 : ms);
       } else {
-        el.style.transform = ''; document.body.style.setProperty('--sp', '1');
+        el.style.transform = ''; backdrop?.style.setProperty('--sp', '1');
         later(() => { el.style.transition = ''; settling = false; }, reducedMotion.matches ? 0 : MS.page + 10);
       }
     };
