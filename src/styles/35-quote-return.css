@@ -1,0 +1,4 @@
+.c-return { position: absolute; z-index: var(--z-bar); left: 50%; transform: translateX(-50%); bottom: calc(var(--bar-h, 62px) + 48px); max-width: calc(100% - 32px); min-height: 44px; padding: 10px 16px; border: 1px solid var(--sep); border-radius: 22px; background: var(--bg2); color: var(--label); font-size: 15px; font-weight: 600; white-space: nowrap; box-shadow: var(--shadow); }
+.c-return[hidden] { display: none; }
+.c-return .i { vertical-align: -2px; margin-right: 4px; }
+.bub .rq { border: 0; text-align: start; font-family: inherit; color: inherit; }

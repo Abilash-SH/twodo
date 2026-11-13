@@ -11,7 +11,7 @@ import { Inbox, Sync } from '@/lib/sync';
 import { parseTask } from '@/lib/parse';
 import { copyText, dayDiff, firstWord, isTouch, reducedMotion, todayStr, ymd } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
-import { useTapKeep } from '@/hooks/useTapKeep';
+import { useTapKeep, useTapKeepWithin } from '@/hooks/useTapKeep';
 import { Velocity, touchById } from '@/hooks/swipe';
 import { island } from '@/ui/island';
 import { showMenu } from '@/ui/menu';
@@ -68,7 +68,7 @@ function InkBubble({ cls, children }: { cls: string; children: React.ReactNode }
 }
 function Quote({ m }: { m: Msg }) {
   const rp = m.rp!, ref = Chat.msgs[rp.id], who = rp.f === L.auth!.uid ? 'You' : firstWord(ptName()), q = ref ? ChatCtl.previewOf(ref) : rp.q;
-  return <span className="rq" data-rq={rp.id} role="button"><b>{who}</b><span>{q || 'Message'}</span></span>;
+  return <button type="button" className="rq" data-rq={rp.id} aria-label={`Find original message from ${who}`}><b>{who}</b><span>{q || 'Message'}</span></button>;
 }
 export function MessageInner({ m, mine }: { m: Msg; mine: boolean }) {
   const side = mine ? 'me' : 'them';
@@ -369,7 +369,7 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
     };
     // long-press = reactions + menu
     const press = (e: PointerEvent) => {
-      const w = (e.target as HTMLElement).closest('.bwrap'); if (!w || (e.target as HTMLElement).closest('button')) return;
+      const w = (e.target as HTMLElement).closest('.bwrap'); if (!w || (e.target as HTMLElement).closest('button:not(.rq)')) return;
       const x0 = e.clientX, y0 = e.clientY;
       clearTimeout(ChatCtl.lp);
       ChatCtl.lp = setTimeout(() => { ChatCtl.suppressUntil = performance.now() + 700; openBubbleMenu(w.closest('.msg-row')); }, 450);
@@ -394,10 +394,13 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
   const v = useApp();
   const ref = useRef<HTMLElement>(null), body = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null);
   const paired = !!(L.pair && L.pair.status === 'paired');
+  const returnButton = useRef<HTMLButtonElement>(null);
+  useTapKeepWithin(returnButton);
   const typingShown = useRef(false), moreT = useRef(0), drawnV = useRef(-1);
   const [, force] = useState(0);
   useBubbleGestures(list);
-  useLayoutEffect(() => { ChatCtl.view = ref.current; return () => { if (ChatCtl.view === ref.current) { ChatCtl.view = null; ChatCtl.here = false; } }; }, []);
+  useTapKeepWithin(list);
+  useLayoutEffect(() => { ChatCtl.view = ref.current; return () => { if (ChatCtl.view === ref.current) { ChatCtl.cancelScroll(); ChatCtl.scrollRequest = null; ChatCtl.returnAnchor = null; ChatCtl.view = null; ChatCtl.here = false; } }; }, []);
   useEffect(() => { // back from another app: a new visit (where the unread messages start), then read what's on screen
     const vis = () => {
       if (ChatCtl.presence()) { renderNow(); return; }
@@ -440,13 +443,15 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
     // Only new content needs pinning. A navigation re-render (the chat sliding under a page) must not read
     // scrollHeight: that forces a full layout of the page being pushed, inside the tap (~20 ms on a phone).
     const fresh = drawnV.current !== v; drawnV.current = v;
+    const positioned = ChatCtl.applyScrollRequest();
     if (op) ChatCtl.afterDraw(op);
+    else if (positioned || ChatCtl.scrolling) { /* preserve owned scroll through unrelated renders */ }
     else if (ChatCtl.landing) { ChatCtl.landing = false; if (ChatCtl.pinned) ChatCtl.land(); } // start where the unread messages start
     else if (fresh && ChatCtl.pinned && body.current) body.current.scrollTop = body.current.scrollHeight;
     const typing = !!(paired && Chat.partnerTyping());
     if (typing && !typingShown.current) {
       const b = ref.current!.querySelector<HTMLElement>('.c-typing .bwrap'); if (b) playBubbleFx(b, 'pop');
-      const bd = body.current!; if (bd.scrollHeight - bd.scrollTop - bd.clientHeight < 140) bd.scrollTo({ top: bd.scrollHeight, behavior: 'smooth' });
+      const bd = body.current!; if (!ChatCtl.scrolling && !ChatCtl.scrollRequest && bd.scrollHeight - bd.scrollTop - bd.clientHeight < 140) bd.scrollTo({ top: bd.scrollHeight, behavior: 'smooth' });
     }
     typingShown.current = typing;
     ChatCtl.readVisible(); // only what is actually on screen counts as read
@@ -457,24 +462,26 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
   const unread = paired ? Chat.unread() : 0;
   return (
     <section ref={ref} className={`${cls} chatview${paired ? '' : ' nopair'}`} data-vid={entry.id}>
-      <div ref={body} className="chatbody" onScroll={e => {
+      <div ref={body} className="chatbody" onTouchStart={() => ChatCtl.cancelScroll()} onWheel={() => ChatCtl.cancelScroll()} onScroll={e => {
         const b = e.currentTarget, gap = b.scrollHeight - b.scrollTop - b.clientHeight;
-        ChatCtl.pinned = gap < 80;
+        if (!ChatCtl.scrolling && !ChatCtl.scrollRequest) ChatCtl.pinned = gap < 80;
         const far = gap >= 140;
         if (far !== ChatCtl.far) { ChatCtl.far = far; force(n => n + 1); } // the "new messages" pill comes and goes
         ChatCtl.readVisible();
         ref.current!.querySelector('.chat-nav')!.classList.toggle('scrolled', b.scrollTop > 2);
-        if (b.scrollTop < 400 && ChatCtl.total > ChatCtl.limit && !moreT.current) moreT.current = requestAnimationFrame(() => { // load older messages, keeping your place
+        if (!ChatCtl.scrolling && !ChatCtl.scrollRequest && !ChatCtl.returnAnchor && b.scrollTop < 400 && ChatCtl.total > ChatCtl.limit && !moreT.current) moreT.current = requestAnimationFrame(() => { // load older messages, keeping your place
           moreT.current = 0;
-          const h = b.scrollHeight, t = b.scrollTop; ChatCtl.limit += 120; renderNow();
-          b.scrollTop = t + (b.scrollHeight - h);
+          if (ChatCtl.scrolling || ChatCtl.scrollRequest || ChatCtl.returnAnchor) return;
+          const anchor = ChatCtl.capturePosition(); ChatCtl.pinned = false;
+          if (anchor) ChatCtl.scrollRequest = { anchor };
+          ChatCtl.limit += 120; renderNow();
         });
       }}>
         <div ref={list} className="chatlist" onClick={e => {
           const t = e.target as HTMLElement;
           const q = t.closest<HTMLElement>('[data-quick]'); if (q) return ChatCtl.sendNow(q.dataset.quick!, q.dataset.quick === '❤️' ? 'love' : null);
           const r = t.closest<HTMLElement>('[data-retry]'); if (r) return Chat.retry(r.dataset.retry!);
-          const rq = t.closest<HTMLElement>('[data-rq]'); if (rq) return ChatCtl.jumpTo(rq.dataset.rq!);
+          const rq = t.closest<HTMLElement>('[data-rq]'); if (rq) { if (performance.now() < ChatCtl.suppressUntil) return; return ChatCtl.jumpTo(rq.dataset.rq!); }
           const chk = t.closest<HTMLElement>('[data-taskchk]');
           if (chk) { const tk = D.tasks[chk.dataset.taskchk!]; if (tk) { toggleDone(tk.id, { instant: true }); setTimeout(() => renderNow(), 100); } return; }
           if (performance.now() < ChatCtl.suppressUntil) return;
@@ -492,6 +499,7 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
       </div>
       <ChatHeader />
       <button className="c-jump" type="button" hidden={!(ChatCtl.far && unread > 0)} onClick={() => ChatCtl.jumpNew()}><Icon name="chevD" cls="xs" /> {unread > 1 ? `${unread} new messages` : 'New message'}</button>
+      <button ref={returnButton} className="c-return" type="button" hidden={!ChatCtl.returnAnchor} onClick={() => ChatCtl.returnToReading()}><Icon name="chevD" cls="xs" /> Back to where you were</button>
       <ChatBar />
     </section>
   );

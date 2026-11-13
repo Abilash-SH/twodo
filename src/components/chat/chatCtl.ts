@@ -16,6 +16,8 @@ import { createStore } from '@/ui/store';
 import { openInviteSheet } from '../settings/AccountSheets';
 import { openSettings } from '../settings/Settings';
 
+interface ReadingAnchor { id: string; offset: number; top: number }
+
 export interface DrawOp { near: boolean; toBottom?: boolean; sentId?: string; fromRect?: DOMRect; newIds?: string[] }
 export const replyStore = createStore<{ r: (ReplyRef & { q: string }) | null; pop: number }>({ r: null, pop: 0 });
 export const fxPickerStore = createStore<{ text: string; seq: number } | null>(null);
@@ -30,6 +32,58 @@ export const ChatCtl = {
   divider: null as number | null, landing: false, far: false, here: false, visitAt: 0,
   lastTap: { id: null as string | null, t: 0 }, suppressUntil: 0, blurAt: -1e9, lp: undefined as ReturnType<typeof setTimeout> | undefined,
 
+  returnAnchor: null as ReadingAnchor | null,
+  scrollRequest: null as { id?: string; anchor?: ReadingAnchor } | null,
+  scrolling: false, scrollFrame: 0,
+  capturePosition(): ReadingAnchor | null {
+    const body = this.body(), frame = this.frame(); if (!body || !frame) return null;
+    const row = Array.from(body.querySelectorAll<HTMLElement>('.msg-row[data-id]')).find(r => r.getBoundingClientRect().bottom > frame.top);
+    return row ? { id: row.dataset.id!, offset: row.getBoundingClientRect().top - frame.top, top: body.scrollTop } : null;
+  },
+  cancelScroll() {
+    cancelAnimationFrame(this.scrollFrame); this.scrollFrame = 0; this.scrolling = false;
+  },
+  moveTo(top: number, smooth: boolean, onSettled?: () => void) {
+    const body = this.body(); if (!body) return;
+    this.cancelScroll(); this.scrolling = true; this.pinned = false;
+    const target = Math.max(0, Math.min(top, body.scrollHeight - body.clientHeight));
+    body.scrollTo({ top: target, behavior: smooth && !reducedMotion.matches ? 'smooth' : 'instant' });
+    let previous = body.scrollTop, stable = 0, moved = false;
+    const started = performance.now();
+    const settle = () => {
+      if (!body.isConnected || !this.shown()) { this.cancelScroll(); return; }
+      const current = body.scrollTop;
+      if (Math.abs(current - previous) > .5) { moved = true; stable = 0; } else stable++;
+      previous = current;
+      if ((stable >= 3 && (moved || Math.abs(current - target) < 1)) || performance.now() - started > 2500) {
+        this.scrolling = false; this.scrollFrame = 0; this.pinned = body.scrollHeight - current - body.clientHeight < 80;
+        this.far = !this.near(); onSettled?.(); this.readVisible(); renderNow(); return;
+      }
+      this.scrollFrame = requestAnimationFrame(settle);
+    };
+    this.scrollFrame = requestAnimationFrame(settle);
+  },
+  applyScrollRequest(): boolean {
+    const request = this.scrollRequest;
+    if (!request || !this.shown()) return false;
+    const body = this.body(), frame = this.frame();
+    if (!body || !frame) return false;
+    this.scrollRequest = null;
+    const row = this.el(request.id || request.anchor!.id)?.closest<HTMLElement>('.msg-row');
+    if (request.anchor) {
+      this.moveTo(row ? body.scrollTop + row.getBoundingClientRect().top - frame.top - request.anchor.offset : request.anchor.top, false);
+    } else if (row) {
+      const rect = row.getBoundingClientRect();
+      this.moveTo(body.scrollTop + rect.top - frame.top - Math.max(0, (frame.bottom - frame.top - rect.height) / 2), true, () => {
+        if (row.isConnected && !reducedMotion.matches) row.animate([{ opacity: .55 }, { opacity: 1 }], { duration: MS.standard, easing: EASE.out });
+      });
+    }
+    return true;
+  },
+  returnToReading() {
+    if (!this.returnAnchor) return;
+    this.scrollRequest = { anchor: this.returnAnchor }; this.returnAnchor = null; this.pinned = false; renderNow();
+  },
   body(): HTMLElement | null { return this.view && this.view.querySelector('.chatbody'); },
   shown(): boolean { const t = topEntry(); return !!t && t.spec.type === 'home' && !!this.view && this.view.isConnected; },
   // actually on screen: Home is on top and nothing covers it
@@ -92,7 +146,7 @@ export const ChatCtl = {
   /** Mark as read only what has been on screen: everything when you're at the bottom, otherwise the new messages
    *  that have scrolled into view. Never while the chat is covered, hidden or another screen is on top. */
   readVisible() {
-    if (!this.isOpen()) return;
+    if (!this.isOpen() || this.scrolling || this.scrollRequest) return;
     const last = Chat.lastPartnerTs(); if (!last || last <= Chat.read) return;
     if (this.near()) { Chat.markRead(); return; }
     const f = this.frame(); if (!f) return;
@@ -123,8 +177,9 @@ export const ChatCtl = {
   afterDraw(op: DrawOp) {
     const body = this.body(); if (!body) return;
     const incoming = (op.newIds || []).length > 0;
-    if (op.sentId) { this.landing = false; body.scrollTop = body.scrollHeight; this.pinned = true; }
+    if (op.sentId) { this.cancelScroll(); this.returnAnchor = null; this.scrollRequest = null; this.landing = false; body.scrollTop = body.scrollHeight; this.pinned = true; }
     // messages you weren't here for: start where they start, unless you're reading further up (then the pill shows)
+    else if (this.scrolling || this.scrollRequest) { /* a quoted-message operation owns the reading position */ }
     else if (this.landing) { this.landing = false; if (op.near || op.toBottom) this.land(); }
     else if (op.toBottom || (op.near && !incoming)) { body.scrollTop = body.scrollHeight; this.pinned = true; }
     else if (op.near && incoming) { body.scrollTo({ top: body.scrollHeight, behavior: reducedMotion.matches ? 'auto' : 'smooth' }); this.pinned = true; }
@@ -242,16 +297,13 @@ export const ChatCtl = {
     if (withHaptic) haptic('light');
   },
   clearReply() { replyStore.set(s => ({ ...s, r: null })); },
-  // scroll to the message a reply quotes, and let it glow for a moment
+  // Expand the window first, then position the quote in the post-commit layout effect.
   jumpTo(id: string) {
     if (!this.view || !Chat.msgs[id]) return;
-    let row = this.el(id);
-    if (!row) { this.limit = Math.max(this.limit, this.total); renderNow(); row = this.el(id); }
-    if (!row) return;
-    row.closest('.msg-row')!.scrollIntoView({ block: 'center', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
-    const r = row;
-    setTimeout(() => { r.classList.remove('hl'); void r.offsetWidth; r.classList.add('hl'); setTimeout(() => r.classList.remove('hl'), 1400); }, 280);
-    haptic('light'); this.body()?.dispatchEvent(new Event('scroll'));
+    if (!this.returnAnchor) this.returnAnchor = this.capturePosition();
+    this.cancelScroll(); this.pinned = false; this.landing = false;
+    this.scrollRequest = { id }; this.limit = Math.max(this.limit, Object.keys(Chat.msgs).length);
+    renderNow(); haptic('light');
   },
   openFxPicker(text: string) {
     if (!text) { island({ e: '✨', text: 'Type a message first', sub: 'Then hold ↑ to pick an effect', ms: 2000 }); return; }
