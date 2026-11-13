@@ -85,17 +85,19 @@ export const ChatCtl = {
     this.scrollRequest = { anchor: this.returnAnchor }; this.returnAnchor = null; this.pinned = false; renderNow();
   },
   body(): HTMLElement | null { return this.view && this.view.querySelector('.chatbody'); },
-  shown(): boolean { const t = topEntry(); return !!t && t.spec.type === 'home' && !!this.view && this.view.isConnected; },
-  // actually on screen: Home is on top and nothing covers it
+  shown(): boolean { const t = topEntry(); return !!t && t.spec.type === 'chat' && !!this.view && this.view.isConnected; },
+  // actually on screen: the chat is the top screen and nothing covers it
   isOpen(): boolean { return this.shown() && !document.hidden && !sheetOpen() && !focusOpen.get(); },
   open() {
     if (!cloudReady()) return island({ e: '💬', text: 'Messages need accounts turned on', sub: 'See README → accounts & sync' });
     if (!Auth.user()) return openSettings();
     if (!(L.pair && L.pair.status === 'paired')) { island({ e: '💌', text: 'Add your partner to start chatting', ms: 2500 }); return openInviteSheet(); }
     if (sheetOpen()) closeSheet();
-    if (!this.shown()) navTo({ type: 'home' });
     Chat.ensure();
-    // "Reply" on a toast or a notification: go to what's new (the first unread message, or the bottom)
+    // Opening the chat screen: it shows what's new (see presence()), or the latest message. While it was closed it kept
+    // itself at the latest message, so usually nothing has to move and nothing is measured while it slides in.
+    if (!this.shown()) { if (!this.pinned) { this.pinned = true; this.landing = true; } navTo({ type: 'chat' }); return; }
+    // already on it (behind a sheet, say): go to what's new (the first unread message, or the bottom)
     setTimeout(() => { this.landing = true; this.draw({ toBottom: true }); this.readVisible(); }, 60);
   },
 
@@ -106,10 +108,14 @@ export const ChatCtl = {
     const here = this.shown() && !document.hidden;
     if (here === this.here) return false;
     this.here = here;
-    if (!here) return false;
+    if (!here) { // leaving the chat: the keyboard goes with it (the screen stays mounted, parked off to the side)
+      const a = document.activeElement as HTMLElement | null;
+      if (a && this.view && this.view.contains(a)) a.blur();
+      return false;
+    }
     this.visitAt = Date.now();
     const line = Chat.read > 0 && Chat.unread() > 0 ? Chat.read : null;
-    if (line !== null) this.landing = true;
+    if (line !== null) this.landing = true; // start at what's new (with nothing new, the chat is where you left it)
     if (line === this.divider) return false;
     this.divider = line;
     return true;

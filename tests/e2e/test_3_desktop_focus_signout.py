@@ -1,6 +1,7 @@
 """Desktop: Esc / ⌘K / n shortcuts, right-click menu, focus timer + live island, task sheet live subtasks, sign out → sign in."""
 import asyncio
 from playwright.async_api import async_playwright
+from helpers import TITLES, open_chat, back_home
 URL = 'http://localhost:8003/'
 async def main():
     async with async_playwright() as p:
@@ -12,12 +13,23 @@ async def main():
         A.on('console', lambda m: m.type == 'error' and errs.append('console: ' + m.text))
         await A.goto(URL); await A.wait_for_timeout(2300)
         q = lambda s: A.evaluate(s)
+        await A.screenshot(path='/tmp/twodo-desk_board.png')
+        # the chat is one click from the board; Esc closes it again
+        await open_chat(A)
         await A.screenshot(path='/tmp/twodo-desk_chat.png')
-        await A.click('.fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(800)
+        print('chat', await q(TITLES))
+        await A.keyboard.press('Escape'); await A.wait_for_timeout(800)
+        print('esc → board', await q(TITLES))
+        # "n" on the board brings up the task box (it adds to today); Esc puts it away again
+        await A.keyboard.press('n'); await A.wait_for_timeout(300)
+        print('n on the board →', await q("[document.activeElement.id, !document.getElementById('composer').classList.contains('hide')]"))
+        await A.keyboard.press('Escape'); await A.wait_for_timeout(500)
+        print('esc → box gone', await q("[document.activeElement.tagName, document.getElementById('composer').classList.contains('hide')]"))
+        await A.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(800)
         await A.screenshot(path='/tmp/twodo-desk_todos.png')
         await A.keyboard.press('Escape'); await A.wait_for_timeout(800)
-        print('esc → home', await q("document.querySelectorAll('#stack > .view').length"))
-        await A.click('.fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(800)
+        print('esc → home', await q(TITLES))
+        await A.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(800)
         await A.keyboard.press('Control+k'); await A.wait_for_timeout(700)
         print('⌘K', await q("[document.querySelector('#stack > .view:last-child .nav-title').textContent, document.activeElement.id]"))
         await A.keyboard.press('Escape'); await A.wait_for_timeout(200); await A.keyboard.press('Escape'); await A.wait_for_timeout(800)
@@ -47,14 +59,18 @@ async def main():
         print('sheet closed by Esc', await q("!document.querySelector('.sheet.open')"))
         await A.keyboard.press('Escape'); await A.wait_for_timeout(800); await A.keyboard.press('Escape'); await A.wait_for_timeout(800)
         # sign out → sign-in gate → sign back in
-        await A.click('.fab-btn[aria-label=Settings]'); await A.wait_for_timeout(800)
+        print('home again', await q(TITLES))
+        await A.click('.boardview .fab-btn[aria-label=Settings]'); await A.wait_for_timeout(800)
         await A.click('.sheet.open .group.danger .cell:has-text("Sign out")'); await A.wait_for_timeout(500)
         await A.click('.alert button[data-r="1"]'); await A.wait_for_timeout(1500)
         print('gate', await q("[!!document.getElementById('ob'), (document.querySelector('#ob h1')||{}).textContent, (document.querySelector('#gEmail')||{}).value]"))
         await A.fill('#gPass', 'wrong password'); await A.click('[data-p="signin"] [data-submit]'); await A.wait_for_timeout(3500)
         print('wrong pw', await q("document.querySelector('#ob .err').textContent"))
         await A.fill('#gPass', 'password 123'); await A.click('[data-p="signin"] [data-submit]'); await A.wait_for_timeout(5000)
-        print('signed in', await q("[!!document.getElementById('ob'), (document.querySelector('.lb-name')||{}).textContent, document.querySelectorAll('.msg-row').length, document.getElementById('isl').innerText.split('\\n')[0]]"))
+        print('signed in', await q("[!!document.getElementById('ob'), (document.querySelector('.board-title')||{}).textContent, document.getElementById('isl').innerText.split('\\n')[0]]"), await q(TITLES))
+        # the conversation is back too
+        await open_chat(A)
+        print('chat again', await q("[(document.querySelector('.lb-name')||{}).textContent, document.querySelectorAll('.msg-row').length]"))
         print('ERRORS:', errs or 'NONE')
         await b.close()
 asyncio.run(main())

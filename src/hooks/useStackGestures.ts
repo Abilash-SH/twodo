@@ -21,6 +21,12 @@ export const Gesture = { g: null as Gest | null, suppressClickUntil: 0, openRow:
 renderGate.busy = () => Nav.dragging || (!!Gesture.g && Gesture.g.kind === 'row' && Gesture.g.mode === 'swipe');
 
 const EDGE = 32; // px from the left edge where a swipe always means "back"
+/** A touch at x starts in the strip that belongs to "back": a screen is open and the finger is at the stack's left edge.
+ *  Gestures inside a screen (a reply swipe on a message) leave this strip alone. */
+export function atBackEdge(x: number): boolean {
+  const st = document.getElementById('stack');
+  return !!st && liveEntries().length > 1 && x - st.getBoundingClientRect().left < EDGE;
+}
 const SYSTEM_EDGE = 48; // px from the left edge where iOS may start its own back swipe as well
 const shade = () => document.querySelector<HTMLElement>('#stack > .shade');
 
@@ -120,8 +126,12 @@ export function useStackGestures(stackRef: React.RefObject<HTMLDivElement | null
     // a finger or the mouse went down: work out what it might become
     const down = (p: Pt) => {
       const t = p.target;
-      if (t.closest('.chatview')) return; // the chat has its own gestures
       const sx = p.x - stackEl.getBoundingClientRect().left, deep = liveEntries().length > 1;
+      if (t.closest('.chatview')) {
+        // In the chat a sideways swipe on a message is a reply. Back is the screen edge, or a drag that starts off the messages.
+        if (deep && p.touch && (sx < EDGE || !t.closest('.msg-row, ' + NO_SWIPE))) Gesture.g = pageG(sx < EDGE ? 'edge' : 'pan', p);
+        return;
+      }
       if (deep && sx < EDGE && p.touch) { Gesture.g = pageG('edge', p); return; }
       const ti = t.closest<HTMLElement>('.ti');
       // Anywhere else on a screen you opened: drag sideways to the right to go back (task rows keep their own swipes)

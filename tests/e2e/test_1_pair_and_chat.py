@@ -1,6 +1,7 @@
 """Two people, everything through the UI: pair by username, chat (send, reply by swipe, react, love you), to-dos, sync."""
 import asyncio, json
 from playwright.async_api import async_playwright
+from helpers import OPEN_CHAT, open_chat
 URL = 'http://localhost:8003/'
 async def main():
     async with async_playwright() as p:
@@ -23,8 +24,10 @@ async def main():
             await P.click('text=Start using Twodo'); await P.wait_for_timeout(1200)
         await signup(A, 'Abilash', 'Deiva', 'a@x.com', 'abilash')
         await signup(B, 'Deiva', 'Abilash', 'd@x.com', 'deiva')
+        # Home is the board. Not connected yet: its first note and its message button both lead to "add your partner"
+        print('B board', await B.evaluate("[document.querySelector('.note.n-msg .n-h').textContent, document.querySelector('.board-tray .tray-btn.chat').textContent]"))
         # B finds @abilash and sends a request
-        await B.click('.c-cta'); await B.wait_for_timeout(700)
+        await B.click(OPEN_CHAT); await B.wait_for_timeout(700)
         await B.fill('input[aria-label="Partner username"]', 'abilash'); await B.click('text=Search'); await B.wait_for_timeout(1500)
         print('B found', await B.evaluate("[...document.querySelectorAll('.fr-card b')].map(x => x.textContent)"))
         await B.screenshot(path='/tmp/twodo-find.png')
@@ -33,15 +36,18 @@ async def main():
         await B.click('.sheet.open [data-s="done"]'); await B.wait_for_timeout(700)
         # A sees the request on Home and accepts it
         await A.wait_for_timeout(2500)
-        print('A home', await A.evaluate("(document.querySelector('.c-empty h3')||{}).textContent"))
-        await A.click('.c-cta'); await A.wait_for_timeout(800)
+        print('A home', await A.evaluate("(document.querySelector('.note.n-msg .n-h')||{}).textContent"))
+        await A.click('.note.n-msg'); await A.wait_for_timeout(800)
         await A.click('.fr-card button:has-text("Accept")'); await A.wait_for_timeout(1200)
         print('confirm', await A.evaluate("(document.querySelector('.alert p')||{}).textContent"))
         await A.click('.alert button[data-r="1"]'); await A.wait_for_timeout(2500)
         print('A island after accept', await A.evaluate("document.getElementById('isl').innerText"), await A.evaluate("JSON.stringify(JSON.parse(localStorage.getItem('twodo:local')).pair)"))
         await A.wait_for_timeout(1500)
+        print('A board', await A.evaluate("[document.querySelector('.note.n-msg .n-h')?.textContent, document.querySelector('.board-tray .tray-btn.chat').textContent]"))
+        await open_chat(A)
         print('A paired', await A.evaluate("({ name: document.querySelector('.lb-name').textContent, sub: document.querySelector('.c-sub').textContent, empty: (document.querySelector('.c-empty h3')||{}).textContent })"))
         await B.wait_for_timeout(2500)
+        await open_chat(B)
         print('B paired', await B.evaluate("({ name: document.querySelector('.lb-name').textContent, sub: document.querySelector('.c-sub').textContent })"))
         # chat: A types and sends with a real tap; the keyboard (focus) stays
         await A.click('.cb-in'); await A.keyboard.type('Hey you 👋 how was your day?')

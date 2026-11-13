@@ -1,5 +1,5 @@
-/* Twodo · navigation stack. Home is the chat (or To-dos without accounts); everything else slides in on top.
-   Screens animate like iOS: push slides in from the right, back slides out (or follows your finger). */
+/* Twodo · navigation stack. Home is the shared board (or To-dos without accounts); the chat and everything else
+   slide in on top. Screens animate like iOS: push slides in from the right, back slides out (or follows your finger). */
 import { cloudReady } from '@/lib/config';
 import { haptic } from '@/lib/feedback';
 import { MS } from '@/lib/motion';
@@ -13,7 +13,7 @@ import { flushSync } from 'react-dom';
 import { closeMenu } from './menu';
 import { createStore } from './store';
 
-export type ViewType = 'home' | 'todos' | 'smart' | 'list' | 'search' | 'tips';
+export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips';
 export interface Spec { type: ViewType; key?: SmartKey; id?: string }
 export interface Entry { id: number; spec: Spec; phase: 'in' | 'idle' | 'out' }
 export const navState = createStore<{ entries: Entry[] }>({ entries: [] });
@@ -60,11 +60,19 @@ export const topEntry = (): Entry | undefined => { const l = liveEntries(); retu
 export const topSpec = (): Spec => topEntry()?.spec || { type: 'home' };
 export const specKey = (s: Spec): string => s.type === 'list' ? 'l:' + s.id : s.type === 'smart' ? 's:' + s.key : s.type;
 export const viewPrefs = (key: string): ViewPrefs => (L.view[key] = L.view[key] || {});
-// Home is your chat once you're signed in; without accounts it shows today's to-dos instead.
-export const homeIsChat = (): boolean => cloudReady() && !!Auth.user();
+// Home is the board the two of you share once you're signed in; without accounts it is the To-dos screen.
+export const boardHome = (): boolean => cloudReady() && !!Auth.user();
+/** "Add a to-do" on the board: the task box is showing over it */
+export const boardAdd = createStore(false);
+/** Bring the task box up over the board. It takes the keyboard inside the same tap: the only way an iPhone shows it. */
+export function openBoardAdd(): void {
+  flushSync(() => boardAdd.set(true));
+  (document.getElementById('cta') as HTMLTextAreaElement | null)?.focus({ preventScroll: true });
+}
 export const alertsOn = (): boolean => !!L.settings.notify || (Push.configured() && Push.on());
 export function viewTitle(spec: Spec): string {
-  if (spec.type === 'home') return homeIsChat() ? 'Chat' : 'To-dos';
+  if (spec.type === 'home') return boardHome() ? 'Board' : 'To-dos';
+  if (spec.type === 'chat') return 'Chat';
   if (spec.type === 'search') return 'Search';
   if (spec.type === 'tips') return 'Tips';
   if (spec.type === 'todos') return 'To-dos';
@@ -81,8 +89,10 @@ export function bootNav(): void {
 }
 export function pushView(spec: Spec, { replace = false } = {}): number {
   closeMenu();
+  if (boardAdd.get()) boardAdd.set(false);
   const e: Entry = { id: ++seq, spec, phase: 'in' };
-  Nav.entering.add(e.id); setTimeout(() => { Nav.entering.delete(e.id); scheduleRender(); }, 1100); // contents rise in one after another
+  // contents rise in one after another (not the chat: it is already drawn, and marking it would restyle every message inside the tap)
+  if (spec.type !== 'chat') { Nav.entering.add(e.id); setTimeout(() => { Nav.entering.delete(e.id); scheduleRender(); }, 1100); }
   navState.set(s => ({ entries: [...s.entries, e] }));
   Nav.seq++;
   if (!replace) armTrap();
@@ -112,20 +122,41 @@ export function doPop({ instant = false } = {}): void {
   navState.set(s => ({ entries: s.entries.map(x => (x.id === top.id ? { ...x, phase: 'out' } : x)) }));
   setTimeout(() => navState.set(s => ({ entries: s.entries.filter(x => x.id !== top.id) })), MS.page + 120);
 }
-// Go somewhere from a button: replace whatever is open (Back always leads Home)
+/** Keep the bottom `keep` screens and the one you're looking at: the ones in between leave without a trace. */
+function dropBetween(keep: number): void {
+  const live = liveEntries(); if (live.length <= keep + 1) return;
+  const gone = new Set(live.slice(keep, -1).map(e => e.id));
+  navState.set(s => ({ entries: s.entries.filter(e => !gone.has(e.id)) }));
+}
+// Go somewhere from a button. Back always leads Home, one screen at a time.
 export function navTo(spec: Spec): void {
   closeMenu();
   const N = depth();
   if (spec.type === 'home') {
     if (N < 2) { const v = topEntry(); if (v) viewEl(v.id)?.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-    while (depth() > 2) doPop({ instant: true });
-    popView(); return;
+    dropBetween(1); popView(); return;
   }
+  if (spec.type === 'chat' && !boardHome()) return; // no chat screen without an account
   if (N > 1 && specKey(topSpec()) === specKey(spec)) return;
   if (N === 1) { pushView(spec); return; }
-  while (depth() > 1) doPop({ instant: true });
+  if (spec.type === 'chat') { revealChat(); return; }
+  if (topSpec().type === 'chat') { pushView(spec); return; } // from the chat: on top of it, so Back returns to the conversation
+  while (depth() > 1) doPop({ instant: true }); // anywhere else: replace what is open
   Nav.seq++;
   pushView(spec, { replace: true }); // still one screen above Home: the trap stays as it is
+}
+/* The chat, asked for from a screen above the board (a tip's "open the chat", a notification while a list is open).
+   The chat only ever sits directly above Home, so it is put there (or already is) and the screen you're looking at
+   slides away to show it: the same motion as Back, and from the chat Back leads to the board. */
+function revealChat(): void {
+  const live = liveEntries();
+  if (live[1].spec.type !== 'chat') {
+    const e: Entry = { id: ++seq, spec: { type: 'chat' }, phase: 'idle' };
+    Nav.noAnim.add(e.id); // it takes its place underneath without moving: only the screen above it will
+    flushSync(() => navState.set(s => { const i = s.entries.indexOf(live[0]) + 1; return { entries: [...s.entries.slice(0, i), e, ...s.entries.slice(i)] }; }));
+  }
+  dropBetween(2);
+  popView(); // Home and the chat stay open: the trap stays as it is
 }
 export const openSmart = (key: SmartKey): void => { pushView({ type: 'smart', key }); };
 export const composerState = createStore<{ listPick: string | null }>({ listPick: null });

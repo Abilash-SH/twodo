@@ -1,5 +1,6 @@
 'use client';
-/* Twodo · Home is your chat: the two of you on top, the conversation, and a floating message box */
+/* Twodo · the chat: the two of you on top, the conversation, and a floating message box.
+   A screen above the board. It stays mounted while it is closed (see NavStack), so opening it is only a slide. */
 import { Fragment, memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Chat, REACTS, type Msg, type TaskRef } from '@/lib/chat';
 import { haptic } from '@/lib/feedback';
@@ -13,13 +14,14 @@ import { copyText, dayDiff, firstWord, isTouch, reducedMotion, todayStr, ymd } f
 import { useApp } from '@/hooks/useApp';
 import { useTapKeep, useTapKeepWithin } from '@/hooks/useTapKeep';
 import { Velocity, touchById } from '@/hooks/swipe';
+import { atBackEdge } from '@/hooks/useStackGestures';
 import { island } from '@/ui/island';
 import { showMenu } from '@/ui/menu';
-import { navTo, type Entry } from '@/ui/nav';
+import { navTo, popView, type Entry } from '@/ui/nav';
 import { viewPhoto } from '@/ui/photos';
 import { useStore } from '@/ui/store';
 import { toggleDone } from '@/ui/tasks';
-import { takeDraft, updateStore } from '@/ui/update';
+import { takeDraft } from '@/ui/update';
 import { openTaskSheet } from '../sheets/TaskSheet';
 import { openInviteSheet } from '../settings/AccountSheets';
 import { openSettings } from '../settings/Settings';
@@ -221,11 +223,10 @@ function ChatHeader() {
     if (first.current) { first.current = false; return; }
     const el = subRef.current; if (!el) return; el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
   }, [sub]);
-  const setWarn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
-  const update = useStore(updateStore).ready;
+  const todoDot = liveTasks().some(SMART.today.match);
   return (
     <header className="chat-nav">
-      <button className="fab-btn" type="button" aria-label="Settings" onClick={() => openSettings()}><Icon name="gear" /><i className={`fab-dot${setWarn ? ' warn' : ''}`} hidden={!setWarn && !update} /></button>
+      <button className="fab-btn" type="button" aria-label="Back to the board" onClick={() => popView()}><Icon name="chevL" /></button>
       <div className="ch-who">
         <div className={`lovebar${on ? ' live' : ''}`}>
           <button className="lb-av pt" type="button" aria-label="View photo" onClick={e => (paired ? viewPhoto(pk, e.currentTarget.querySelector('.av')) : openInviteSheet())}>
@@ -347,7 +348,12 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
       if (go) { if (!G.buzzed) haptic('medium'); ChatCtl.setReply(G.m, false); }
     };
     // touch
-    const tStart = (e: TouchEvent) => { if (e.touches.length !== 1) { finish(false); return; } const t = e.touches[0]; begin(e.target as HTMLElement, t.clientX, t.clientY, t.identifier, true); };
+    const tStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) { finish(false); return; }
+      const t = e.touches[0];
+      if (atBackEdge(t.clientX)) return; // the left edge of the screen belongs to "back": a reply swipe never starts there
+      begin(e.target as HTMLElement, t.clientX, t.clientY, t.identifier, true);
+    };
     const tMove = (e: TouchEvent) => {
       if (!S || !S.touch) return;
       if (e.touches.length > 1) return finish(false);
@@ -390,7 +396,8 @@ function useBubbleGestures(list: React.RefObject<HTMLDivElement | null>) {
   }, [list]);
 }
 
-export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
+/** `entry` is null while the chat is parked: mounted and up to date, off to the right, not reachable (see NavStack) */
+export function ChatView({ entry, cls }: { entry: Entry | null; cls: string }) {
   const v = useApp();
   const ref = useRef<HTMLElement>(null), body = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null);
   const paired = !!(L.pair && L.pair.status === 'paired');
@@ -461,7 +468,7 @@ export function ChatView({ entry, cls }: { entry: Entry; cls: string }) {
   const its = useMemo(items, [v, paired]); // eslint-disable-line react-hooks/exhaustive-deps
   const unread = paired ? Chat.unread() : 0;
   return (
-    <section ref={ref} className={`${cls} chatview${paired ? '' : ' nopair'}`} data-vid={entry.id}>
+    <section ref={ref} className={`${cls} chatview${paired ? '' : ' nopair'}`} data-vid={entry ? entry.id : undefined} inert={!entry}>
       <div ref={body} className="chatbody" onTouchStart={() => ChatCtl.cancelScroll()} onWheel={() => ChatCtl.cancelScroll()} onScroll={e => {
         const b = e.currentTarget, gap = b.scrollHeight - b.scrollTop - b.clientHeight;
         if (!ChatCtl.scrolling && !ChatCtl.scrollRequest) ChatCtl.pinned = gap < 80;

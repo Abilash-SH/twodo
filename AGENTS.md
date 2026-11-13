@@ -7,10 +7,11 @@ Twodo is a private to-do list + chat PWA for two people. In tests the partner is
 - `ROADMAP.md`: the plan, the state of every item, acceptance criteria and the decisions with their reasons. Take the first item marked next, and update the file in the PR that changes an item's state.
 
 ## Where things are
-- `src/components`: `App.tsx` (boot, global events), `nav/NavStack.tsx` (screen stack), `chat/` (`ChatView.tsx`, `chatCtl.ts`), `composer/Composer.tsx`, `sheets/`, `settings/`, `vault/VaultUI.tsx`, `overlays/` (sheets, photo viewer, focus timer, alerts, island, menus)
+- `src/components`: `App.tsx` (boot, global events), `nav/NavStack.tsx` (screen stack), `home/BoardView.tsx` (Home when signed in: the board), `chat/` (`ChatView.tsx`, `chatCtl.ts`), `composer/Composer.tsx`, `sheets/`, `settings/`, `vault/VaultUI.tsx`, `overlays/` (sheets, photo viewer, focus timer, alerts, island, menus)
+- Screens: Home is the board when signed in (To-dos without accounts). The chat is a screen that only sits directly above Home and stays mounted while closed (`.view.parked`, `inert`), so opening it never draws the conversation inside the tap. Everything on the board is computed from data already on the phone (never from a secret list); it stores nothing.
 - `src/hooks`: `useKeyboard.ts` (iPhone keyboard), `useStackGestures.ts` + `swipe.ts` (touch gestures), `useTapKeep.ts` (buttons that must not close the keyboard), `useFlip.ts` (rows slide into place)
 - `src/lib`: data, sync, crypto, vault (no React). `src/ui`: small stores (`nav.ts` screens and history, `update.ts` app updates).
-- `docs/`: `gesture-ownership.md` (who owns each gesture), `home-concepts.md` (home-screen concepts under review), `iphone-validation.md`.
+- `docs/`: `gesture-ownership.md` (who owns each gesture), `home-concepts.md` (the home-screen concepts and the Pinboard decision), `iphone-validation.md`.
 - `src/styles/NN-*.css`: the design system, imported in order by `legacy.css` (later files win). `31-native-surfaces.css` limits every transition to transform/opacity and keeps blur off moving layers. Tokens (colours, motion, layers) live in `01-tokens.css`. Put new CSS in a new, higher-numbered file. Tailwind only with the `tw:` prefix.
 
 ## Security (never break)

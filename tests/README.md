@@ -23,6 +23,12 @@ swipes, and text contrast for every palette pair. Test 6 refreshes bubble geomet
 after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
 
+Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
+Test 13 covers the board: what its notes say against the To-dos screen, every note as a door, adding and ticking in
+place (and the partner's board following), that nothing from a secret list reaches it (unlocked, ticked off, locked),
+offline and "Waiting to send", the states before pairing and with nothing to show, and text contrast for every
+colour in light and dark.
+
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
 1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be

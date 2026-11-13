@@ -85,7 +85,9 @@ Reminders arrive within roughly **5–15 minutes** of the due time, because GitH
 ---
 
 ## 5. Messages 💬
-Once you're signed in, **Home is your chat**, with the conversation taking up the screen. At the top: their name, with your two small photos and a heart above it. Two small floating buttons sit in the corners: **Settings** (top left) and **To-dos & reminders** (top right).
+Once you're signed in, **Home is your board**: the latest message, today's to-dos (tick them right there), what's for both of you, one list, a pinned to-do and the last thing ticked off pin themselves to it. **Message** and **Add a to-do** stay at the bottom; **Settings** sits top left and **To-dos & reminders** top right. Nothing from a Secret list ever appears on the board.
+
+Tap **Message** (or the note with their latest message) and the chat slides in; swipe from the left edge or tap ‹ to go back to the board. At the top of the chat: their name, with your two small photos and a heart above it.
 - Under their name, quietly: **online**, **typing…** or **last seen 5m ago / 9:41 PM / yesterday** (an encrypted heartbeat every ~45 s while the app is open, so it's accurate to about a minute).
 - Your bubbles wear your colour, theirs wear theirs. Under your last message, an outline **♡** means sent and a filled **♥** means seen. Big emoji when you send just one to three.
 - Tap either photo to see it big; only your own can be changed (Settings shows only your profile).
@@ -101,10 +103,10 @@ Messages are encrypted with the same key as your tasks. The database rules only 
 ## 6. Using it
 - **Type naturally** in the bottom box: `Dinner @us fri 8pm !!` · `Milk #groceries` · `Gym every mon 7am` · `Call mom tomorrow 6pm`. Tap a chip to ignore a guess. Paste several lines to add several tasks.
 - **Messages:** swipe a message right to reply (tap the quote to jump to the original) · press and hold to react ❤️ 😂 😮 🥹 🔥 👍, Reply or Copy · when you both say “love you” within 10 minutes, a little celebration plays · the keyboard stays open while you send.
-- **Gestures:** swipe a task right to complete · left to pin or delete · long-press for quick actions · **swipe right anywhere else (or from the left edge) to go back to the chat** · drag sheets down to close. On a computer: the ‹ button or Esc.
+- **Gestures:** swipe a task right to complete · left to pin or delete · long-press for quick actions · **swipe right anywhere else (or from the left edge) to go back one screen** (in the chat: from the left edge, since a swipe on a message is a reply) · drag sheets down to close. On a computer: the ‹ button or Esc.
 - **To-dos & reminders** (top-right button): Today (Overdue / Morning / Afternoon / Tonight), Upcoming, **Reminders** (everything with a time, missed ones first), Together, Pinned, All, Completed, search, your streak, plus your own lists and a 🎁 Secret list (locked with a passcode or Face ID).
 - **Extras:** focus timer, streaks, search, sorting, person filters, subtasks, repeats, backup export/import, and keyboard shortcuts (`N`, `⌘K`, `Esc`).
-- **Home** is your chat. Without accounts, Home is To-dos instead.
+- **Home** is your board; **Add a to-do** there adds it to today. Without accounts, Home is To-dos instead.
 - **Keyboard:** on iPhone the chat moves up and down with the keyboard and keeps the latest message in view (it learns your keyboard's height the first time you type).
 - **Any screen:** phones (portrait or landscape), iPads and computers.
 - **💡 Tips & tricks:** every tip, with little animated demos, lives in Settings.

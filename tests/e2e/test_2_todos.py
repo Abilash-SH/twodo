@@ -2,6 +2,7 @@
 tips, swipe back with a finger, settings, focus timer, sync to the partner."""
 import asyncio
 from playwright.async_api import async_playwright
+from helpers import TITLES, open_chat
 URL = 'http://localhost:8003/'
 async def main():
     async with async_playwright() as p:
@@ -22,9 +23,9 @@ async def main():
                 await cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * i / steps, 'y': y0 + (y1 - y0) * i / steps}]}); await A.wait_for_timeout(16)
             await cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
         q = lambda s: A.evaluate(s)
-        # open To-dos with the top-right button
-        await A.click('.fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(900)
-        print('todos', await q("({ views: document.querySelectorAll('#stack > .view').length, title: document.querySelector('.view.pushed .large-title').textContent, cards: [...document.querySelectorAll('.hub-card .hub-t')].map(x => x.textContent).join(','), back: document.querySelector('.view.pushed .nav-btn.back').innerText, composer: !document.getElementById('composer').classList.contains('hide') })"))
+        # Home is the board: open To-dos with its top-right button
+        await A.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(900)
+        print('todos', await q("({ open: " + TITLES + ", title: document.querySelector('.view.pushed .large-title').textContent, cards: [...document.querySelectorAll('.hub-card .hub-t')].map(x => x.textContent).join(','), back: document.querySelector('.view.pushed .nav-btn.back').innerText, composer: !document.getElementById('composer').classList.contains('hide') })"))
         await A.screenshot(path='/tmp/twodo-hub.png')
         # composer: natural language → chips → add
         await A.click('#cta'); await A.keyboard.type('Movie night fri 8pm @us !! #dates')
@@ -84,19 +85,20 @@ async def main():
         await A.keyboard.type('movie'); await A.wait_for_timeout(400)
         print('search', await q("[...document.querySelectorAll('.view:not(.under) .task .tt')].map(x => x.textContent)"), await q("document.activeElement.id"))
         await A.click('.view:not(.under) .nav-btn:has-text("Cancel")'); await A.wait_for_timeout(800)
-        # back to chat, partner got the shared task
+        # back to the board, partner got the shared task
         await A.click('.view:not(.under) .nav-btn.back'); await A.wait_for_timeout(900)
-        print('home', await q("[document.querySelectorAll('#stack > .view').length, !!document.querySelector('.chatview')]"))
+        print('home', await q(TITLES), await q("[...document.querySelectorAll('.board .bn-title')].map(x => x.textContent)"))
         print('B sees', await B.evaluate("Object.values(JSON.parse(localStorage.getItem('twodo:data')).tasks).filter(t => t.title && (t.title.startsWith('Movie') || t.title.startsWith('Buy'))).map(t => [t.title, t.priority, t.assignee, t.listId, t.subtasks.length])"))
         # settings: theme to dark, then focus timer from a task
-        await A.click('.fab-btn[aria-label=Settings]'); await A.wait_for_timeout(800)
+        await A.click('.boardview .fab-btn[aria-label=Settings]'); await A.wait_for_timeout(800)
         print('settings', await q("({ name: document.querySelector('.me-name').value, handle: document.querySelector('.me-handle').textContent, paired: [...document.querySelectorAll('#syncWrap .cell')].map(c => c.innerText.replace(/\\n/g,' ')).slice(0,4) })"))
         await A.click('[data-seg=theme] button:has-text("Dark")'); await A.wait_for_timeout(400)
         print('theme', await q("document.documentElement.dataset.theme"))
         await A.screenshot(path='/tmp/twodo-settings.png')
         await A.click('[data-seg=theme] button:has-text("Light")'); await A.wait_for_timeout(300)
         await A.click('.sheet.open [data-s="done"]'); await A.wait_for_timeout(700)
-        # photo viewer on the partner's picture
+        # photo viewer on the partner's picture (in the chat's header)
+        await open_chat(A)
         await A.click('.lb-av.pt'); await A.wait_for_timeout(700)
         print('photo viewer', await q("[!!document.querySelector('.pv.on'), (document.querySelector('.pv-name')||{}).textContent, !!document.querySelector('.pv-acts')]"))
         await A.keyboard.press('Escape'); await A.wait_for_timeout(700)

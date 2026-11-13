@@ -14,8 +14,8 @@ and data checks, and a short iPhone checklist.
 | Phase | What | Status |
 | --- | --- | --- |
 | 1 | Reproduce remaining defects, add regression coverage | ✅ PRs #4, #5, #6 |
-| 2 | Home-screen concepts and the visual specification | 🔎 this PR: `design.md`, `docs/home-concepts.md`, prototypes |
-| 3 | Build the chosen home and navigation | ⏸ needs a decision on the concept |
+| 2 | Home-screen concepts and the visual specification | ✅ #7 (`design.md`, `docs/home-concepts.md`); Pinboard chosen |
+| 3 | Build the chosen home and navigation | 🔎 this PR: the board is Home, the chat is a screen above it |
 | 4 | Chat and task interaction improvements | ⏭ |
 | 5 | Prototype and validate the 3D companions | 📋 |
 | 6 | Motion, celebrations, adaptive layouts | 📋 |
@@ -29,15 +29,19 @@ and data checks, and a short iPhone checklist.
   storage, notifications and the vault. An assessment only; nothing is packaged or migrated.
 - **Done when:** the document exists and names what must be true of the PWA first.
 
-### 2. A new personal home screen — 🔎 Phase 2, then ⏸ Phase 3
+### 2. A new personal home screen — ✅ Phase 2 (#7, Pinboard chosen) · 🔎 Phase 3 (this PR)
 - **Deliver:** three distinct concepts with phone mockups in empty, busy and offline states, the navigation model,
   advantages and tradeoffs of each, and a recommendation: `docs/home-concepts.md` and `docs/home-concepts/`.
 - **Done when (Phase 2):** a concept is chosen, or a fourth direction is asked for.
 - **Done when (Phase 3):** the chosen home is built; opening the chat and adding a to-do are each one obvious tap;
   nothing from a secret list appears on it; back, swipes and Back presses pass test 9; empty, busy and offline states
   match the mockups.
-- **Files it will touch:** `src/ui/nav.ts`, `src/components/nav/NavStack.tsx`, a new `src/components/home/`, a new
-  stylesheet, `tests/e2e/`.
+- **Files:** `src/ui/nav.ts` (the `chat` screen, `boardHome`, `boardAdd`, `navTo`), `src/components/nav/NavStack.tsx`
+  (the board at the bottom, the chat mounted right above it), `src/components/home/BoardView.tsx`,
+  `src/styles/36-board.css`, `src/components/chat/` (back button, edge strip), `tests/e2e/` (every test now starts on
+  the board; `test_13_board_home.py` is new).
+- **State:** built. Measured in headless Chrome at 4× CPU slowdown, not on an iPhone: see the PR. Still to confirm on
+  a phone: the keyboard with *Add a to-do*, the edge swipe out of the chat next to iOS's own, and the feel of the tilt.
 
 ### 3. The visual system — 🔎 Phase 2
 - **Deliver:** `design.md`: colour roles (both people), type, spacing, shapes, surfaces, components, characters,
@@ -78,7 +82,7 @@ and data checks, and a short iPhone checklist.
 - **D. Delivery feedback** ⏭: sending, delivered, seen, disconnected and retry are understandable without clutter.
 - **E. Bubble identity** ⏭: the blush, heart tails, delivered and seen hearts and the send heart, at 4.5:1 for every
   colour pair and theme.
-- **F. Reply navigation** ⏭: quoted messages are easy to find, with a clear way back after jumping to the original.
+- **F. Reply navigation** ✅ #8: quoted messages are easy to find, with a clear way back after jumping to the original.
 - **Always:** sending a message, a heart or a reply, and cancelling a reply, keep the keyboard focus.
 - **Out of scope (backlog):** attachments, calls, a new backend.
 
@@ -127,6 +131,11 @@ and data checks, and a short iPhone checklist.
 | 2026-11-12 | PRs are independent and one topic each; they are merged together locally and the whole suite run before opening | Merging happens from a phone, where conflicts are hard to resolve |
 | 2026-11-13 | The home screen is not decided: three concepts are prototyped first | Changing Home changes the navigation model, which is expensive to redo |
 | 2026-11-13 | No native packaging in this roadmap; Capacitor is assessed after the PWA work | Packaging would not fix web rendering or gesture problems |
+| 2026-11-13 | Home is the Pinboard; without accounts Home stays To-dos | Chosen after review of the three concepts. The board needs a partner and shared data to say anything |
+| 2026-11-13 | The board stores nothing: every note is computed from tasks, lists and messages already on the phone | No schema, storage or sync change; nothing new to keep private |
+| 2026-11-13 | The chat is a screen that only sits directly above the board, and stays mounted while closed | Back from the chat always leads to the board; drawing a long conversation inside the tap cost 217 ms at 4× CPU |
+| 2026-11-13 | A to-do added from the board is due today | It then appears on the board's Today note straight away, where it was added |
+| 2026-11-13 | In the chat the left 32 px belong to Back; a swipe on a message is only ever a reply | The chat is no longer Home, so it needs a way back that never fights the reply swipe |
 
 ## How to pick up work
 

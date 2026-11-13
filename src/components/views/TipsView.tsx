@@ -23,8 +23,8 @@ type Act = 'invite' | 'chat' | 'settings';
 interface Tip { c: string; e: string; t: string; d: string | (() => string); demo?: keyof typeof DEMOS; act?: [Act, string] }
 const TIPS: Tip[] = [
   // Basics
-  { c: 'basics', e: '🏠', t: 'Home is your chat', d: 'Your conversation fills the screen. The small button at the **top right** opens To-dos & reminders; the one at the **top left** opens Settings.' },
-  { c: 'basics', e: '➕', t: 'Add a task by typing', d: 'Open To-dos (top right), type in the box at the bottom and tap ↑. It goes into the list you’re in, or your Inbox.' },
+  { c: 'basics', e: '📌', t: 'Home is your board', d: 'What matters today pins itself there: the latest message, today’s to-dos, what’s for both of you. Tap a note to open it, or tick a to-do right on it. **Message** and **Add a to-do** stay at the bottom; the small button at the **top right** opens To-dos & reminders, the one at the **top left** opens Settings.' },
+  { c: 'basics', e: '➕', t: 'Add a task by typing', d: 'Tap **Add a to-do** on your board and type: it lands in today. In To-dos (top right) the box at the bottom adds to the list you’re in, or your Inbox.' },
   { c: 'basics', e: '📥', t: 'Choose where it goes', d: 'Tap the list name inside the box (like **📥 Inbox ⌄**) to pick another list, or just type **#groceries**.' },
   { c: 'basics', e: '📋', t: 'Paste a whole list', d: 'Paste several lines and Twodo adds one task per line. Perfect for groceries.' },
   { c: 'basics', e: '📝', t: 'Tap a task for details', d: 'Notes, date, time, repeat, priority, who it’s for, list, tags and subtasks. Everything saves instantly.' },
@@ -38,7 +38,7 @@ const TIPS: Tip[] = [
   { c: 'gestures', e: '👉', t: 'Swipe right to complete', d: 'Swipe a task to the right. Changed your mind? Tap the circle again right away.', demo: 'swipeR' },
   { c: 'gestures', e: '👈', t: 'Swipe left to pin or delete', d: 'A short swipe shows Pin and Delete; a long swipe deletes straight away.', demo: 'swipeL' },
   { c: 'gestures', e: '👆', t: 'Long-press for quick actions', d: 'Move to Today, Tomorrow or the weekend, set priority or person, move list, duplicate or start a focus timer.', demo: 'press' },
-  { c: 'gestures', e: '⬅️', t: 'Swipe right to go back', d: 'Drag to the right from the left edge, or anywhere that isn’t a task, to slide back to the chat. On a computer, use ‹ or Esc.', demo: 'edge' },
+  { c: 'gestures', e: '⬅️', t: 'Swipe right to go back', d: 'Drag to the right from the left edge, or anywhere that isn’t a task or a message, to slide back one screen. On a computer, use ‹ or Esc.', demo: 'edge' },
   { c: 'gestures', e: '↩️', t: 'Swipe a message to reply', d: 'In the chat, drag a message to the right and let go. Your reply quotes it. Tap the quote to jump back to the original.' },
   { c: 'gestures', e: '⬇️', t: 'Drag sheets down to close', d: 'Task details, Settings and other cards close when you pull them down.', demo: 'sheetdown' },
   // Organize
@@ -47,7 +47,7 @@ const TIPS: Tip[] = [
   { c: 'organize', e: '⋯', t: 'Sort, show completed, share', d: 'The ⋯ button sorts a list and shows or clears completed tasks. On your own lists it also edits the list or shares it as text.' },
   { c: 'organize', e: '🔁', t: 'Repeating tasks', d: 'Type **daily**, **weekdays** or **every mon**. When you finish one, the next appears automatically.' },
   { c: 'organize', e: '🔎', t: 'Search everything', d: 'In To-dos, tap Search to find titles, notes, subtasks and #tags. On a computer, press ⌘K.' },
-  { c: 'organize', e: '📌', t: 'Pin what matters', d: 'Pinned tasks stay at the top of every list and in Pinned in To-dos.' },
+  { c: 'organize', e: '📌', t: 'Pin what matters', d: 'Pinned tasks stay at the top of every list and in Pinned in To-dos. The first one is pinned to your board too.' },
   { c: 'organize', e: '🔔', t: 'Reminders', d: 'Every to-do with a time shows up in **Reminders** in To-dos, missed ones first.' },
   // Together
   { c: 'together', e: '💌', t: 'Add your partner like a friend', d: 'Tap **＋ Add partner**, search their @username and tap Add. They accept and your lists sync.', act: ['invite', 'Add partner'] },
@@ -58,7 +58,7 @@ const TIPS: Tip[] = [
   // Messages
   { c: 'messages', e: '😂', t: 'React to a message', d: 'Press and hold a message, then pick ❤️ 😂 😮 🥹 🔥 or 👍. Double-tap sends a ❤️ straight away.' },
   { c: 'messages', e: '💞', t: 'Say it together', d: 'When you both say “love you” within a few minutes, you two meet in the middle of the screen. Try it.' },
-  { c: 'messages', e: '💬', t: 'Message your partner', d: 'Your chat is Home. Under their name you’ll see **online**, **typing…** or when they were last seen. Everything is end-to-end encrypted.', act: ['chat', 'Open chat'] },
+  { c: 'messages', e: '💬', t: 'Message your partner', d: 'Tap **Message** on your board, or the note with their latest message. Under their name you’ll see **online**, **typing…** or when they were last seen. Everything is end-to-end encrypted.', act: ['chat', 'Open chat'] },
   { c: 'messages', e: '🤍', t: 'Hearts, not ticks', d: 'Under your last message: an outline ♡ means sent, a filled ♥ means they’ve seen it.' },
   { c: 'messages', e: '🖼️', t: 'Tap a photo', d: 'Tap either picture at the top to see it big. On yours you can change or remove it — only you can change your own.' },
   { c: 'messages', e: '💥', t: 'Send with effect', d: 'Hold the ↑ arrow. Bubble: Slam, Loud, Gentle, Invisible Ink. Screen: Echo, Spotlight, Balloons, Confetti, Love, Lasers, Fireworks, Celebration.', demo: 'slam' },
@@ -105,7 +105,7 @@ const TIP_ACT_OK: Record<Act, () => boolean> = {
   chat: () => cloudReady() && !!Auth.user(),
   settings: () => true,
 };
-const runAct = (a: Act) => (a === 'invite' ? openInviteSheet() : a === 'chat' ? navTo({ type: 'home' }) : openSettings());
+const runAct = (a: Act) => (a === 'invite' ? openInviteSheet() : a === 'chat' ? navTo({ type: 'chat' }) : openSettings());
 
 function Sections({ cat }: { cat: string }) {
   return <>{TIP_CATS.filter(([k]) => cat === 'all' || cat === k).map(([k, e, n, col]) => (

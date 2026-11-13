@@ -10,7 +10,7 @@ import { alertOpen } from './alert';
 import { gateStore } from './gate';
 import { focusOpen, island } from './island';
 import { menuOpen } from './menu';
-import { Nav, liveEntries, topSpec, type Spec } from './nav';
+import { Nav, boardHome, liveEntries, topSpec, type Spec } from './nav';
 import { PhotoView } from './photos';
 import { sheetOpen } from './sheet';
 import { createStore } from './store';
@@ -29,7 +29,7 @@ let applying = false, hadController = false, lastOffer = -1e9;
 
 const secretTop = (): boolean => { const s = topSpec(); return s.type === 'list' && !!(D.lists[s.id!] && D.lists[s.id!].private); };
 // screens we can reopen: never a secret list (it is locked after a reload, and which list it was stays private)
-const resumable = (s: Spec): boolean => s.type === 'todos' || (s.type === 'smart' && !!s.key && !!SMART[s.key])
+const resumable = (s: Spec): boolean => s.type === 'todos' || s.type === 'chat' || (s.type === 'smart' && !!s.key && !!SMART[s.key])
   || (s.type === 'list' && !!s.id && !!D.lists[s.id] && !D.lists[s.id].private && !D.lists[s.id].deleted);
 
 /** true while a reload would interrupt something: typing, an open editor or overlay, a passcode, a swipe */
@@ -109,7 +109,8 @@ export function resume(): Resume {
     if (o && typeof o === 'object') {
       const stack = Array.isArray(o.stack) ? o.stack.slice(0, 3) : [];
       resumed = { chat: cStr(o.chat, 20000), task: cStr(o.task, 2000), updated: o.updated === true,
-        stack: stack.map(s => { const x = (s && typeof s === 'object' ? s : {}) as Record<string, unknown>; return { type: cStr(x.type, 12), key: cStr(x.key, 24) || undefined, id: cStr(x.id, 80) || undefined } as Spec; }).filter(resumable) };
+        stack: stack.map(s => { const x = (s && typeof s === 'object' ? s : {}) as Record<string, unknown>; return { type: cStr(x.type, 12), key: cStr(x.key, 24) || undefined, id: cStr(x.id, 80) || undefined } as Spec; }).filter(resumable)
+          .filter((s, i) => s.type !== 'chat' || (i === 0 && boardHome())) }; // the chat only ever sits directly above the board
     }
   } catch { /* nothing to restore */ }
   return resumed;

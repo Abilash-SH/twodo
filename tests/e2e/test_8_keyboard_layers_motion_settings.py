@@ -2,6 +2,7 @@
 Run test 1 first (it creates the accounts saved in /tmp/twodo-A.json)."""
 import asyncio
 from playwright.async_api import async_playwright
+from helpers import TITLES, open_chat
 
 async def main():
     async with async_playwright() as p:
@@ -25,7 +26,7 @@ async def main():
             return r[0], r[1]
 
         # ---------- composer: tapping pills keeps the field focused; adding keeps focus and never scrolls the page
-        await P.click('.fab-btn[aria-label="To-dos and reminders"]'); await P.wait_for_timeout(1200)
+        await P.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await P.wait_for_timeout(1200)
         await P.click('.group .cell:has-text("Groceries")'); await P.wait_for_timeout(1100)
         await P.click('#cta'); await P.wait_for_timeout(500)
         await P.fill('#cta', 'Bread'); await P.wait_for_timeout(300)
@@ -49,7 +50,7 @@ async def main():
         await q("document.querySelector('.view:not(.under)').scrollTop = 0"); await P.wait_for_timeout(300)
         x, y = await center('.view:not(.under) .searchbar')
         await tap(x, y); await P.wait_for_timeout(300)
-        print('search focused in the tap', await q("[document.activeElement && document.activeElement.id, [...document.querySelectorAll('#stack > .view')].length, document.elementFromPoint(%f, %f)?.className]" % (x, y)))
+        print('search focused in the tap', await q("[document.activeElement && document.activeElement.id, document.elementFromPoint(%f, %f)?.className]" % (x, y)), await q(TITLES))
         await q("document.querySelector('.view:not(.under) .nav-side.r .nav-btn').click()"); await P.wait_for_timeout(900)
 
         # ---------- layers and the island
@@ -63,7 +64,7 @@ async def main():
         # ---------- Settings: inset-grouped cards, danger group last, tall segmented controls
         await q("document.querySelector('.view:not(.under) .nav-btn.back').click()"); await P.wait_for_timeout(900)
         await q("document.querySelector('.view:not(.under) .nav-btn.back').click()"); await P.wait_for_timeout(900)
-        await P.click('.fab-btn[aria-label="Settings"]'); await P.wait_for_timeout(1000)
+        await P.click('.boardview .fab-btn[aria-label="Settings"]'); await P.wait_for_timeout(1000)
         print('settings', await q("""(() => {
           const groups = [...document.querySelectorAll('.sheet.open .sheet-body > .group')];
           const segs = [...document.querySelectorAll('.sheet.open .cell .seg')].map(s => Math.round(s.getBoundingClientRect().height));
@@ -76,15 +77,25 @@ async def main():
 
         # ---------- iPhone SE width: nothing in Settings is cut off
         ctx, S = await phone(320, 568)
-        await S.click('.fab-btn[aria-label="Settings"]'); await S.wait_for_timeout(1000)
+        # the board on the narrowest phone: both of its buttons keep their whole label, no note leaves the board
+        print('320 board', await S.evaluate("""(() => { const bd = document.querySelector('.board').getBoundingClientRect();
+          return { labels: [...document.querySelectorAll('.tray-btn > span:last-child')].map(s => [s.textContent, s.scrollWidth <= s.clientWidth]),
+                   inside: [...document.querySelectorAll('.board .note, .board .strip')].every(n => { const r = n.getBoundingClientRect(); return r.left >= bd.left - 1 && r.right <= bd.right + 1; }),
+                   sideways: document.querySelector('.boardview').scrollWidth > document.querySelector('.boardview').clientWidth }; })()"""))
+        await S.click('.boardview .fab-btn[aria-label="Settings"]'); await S.wait_for_timeout(1000)
         print('320 cut off', await S.evaluate("""[...document.querySelectorAll('.sheet.open .sheet-body *')].filter(e => { const r = e.getBoundingClientRect();
           return r.width && e.scrollWidth > e.clientWidth + 1 && !['INPUT', 'TEXTAREA', 'svg', 'path'].includes(e.tagName) && getComputedStyle(e).overflowX !== 'auto'; }).map(e => e.textContent.trim().slice(0, 20))"""))
         await ctx.close()
 
         # ---------- Reduce Motion: screens fade instead of sliding
         ctx, R = await phone(reduced=True)
-        await R.click('.fab-btn[aria-label="To-dos and reminders"]'); await R.wait_for_timeout(1200)
-        print('reduce motion', await R.evaluate("(() => { const v = document.querySelector('.view.pushed'), u = document.querySelector('.view.under'); return [getComputedStyle(v).transitionProperty, getComputedStyle(u).transform]; })()"))
+        # the board's notes don't fly in either
+        print('reduce motion board', await R.evaluate("[...new Set([...document.querySelectorAll('.board .note, .board .strip')].map(n => getComputedStyle(n).animationName))]"))
+        await R.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await R.wait_for_timeout(1200)
+        print('reduce motion', await R.evaluate("(() => { const v = document.querySelector('#stack > .view.pushed:not(.parked)'), u = document.querySelector('#stack > .boardview'); return [getComputedStyle(v).transitionProperty, getComputedStyle(u).transform]; })()"))
+        await R.evaluate("history.back()"); await R.wait_for_timeout(900)
+        await open_chat(R)
+        print('reduce motion chat', await R.evaluate("(() => { const v = document.querySelector('#stack > .chatview'), u = document.querySelector('#stack > .boardview'); return [getComputedStyle(v).transitionProperty, getComputedStyle(v).transform, getComputedStyle(v).opacity, getComputedStyle(u).transform]; })()"), await R.evaluate(TITLES))
         await ctx.close()
         print('ERRORS:', errs or 'NONE')
         await b.close()
