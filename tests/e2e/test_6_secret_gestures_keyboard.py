@@ -2,6 +2,7 @@
 at an angle (back, sheets, reply), and the message box keeping focus after send even with the iPhone haptic path."""
 import asyncio, json
 from playwright.async_api import async_playwright
+from helpers import TITLES, open_chat
 
 async def main():
     async with async_playwright() as p:
@@ -104,6 +105,7 @@ async def main():
         ctx, A = await phone('http://localhost:8003/', '/tmp/twodo-A.json')
         q = lambda s: A.evaluate(s)
         drag = swiper(ctx, A)
+        await open_chat(A)  # the chat is a screen above the board now: a swipe on a message is still a reply, never "back"
         r = await q("(() => { const b = [...document.querySelectorAll('.msg-row[data-id] .bub')].pop().getBoundingClientRect(); return { x: b.left + 20, y: b.top + b.height / 2 }; })()")
         await drag(r['x'], r['y'], r['x'] + 70, r['y'] + 28, steps=6); await A.wait_for_timeout(700)  # 22° off horizontal
         print('angled reply', await q("!!document.querySelector('.cb-reply:not([hidden])')"))
@@ -115,6 +117,7 @@ async def main():
         await A.click('.rb-x'); await A.wait_for_timeout(500)
         await drag(r['x'], r['y'], r['x'] + 8, r['y'] + 90, steps=6); await A.wait_for_timeout(700)  # scrolling: no reply
         print('scroll is not reply', await q("!document.querySelector('.cb-reply:not([hidden])')"))
+        assert await q(TITLES) == ['Board', 'Chat'], 'a swipe on a message must not close the chat'
         # iPhone path: no vibrate → the switch trick. The field must keep focus and nothing may stay in the page.
         await q("delete Navigator.prototype.vibrate")
         await A.click('.cb-in'); await A.fill('.cb-in', 'still typing?'); await A.click('.cb-send'); await A.wait_for_timeout(900)

@@ -1,13 +1,17 @@
 """Chat reading position: a message only counts as read once it has been on screen, a "New messages" line shows where
-unread messages start, and opening the chat (or tapping the pill) takes you there.
+unread messages start, and opening the chat (from the board, from another screen, or with the pill) takes you there.
+The board says what is new without marking anything read.
 Run test 1 first (it creates Abilash in /tmp/twodo-A.json and Deiva in /tmp/twodo-B.json). Needs the test build on 8003."""
 import asyncio, os
 from playwright.async_api import async_playwright
+from helpers import TITLES, open_chat, back_home
 
 GAP = "(() => { const b = document.querySelector('.chatbody'); return Math.round(b.scrollHeight - b.scrollTop - b.clientHeight); })()"
 UNREAD = """(() => { const c = JSON.parse(localStorage.getItem('twodo:chat') || '{}'), me = JSON.parse(localStorage.getItem('twodo:local')).auth.uid;
   return Object.values(c.msgs || {}).filter(m => m.f !== me && !m.del && m.ts > c.read).length; })()"""
 STATUS = "(document.querySelector('.c-status') || {}).className || ''"
+# what the board says about the conversation: [the first note's badge, the number on its "Message" button]
+BOARD_NEW = "[(document.querySelector('.board .n-msg .n-badge') || {}).textContent || null, (document.querySelector('.board-tray .tray-n') || {}).textContent || null]"
 PILL = "(() => { const p = document.querySelector('.c-jump'); return p && !p.hidden ? p.textContent.trim() : null; })()"
 # the "New messages" line: [text of the message under it, its distance below the header, its distance above the message box]
 LINE = """(() => { const l = document.querySelector('.chatlist > .c-new'); if (!l) return null;
@@ -41,6 +45,7 @@ async def main():
         delivered = lambda s: 'sent' in s and 'seen' not in s
 
         ca, A = await phone('/tmp/twodo-A.json'); cb, B = await phone('/tmp/twodo-B.json')
+        await open_chat(A); await open_chat(B)
         await A.evaluate("document.querySelector('.chatbody').scrollTop = 1e9"); await B.evaluate("document.querySelector('.chatbody').scrollTop = 1e9")
         for i in range(26): await say(A, f'history line {i}', 80)   # enough history to scroll through
         await say(B, 'catching up')                                  # both are at the bottom and have read everything
@@ -64,7 +69,7 @@ async def main():
 
         # ---------- coming back to the chat with more unread than fits: start at the first one, read as you scroll
         await say(A, 'back in a minute'); await A.wait_for_timeout(600)
-        await A.click('.fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(1000)
+        await A.click('.chatview .fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(1000)
         for i in range(12): await say(B, f'note {i}\nsecond line\nthird line', 110)
         await B.wait_for_timeout(1800)
         assert delivered(await B.evaluate(STATUS)), 'another screen is on top: nothing is read'
@@ -82,15 +87,45 @@ async def main():
 
         # ---------- unread that fits on screen: straight to the bottom, with the line above it
         await say(A, 'reading all of these'); await A.wait_for_timeout(600)
-        await A.click('.fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(1000)
+        await A.click('.chatview .fab-btn[aria-label="To-dos and reminders"]'); await A.wait_for_timeout(1000)
         await say(B, 'just one'); await B.wait_for_timeout(1200)
         await A.click('.view:not(.under) .nav-btn.back')
         assert seen(await until(B, STATUS, seen)), 'visible at once, so read at once'
         line = await A.evaluate(LINE); assert line and line[0] == 'just one' and await A.evaluate(GAP) < 80, (line, await A.evaluate(GAP))
         print('PASS: back to the chat with one unread: at the bottom, line above it, read')
 
+        # ---------- on the board (the chat closed): the board says what is new, nothing is read until the chat is opened
+        await say(A, 'off to the board'); await A.wait_for_timeout(600)
+        await back_home(A)
+        assert await A.evaluate(TITLES) == ['Board'] and await A.evaluate(BOARD_NEW) == [None, None], (await A.evaluate(TITLES), await A.evaluate(BOARD_NEW))
+        for i in range(3): await say(B, f'board note {i}', 110)
+        await B.wait_for_timeout(1800)
+        assert delivered(await B.evaluate(STATUS)), 'the chat is closed: nothing is read'
+        assert await A.evaluate(UNREAD) == 3 and await until(A, BOARD_NEW, ['3 new', '3']) == ['3 new', '3'], (await A.evaluate(UNREAD), await A.evaluate(BOARD_NEW))
+        assert await A.evaluate("document.querySelector('.board .n-msg .n-text').textContent") == 'board note 2', 'the note shows the latest message'
+        await A.click('.board .note.n-msg')  # the note is a door to the conversation
+        assert seen(await until(B, STATUS, seen)), 'opened from the board with all of it on screen: read'
+        line = await A.evaluate(LINE); assert line and line[0] == 'board note 0' and await A.evaluate(GAP) < 80, (line, await A.evaluate(GAP))
+        await A.wait_for_timeout(700); await back_home(A)
+        assert await A.evaluate(BOARD_NEW) == [None, None], ('read: the board has nothing new to announce', await A.evaluate(BOARD_NEW))
+        for i in range(12): await say(B, f'pile {i}\nsecond line\nthird line', 110)   # more than fits on one screen
+        await B.wait_for_timeout(1800)
+        assert delivered(await B.evaluate(STATUS)) and await until(A, BOARD_NEW, ['9+ new', '9+']) == ['9+ new', '9+'], await A.evaluate(BOARD_NEW)
+        await open_chat(A, wait=1500)
+        line = await A.evaluate(LINE); n = await A.evaluate(UNREAD)
+        assert line and line[0].startswith('pile 0') and 0 <= line[1] <= 40, ('from the board the chat opens at the first unread message', line)
+        assert await A.evaluate(GAP) > 140 and 1 <= n < 12, ('some read, the rest not yet', await A.evaluate(GAP), n)
+        assert delivered(await B.evaluate(STATUS)), 'the last message has not been on screen yet'
+        await A.evaluate("document.querySelector('.chatbody').scrollTop = 1e9")
+        assert seen(await until(B, STATUS, seen)) and await until(A, UNREAD, 0) == 0
+        print(f'PASS: on the board nothing is read; it shows what is new, and the chat opens at the first unread ({12 - n} of 12 read at once)')
+
         # ---------- behind a sheet, and with the app in the background: not read until you can see it
-        await A.click('.fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(1000)
+        await say(A, 'one moment'); await A.wait_for_timeout(500)
+        await A.click('.chatview .cb-plus'); await A.wait_for_timeout(500)     # share a to-do, then open it: its sheet covers the chat
+        await A.click('#menu [data-m="share"] >> nth=0'); await A.wait_for_timeout(900)
+        await A.locator('.chatview .tcard .tc-t').last.click(); await A.wait_for_timeout(1200)
+        assert await A.locator('.sheet.open').count() == 1, 'the shared to-do opens in a sheet'
         await say(B, 'behind the sheet'); await B.wait_for_timeout(2200)
         assert delivered(await B.evaluate(STATUS)), 'a sheet covers the chat: not read'
         await A.evaluate("history.back()")
@@ -115,11 +150,17 @@ async def main():
         await say(B, 'sent while closed 1'); await say(B, 'sent while closed 2'); await B.wait_for_timeout(1200)
         assert delivered(await B.evaluate(STATUS))
         A = await page(ca)
-        assert seen(await until(B, STATUS, seen)), 'reopened at the bottom: read'
+        assert await until(A, BOARD_NEW, ['2 new', '2']) == ['2 new', '2'], ('reopened on the board: it says what arrived', await A.evaluate(BOARD_NEW))
+        await A.wait_for_timeout(1200)
+        assert delivered(await B.evaluate(STATUS)), 'reopening the app shows the board: nothing is read yet'
+        await open_chat(A)
+        assert seen(await until(B, STATUS, seen)), 'the chat opened at the bottom: read'
         line = await A.evaluate(LINE); assert line and line[0] == 'sent while closed 1', line
         await A.wait_for_timeout(700); await A.reload(); await A.wait_for_timeout(2600)
-        assert await A.evaluate(LINE) is None and await A.evaluate(UNREAD) == 0, 'nothing new: no line'
-        print('PASS: reopening the app shows the line above what arrived meanwhile, and none when nothing is new')
+        assert await A.evaluate(BOARD_NEW) == [None, None] and await A.evaluate(UNREAD) == 0, 'nothing new: the board announces nothing'
+        await open_chat(A)
+        assert await A.evaluate(LINE) is None, 'nothing new: no line'
+        print('PASS: reopening the app shows what arrived on the board, the line above it in the chat, and none when nothing is new')
 
         # ---------- the line keeps readable contrast for every colour a partner can pick, light and dark
         worst = await A.evaluate("""(() => {

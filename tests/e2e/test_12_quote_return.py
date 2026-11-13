@@ -3,6 +3,7 @@ Run after test 1 against fake Firebase; no production records are used.
 """
 import asyncio, json, os
 from playwright.async_api import async_playwright, expect
+from helpers import open_chat
 
 async def settled(pg):
     # Observe real movement/settling instead of waiting an assumed animation duration.
@@ -30,6 +31,7 @@ async def main():
           cache.msgs={...messages,...cache.msgs};localStorage.setItem('twodo:chat',JSON.stringify(cache));
         })()''')
         await pg.reload(); await pg.wait_for_timeout(2600)
+        await open_chat(pg)  # Home is the board; the conversation is one tap away
         await pg.evaluate("document.querySelector('.chatbody').scrollTop=1e9")
         await settled(pg)
         # The quote's original sits outside the default 120-row render window.

@@ -94,6 +94,9 @@ async def main():
         await ctx.close()
 
         ctx, pg = await phone(8003,'/tmp/twodo-A.json')
+        # Home is the board; the chat is one tap away and slides in already drawn
+        assert await pg.locator('.board-title').text_content() == 'Our board'
+        await pg.locator('.board-tray .tray-btn.chat').tap(); await pg.wait_for_timeout(900)
         assert await pg.locator('.lb-name').text_content() == 'Deiva'
         await pg.fill('.cb-in','Native regression message')
         await pg.evaluate("delete Navigator.prototype.vibrate")
@@ -123,6 +126,10 @@ async def main():
         print('PASS: repeated touch send preserves focus, static scene, no chat blur, viewport never hidden')
         partner=await b.new_context(storage_state='/tmp/twodo-B.json',viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
         other=await partner.new_page(); await other.goto('http://localhost:8003/'); await other.wait_for_timeout(2400)
+        # opening the app shows the board, with what is new on its first note: nothing is "seen" until the chat is opened
+        assert 'new' in await other.locator('.note.n-msg .n-badge').text_content()
+        assert not await pg.locator('.c-status.seen').count(), 'messages were marked seen from the board'
+        await other.locator('.board-tray .tray-btn.chat').tap()
         await expect(pg.locator('.c-status.seen .hs')).to_have_count(2)
         await partner.close()
         print('PASS: send heart pop and two overlapping seen hearts')
@@ -139,12 +146,16 @@ async def main():
         await pg.wait_for_timeout(700)
         assert not await pg.locator('.pv').count(), 'photo flick failed'
         print('PASS: reply flick and touch photo dismissal')
-        await pg.locator('.fab-btn[aria-label=Settings]').tap(); await pg.wait_for_timeout(650)
+        # Settings lives on the board: back with the chat's own button, then return to the chat
+        await pg.locator('.chatview .fab-btn[aria-label="Back to the board"]').tap(); await pg.wait_for_timeout(700)
+        assert await pg.locator('#stack > .view:not(.offright)').count() == 1, 'the chat did not close'
+        await pg.locator('.boardview .fab-btn[aria-label=Settings]').tap(); await pg.wait_for_timeout(650)
         h = await pg.locator('.sheet.open .sheet-head').bounding_box()
         d = await finger(ctx, pg, 130,h['y']+30,[(10,3),(25,6),(45,10)],selector='.sheet.open')
         assert abs(d-45)<1
         await pg.wait_for_timeout(850)
         assert not await pg.locator('.sheet.open').count(), 'Settings swipe failed'
+        await pg.locator('.board-tray .tray-btn.chat').tap(); await pg.wait_for_timeout(900)
         await pg.fill('.cb-in','Effects swipe test'); await pg.wait_for_timeout(450)
         send = await pg.locator('.cb-send').bounding_box()
         cdp=await ctx.new_cdp_session(pg)
@@ -156,7 +167,7 @@ async def main():
         await finger(ctx, pg, 100,350,[(10,3),(25,6),(45,10)])
         await pg.wait_for_timeout(850)
         assert not await pg.locator('.fxp').count(), 'Effects swipe failed'
-        await pg.locator('.fab-btn[aria-label="To-dos and reminders"]').tap(); await pg.wait_for_timeout(650)
+        await pg.locator('.chatview .fab-btn[aria-label="To-dos and reminders"]').tap(); await pg.wait_for_timeout(650)
         count=await pg.evaluate("[...document.querySelectorAll('#stack > .view:last-child .hub-card, #stack > .view:last-child .cell, #stack > .view:last-child .group')].filter(e=>getComputedStyle(e).animationName==='riseIn').length")
         assert count == 6, ('entrance budget',count)
         await pg.locator('.hub-card:has-text("Today")').tap(); await pg.wait_for_timeout(650)

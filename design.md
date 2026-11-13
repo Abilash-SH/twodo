@@ -104,6 +104,13 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 - **Menus.** Open from the thing that was pressed, above the sheet layer. At most seven items; destructive last.
 - **The island.** One short line, an optional second line, at most one button. It never takes focus, never covers a
   focused field, and leaves by itself.
+- **The board (Home).** Notes on a dotted board, each pinned with a pin in the colour of whose it is and tilted by a
+  fixed small angle (−2° to 3°). Notes take slots in a two-column grid (`36-board.css`), never pixel positions, so
+  long titles, dark mode and 320 px phones never overlap. A note is a door (one tap, one screen) and says one thing.
+  Two filled buttons sit at the bottom and never move: *Message* in your partner's colour, *Add a to-do* in yours,
+  labels in `--on-color`. Nothing from a secret list, ever: not a title, not a count, not a pin.
+- **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
+  labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
 - **Empty states.** One emoji or character, one sentence, one button. Friendly, never guilt.
 - **Offline.** Say it once, quietly, where it matters ("Will send when you're back"). The app keeps working.
 
@@ -148,7 +155,9 @@ rules already apply.
 ## 8. Layout across sizes
 
 - **Phone** (under 700 px wide): one column. Primary actions within thumb reach. Nothing important in the top 90 px
-  besides the header.
+  besides the header. The board keeps its two columns down to 320 px; the message button takes the wider share so a
+  name fits.
+- **The board on wider screens:** at most 560 px wide and centred; its two buttons are at most 260 px each.
 - **Tablet** (from 700 px): content column up to 820 px; where useful, a second column (the chat beside to-dos).
 - **Desktop** (from 900 px, and framed on a desk background from 1241 px): sheets become centred dialogs, panels have
   comfortable widths (chat 420–560, lists 360–480), every action is reachable by keyboard, focus and hover are visible.
@@ -207,7 +216,8 @@ Places where the app does not yet meet this file. Fix them when touching the are
   a value at or above 4.5:1, such as `#66636D` (5.6:1 on the page, 5.2:1 on tinted surfaces), used in the home-screen
   mockups. Roadmap Phase 6; it changes the look of every screen slightly, so it needs a yes first.
 - **Labels on filled buttons are too light.** White `--me-ink` on the twelve person colours measures 2.1–3.4:1.
-  A dark ink (`#1B1730`, at least 5.1:1 on every colour) passes. Same phase, same yes needed.
+  A dark ink (`#1B1730`, at least 5.1:1 on every colour) passes, and the board already uses it as `--on-color`
+  (test 13 measures every piece of text on the board). The rest of the app: same phase, same yes needed.
 - Eight styles use 11–11.5 px text (badges, the "me" tag, reaction counts, the status line under the name in the chat
   header). Target: 12 px. Roadmap Phase 6.
 - Complete, pin and delete on a task are easiest to find by swiping or holding. Roadmap item 8.

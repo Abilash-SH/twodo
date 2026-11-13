@@ -1,8 +1,9 @@
 # Home screen: three concepts
 
-Roadmap item 2. The home screen is not decided. These are three different directions to react to, drawn as phone
-mockups (390 × 844, light theme) with fictional data: Abilash in blue, Deiva in pink, an ordinary Friday.
-Nothing here is built into the app yet.
+Roadmap item 2. **Decided (2026-11-13): the Pinboard.** It is built as Home when signed in
+(`src/components/home/BoardView.tsx`, `src/styles/36-board.css`); see "What was built" below. The three directions
+below were drawn as phone mockups (390 × 844, light theme) with fictional data: Abilash in blue, Deiva in pink, an
+ordinary Friday. They are kept as the record of the choice.
 
 What every concept keeps the same, so they can be compared fairly:
 
@@ -107,13 +108,37 @@ It is also the plainest of the three, so I would borrow from the others rather t
 If personality matters more to you than glanceable usefulness, choose the Postcard: it is nearly as safe to build.
 I would not start with the Pinboard; it could become a second view later.
 
-## What is needed to go on
+## The decision
 
-One answer: **Postcard, Pinboard, Our day, or a mix** (for example "Our day with the postcard greeting").
-Roadmap Phase 3 starts from that answer. Until then nothing about Home or its navigation changes.
+The Pinboard was chosen over the recommendation above. What that changes from the mockups, and why:
 
-Not drawn yet, and following from the choice: the dark theme, tablet and desktop layouts, the state before a
-partner is connected (the message area becomes "Add your partner"), and the motion between Home and the chat.
+- **Notes are placed by a grid, not by pixel.** Each note sits in one of six slots of a two-column grid and is tilted
+  by a fixed small angle, so real titles of any length, the dark theme and narrow phones never overlap.
+- **Every note is a door**, as drawn: the message note opens the chat, *Today* and *Together* open those lists, the
+  list note opens that list, the pinned note opens the to-do. To-dos on the Today note tick off in place (a second tap
+  within 0.7 s cancels, as everywhere else), and their titles open the details.
+- **The board stores nothing.** Every note is computed from what is already on the phone: tasks without secret lists,
+  the lists that are not secret, the chat. No new storage, sync or schema.
+- **The chat is a screen above the board.** *Message Deiva* and the message note slide it in; Back, the ‹ button or a
+  swipe from the left edge return to the board. It stays mounted while closed, so opening it draws nothing.
+- **Add a to-do** raises the task box over the board, with the keyboard in the same tap; what is added is due today,
+  so it lands on the Today note. Left empty, the box goes away again.
+- **States drawn after the decision:** dark theme, before a partner is connected (the first note and the message
+  button lead to *Add partner*; a pending request is never hidden), nothing to show yet (two dashed slots and a
+  note), offline (a strip of tape, "Waiting to send" on an unsent message), and wide screens (the board keeps a
+  560 px width; the two buttons stay centred).
+- **Without accounts** Home stays the To-dos screen: there is no partner or chat to pin.
+
+## What was built
+
+| Note | Shows | Opens |
+| --- | --- | --- |
+| Message (top left) | Something new from your partner with a count, or the last message either of you sent, or *Waiting to send* / *Not delivered*; before pairing: *Add your partner*, a request, or *Waiting for* | The chat, or *Add partner* |
+| Today (top right) | Up to three of today's to-dos, rings in the colour of whose they are, and how many more | Today; a title opens its details |
+| Together | How many to-dos are for both of you | Together |
+| A list | The list (not a secret one) with the most left to do, your own lists before the Inbox | That list |
+| Pinned | The first pinned to-do, or a dashed slot | Its details; *n more pinned* opens Pinned |
+| Strip | The last thing either of you ticked off in the past 36 hours | — |
 
 ## Files
 

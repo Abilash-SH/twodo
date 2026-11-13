@@ -104,7 +104,7 @@ export function Gate({ first }: { first: GatePage }) {
           <li><span className="e">💌</span><div>Pair with {firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName())}<small>Tap “Add partner” on Home and search their @username.</small></div></li>
           <li><span className="e">✅</span><div>To-dos, one tap away<small>Tap the button at the top right and just type: “Movie night fri 8pm @us !!”.</small></div></li>
           <li><span className="e">👉</span><div>Swipe right to complete<small>Swipe left to pin or delete. Long-press for more.</small></div></li>
-          <li><span className="e">💬</span><div>Home is your chat<small>See when they’re online. A filled ♥ means they’ve seen your message.</small></div></li>
+          <li><span className="e">📌</span><div>Home is your board<small>The latest message and today’s to-dos pin themselves there. Tap Message to chat.</small></div></li>
         </ul><div className="spacer" />
         <button className="btn" type="button" onClick={() => { haptic('success'); enter({ e: '✨', text: `You’re @${L.auth!.username}`, sub: 'Share it with your partner to pair' }); }}>Start using Twodo</button>
         <button className="btn ghost" type="button" onClick={() => { haptic('light'); enter(); setTimeout(() => openTips(), 420); }}>💡 Show me all the tips</button></>);

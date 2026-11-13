@@ -17,7 +17,7 @@ import { alertOpen } from '@/ui/alert';
 import { boot, gateStore, showGate, showOnboarding } from '@/ui/gate';
 import { focusOpen, island, showLive } from '@/ui/island';
 import { closeMenu, menuOpen } from '@/ui/menu';
-import { Nav, armTrap, bootNav, depth, navState, onHistoryBack, openSearch, popView, pushView, topSpec } from '@/ui/nav';
+import { Nav, armTrap, boardAdd, boardHome, bootNav, depth, navState, onHistoryBack, openBoardAdd, openSearch, popView, pushView, topSpec } from '@/ui/nav';
 import { resume, watchUpdates } from '@/ui/update';
 import { PhotoView } from '@/ui/photos';
 import { checkReminders } from '@/ui/reminders';
@@ -113,6 +113,7 @@ function useGlobalEvents() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!sheetOpen()) openSearch(); return; }
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
       if ((e.key === 'n' || e.key === '/') && !sheetOpen() && topSpec().type !== 'search') {
+        if (topSpec().type === 'home' && boardHome()) { e.preventDefault(); openBoardAdd(); return; } // on the board the task box comes up first
         const ta = document.getElementById('cta') as HTMLTextAreaElement | null;
         if (ta && !document.getElementById('composer')!.classList.contains('hide')) { e.preventDefault(); ta.focus(); }
       }
@@ -154,11 +155,12 @@ export default function App() {
   useGlobalEvents();
   useServiceWorker();
   useApp();
-  const gate = useStore(gateStore);
+  const gate = useStore(gateStore), adding = useStore(boardAdd);
   useStore(navState);
   if (!ready) return null;
   const top = topSpec(), noEntries = !navState.get().entries.length;
-  const composerHidden = noEntries || !L.onboarded || top.type === 'search' || top.type === 'tips' || (top.type === 'home' && cloudReady() && !!Auth.user())
+  // the task box belongs to the to-do screens; on the board it comes up when you tap "Add a to-do"; the chat has its own
+  const composerHidden = noEntries || !L.onboarded || top.type === 'search' || top.type === 'tips' || top.type === 'chat' || (top.type === 'home' && boardHome() && !adding)
     || (top.type === 'list' && vaultBlocks(top.id));
   return (<>
     <div id="app"><NavStack /><Composer hidden={composerHidden} /></div>

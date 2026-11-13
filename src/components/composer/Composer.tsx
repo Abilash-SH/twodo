@@ -13,7 +13,7 @@ import { useTapKeep, useTapKeepWithin } from '@/hooks/useTapKeep';
 import { closeOpenRow } from '@/hooks/useStackGestures';
 import { island } from '@/ui/island';
 import { showMenu } from '@/ui/menu';
-import { composerState, specKey, topSpec, viewPrefs } from '@/ui/nav';
+import { boardAdd, boardHome, composerState, specKey, topSpec, viewPrefs } from '@/ui/nav';
 import { Fresh } from '@/ui/tasks';
 import { useStore } from '@/ui/store';
 import { Avatar, colorVar, cssVars } from '../ui/Avatar';
@@ -33,6 +33,8 @@ function composerCtx(): Ctx {
     const extra = ({ today: ['due', todayStr(), 'Today'], upcoming: ['due', ymd(addDays(new Date(), 1)), 'Tomorrow'], pinned: ['pinned', true, 'Pinned'], us: ['assignee', 'both', 'For both of you'] } as Record<string, [keyof Ctx, string | boolean, string]>)[spec.key!];
     if (extra) { (ctx as unknown as Record<string, unknown>)[extra[0]] = extra[1]; ctx.label += ' · ' + extra[2]; }
   }
+  // added from the board: it is for today, so it shows up on the board's Today note straight away
+  if (spec.type === 'home' && boardHome() && !pick) { ctx.due = todayStr(); ctx.label += ' · Today'; }
   if (spec.type !== 'home' && spec.type !== 'search' && !ctx.assignee) {
     const who = viewPrefs(specKey(spec)).who;
     if (who === 'me') ctx.assignee = L.me;
@@ -159,7 +161,11 @@ export function Composer({ hidden }: { hidden: boolean }) {
           onInput={e => { const v = e.currentTarget.value; setText(v); if (!v.trim()) setIgnored(new Set()); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }}
           onFocus={() => { clearTimeout(blurT.current); setFocus(true); closeOpenRow(); }}
-          onBlur={() => { blurT.current = setTimeout(() => { if (document.activeElement !== ta.current) setFocus(false); }, 150); }} />
+          onBlur={() => { blurT.current = setTimeout(() => {
+            if (document.activeElement === ta.current) return;
+            setFocus(false);
+            if (boardAdd.get() && !ta.current?.value.trim()) boardAdd.set(false); // done adding from the board: the board's own buttons are back
+          }, 150); }} />
         <div className="crow">
           <button className="cplus" id="cplus" type="button" aria-label="Show quick options" onMouseDown={e => e.preventDefault()}
             onClick={() => { if (focus) ta.current!.blur(); else ta.current!.focus(); }}><Icon name="plus" /></button>

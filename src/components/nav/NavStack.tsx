@@ -4,10 +4,11 @@ import { Fragment, memo, useLayoutEffect, useRef, useState } from 'react';
 import { Chat } from '@/lib/chat';
 import { useApp } from '@/hooks/useApp';
 import { Gesture, closeOpenRow, useStackGestures } from '@/hooks/useStackGestures';
-import { Nav, homeIsChat, navState, popView, viewTitle, type Entry } from '@/ui/nav';
+import { Nav, boardHome, navState, popView, viewTitle, type Entry } from '@/ui/nav';
 import { useStore } from '@/ui/store';
 import { toggleDone, togglePin, deleteTask } from '@/ui/tasks';
 import { ChatView } from '../chat/ChatView';
+import { BoardView } from '../home/BoardView';
 import { openTaskSheet } from '../sheets/TaskSheet';
 import { openSettings } from '../settings/Settings';
 import { Icon } from '../ui/Icon';
@@ -41,7 +42,8 @@ function PageView({ entry, prev, cls, v }: { entry: Entry; prev: Entry | null; c
   const isSearch = spec.type === 'search';
   let left: React.ReactNode = null, right: React.ReactNode = null;
   if (prev) {
-    const backTo = prev.spec.type !== 'home' ? viewTitle(prev.spec) : homeIsChat() ? <>Chat<ChatBadge /></> : 'To-dos';
+    // new messages show on the way back to the chat, or to the board it opens from
+    const backTo = prev.spec.type === 'chat' || (prev.spec.type === 'home' && boardHome()) ? <>{viewTitle(prev.spec)}<ChatBadge /></> : viewTitle(prev.spec);
     left = <button className="nav-btn back" type="button" onClick={() => popView()}><Icon name="chevL" /><span>{backTo}</span></button>;
   }
   if (spec.type === 'home') left = <button className="nav-btn" type="button" aria-label="Settings" onClick={() => openSettings()}><Icon name="gear" /></button>;
@@ -77,6 +79,14 @@ export function NavStack() {
   useStackGestures(ref);
   const live = entries.filter(e => e.phase !== 'out');
   const top = entries[entries.length - 1];
+  const board = boardHome();
+  const clsOf = (e: Entry, i: number) => {
+    const liveIdx = live.indexOf(e), isTopLive = liveIdx === live.length - 1;
+    return ['view', i > 0 ? 'pushed' : '', e.phase !== 'idle' ? 'offright' : '', liveIdx >= 0 && !isTopLive ? 'under' : '', Nav.entering.has(e.id) ? 'enter' : ''].filter(Boolean).join(' ');
+  };
+  const shadeFor = (e: Entry) => (entries.length > 1 && e === top ? <div ref={shadeRef} className="shade" /> : null);
+  const chatIdx = entries.findIndex(e => e.spec.type === 'chat'), chatEntry = chatIdx >= 0 ? entries[chatIdx] : null;
+  const chatCls = chatEntry ? clsOf(chatEntry, chatIdx) : 'view pushed under offright parked';
 
   // Screens slide in: render off to the right, let the browser see that, then move into place (CSS transition).
   useLayoutEffect(() => {
@@ -128,18 +138,16 @@ export function NavStack() {
         if (t.closest('.chk')) return toggleDone(row.dataset.id!);
         openTaskSheet(row.dataset.id!);
       }}>
-      {entries.map((e, i) => {
-        const liveIdx = live.indexOf(e), isTopLive = liveIdx === live.length - 1;
-        const cls = ['view', i > 0 ? 'pushed' : '', e.phase !== 'idle' ? 'offright' : '', liveIdx >= 0 && !isTopLive ? 'under' : '', Nav.entering.has(e.id) ? 'enter' : ''].filter(Boolean).join(' ');
+      {entries.flatMap((e, i) => {
+        if (e === chatEntry) return []; // drawn once, right above Home (below)
+        const liveIdx = live.indexOf(e);
         const prev = liveIdx > 0 ? live[liveIdx - 1] : e.phase === 'out' && live.length ? live[live.length - 1] : null;
-        const showShade = entries.length > 1 && e === top;
-        const view = e.spec.type === 'home' && homeIsChat() ? <ChatView entry={e} cls={cls} /> : <PageView entry={e} prev={prev} cls={cls} v={v} />;
-        return (
-          <Fragment key={e.id}>
-            {showShade ? <div ref={shadeRef} className="shade" /> : null}
-            {view}
-          </Fragment>
-        );
+        const view = e.spec.type === 'home' && board ? <BoardView entry={e} cls={clsOf(e, i)} /> : <PageView entry={e} prev={prev} cls={clsOf(e, i)} v={v} />;
+        const kids = [<Fragment key={e.id}>{shadeFor(e)}{view}</Fragment>];
+        // The chat stays mounted, parked off to the right, so opening it is only a slide: no first draw of the whole
+        // conversation inside the tap. It is always the screen directly above Home (navTo guarantees that).
+        if (i === 0 && board) kids.push(<Fragment key="chat">{chatEntry ? shadeFor(chatEntry) : null}<ChatView entry={chatEntry} cls={chatCls} /></Fragment>);
+        return kids;
       })}
     </div>
   );

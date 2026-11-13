@@ -13,7 +13,8 @@ export const Fresh = new Set<string>();   // task ids that should animate in
 export const Popping = new Set<string>(); // check circle "pop"
 export const Leaving = new Set<string>(); // rows collapsing away
 
-const rowsFor = (id: string) => Array.from(document.querySelectorAll<HTMLElement>(`#stack .task[data-id="${CSS.escape(id)}"]`));
+// every row showing this task: in a list, or on the board's Today note
+const rowsFor = (id: string) => Array.from(document.querySelectorAll<HTMLElement>(`#stack :is(.task, .bn-task)[data-id="${CSS.escape(id)}"]`));
 function pop(id: string) { Popping.add(id); setTimeout(() => { Popping.delete(id); scheduleRender(); }, 500); }
 // the row fades out where it is; once it's gone the rows below slide up into its place (hooks/useFlip.ts)
 export function leaveThen(id: string, cb: () => void) {
