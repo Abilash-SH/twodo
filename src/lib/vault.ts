@@ -9,7 +9,7 @@
 import { b64, te, unb64 } from './crypto';
 import { scheduleRender } from './render';
 import { D, cleanMap, save, saveNow, vaultHooks } from './store';
-import type { List, Task } from './types';
+import type { JournalEntry, List, Task } from './types';
 
 const KV = 'twodo:vault';
 const ITER = 600000;
@@ -62,16 +62,18 @@ const rawDek = async (): Promise<Uint8Array<ArrayBuffer>> => new Uint8Array(awai
 
 /* ---------- which records are secret ---------- */
 const secretLists = (): List[] => Object.values(D.lists).filter(l => l.private);
-function secretRecords(): { lists: Record<string, List>; tasks: Record<string, Task> } {
-  const lists: Record<string, List> = {}, tasks: Record<string, Task> = {};
+function secretRecords(): { lists: Record<string, List>; tasks: Record<string, Task>; journal: Record<string, JournalEntry> } {
+  const lists: Record<string, List> = {}, tasks: Record<string, Task> = {}, journal: Record<string, JournalEntry> = {};
   for (const l of secretLists()) lists[l.id] = l;
   for (const t of Object.values(D.tasks)) if (lists[t.listId]) tasks[t.id] = t;
-  return { lists, tasks };
+  for (const e of Object.values(D.journal)) if (e.private) journal[e.id] = e; // the private journal (docs/journal-and-planner.md)
+  return { lists, tasks, journal };
 }
 function dropFromMemory(): void {
-  const { lists, tasks } = secretRecords();
+  const { lists, tasks, journal } = secretRecords();
   for (const id in tasks) delete D.tasks[id];
   for (const id in lists) delete D.lists[id];
+  for (const id in journal) delete D.journal[id];
 }
 
 /* ---------- attempts: after 5 wrong passcodes, wait 30 s, then a minute, 2, 4… (up to an hour) ---------- */
@@ -85,12 +87,13 @@ function noteFail(f: VaultFile): void {
 async function openWith(key: CryptoKey, f: VaultFile, which: 'pin' | 'bio'): Promise<void> {
   const raw = await open(key, which === 'pin' ? f.wk : f.bio!.wk, which === 'pin' ? AAD_WK : AAD_BIO);
   const k = await importDek(raw);
-  const data = JSON.parse(new TextDecoder().decode(await open(k, f.data, AAD_DATA))) as { lists?: unknown; tasks?: unknown };
+  const data = JSON.parse(new TextDecoder().decode(await open(k, f.data, AAD_DATA))) as { lists?: unknown; tasks?: unknown; journal?: unknown };
   dek = k;
   // the vault's copy wins for its own records (checked like any stored record before it's used)
   const lists = cleanMap<List>(data.lists), tasks = cleanMap<Task>(data.tasks);
   for (const [id, l] of Object.entries(lists)) D.lists[id] = { ...l, private: true };
   for (const [id, t] of Object.entries(tasks)) if (lists[t.listId]) D.tasks[id] = t;
+  for (const [id, e] of Object.entries(cleanMap<JournalEntry>(data.journal))) if (e.private) D.journal[id] = e;
   if (f.fails || f.until) { delete f.fails; delete f.until; write(f); }
   scheduleRender();
 }

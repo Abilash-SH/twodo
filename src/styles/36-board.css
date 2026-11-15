@@ -22,8 +22,9 @@ button.note:active, .n-pin:has(.n-open:active) { transform: rotate(var(--r, 0deg
 .r2 { --r: 2deg; --i: 1; grid-column: 2; grid-row: 1 / span 2; margin-top: 24px; }
 .r3 { --r: 3deg; --i: 2; grid-column: 1; grid-row: 2 / span 2; width: 88%; }
 .r4 { --r: -1.5deg; --i: 3; grid-column: 2; grid-row: 3; align-self: end; }
-.r5 { --r: 1.2deg; --i: 4; grid-column: 1 / span 2; grid-row: 4; width: 64%; margin-left: 3%; }
-.r6 { --r: -1deg; --i: 5; grid-column: 1 / span 2; grid-row: 5; justify-self: center; }
+.r5 { --r: 1.2deg; --i: 4; grid-column: 1; grid-row: 4; }
+.r7 { --r: 2.2deg; --i: 5; grid-column: 2; grid-row: 4; } /* today's journal page */
+.r6 { --r: -1deg; --i: 6; grid-column: 1 / span 2; grid-row: 5; justify-self: center; }
 
 .n-h { display: block; font: 700 17px/22px var(--round); overflow-wrap: anywhere; }
 .n-sub { display: block; font-size: 13px; line-height: 18px; color: var(--soft); }
@@ -81,8 +82,17 @@ span.n-go { margin-top: 8px; }
 .strip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .strip .i { color: color-mix(in srgb, var(--pt-c) 50%, var(--label)); }
 
+/* today's journal page: lined paper in the colour of whoever wrote */
+.n-page { padding: 16px 12px 12px 14px; background-color: color-mix(in srgb, var(--c) 12%, var(--bg2));
+  background-image: repeating-linear-gradient(180deg, transparent 0 20px, color-mix(in srgb, var(--c) 26%, transparent) 20px 21px); background-position: 0 37px; }
+.n-page .n-h { display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 15px; line-height: 20px; font-weight: 700; }
+.n-wx { display: inline-flex; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+.n-page-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 4px; font: 400 15px/21px ui-serif, 'New York', 'Iowan Old Style', Georgia, serif; overflow-wrap: anywhere; }
+.n-page-t.prompt { font-style: italic; }
+.n-page .n-go { color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+
 /* where a pinned to-do goes, until there is one */
-.slot.s-pin { position: relative; width: 64%; margin-left: 3%; min-height: 64px; transform: rotate(1.2deg); grid-column: 1 / span 2; grid-row: 4; }
+.slot.s-pin { position: relative; min-height: 96px; transform: rotate(1.2deg); grid-column: 1; grid-row: 4; }
 
 /* offline: a strip of tape across the top */
 .tape { position: absolute; left: 50%; top: -11px; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 7px 14px; white-space: nowrap; transform: translateX(-50%) rotate(-1.5deg);

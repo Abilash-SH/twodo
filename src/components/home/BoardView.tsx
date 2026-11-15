@@ -10,11 +10,12 @@ import { Chat, type Msg } from '@/lib/chat';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, lists, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
-import type { List, PersonKey, Task } from '@/lib/types';
+import type { JournalEntry, List, PersonKey, Task } from '@/lib/types';
 import { dayDiff, firstWord, todayStr, ymd } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { useFlip } from '@/hooks/useFlip';
-import { boardAdd, navTo, openBoardAdd, openList, openSmart, type Entry } from '@/ui/nav';
+import { boardAdd, navTo, openBoardAdd, openJournal, openList, openSmart, type Entry } from '@/ui/nav';
+import { WEATHER, getPage, hasWords, promptFor } from '@/lib/journal';
 import { useStore } from '@/ui/store';
 import { Leaving, Pending, Popping, toggleDone } from '@/ui/tasks';
 import { updateStore } from '@/ui/update';
@@ -30,6 +31,7 @@ interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'wai
 export interface Board {
   msg: MsgNote; today: Task[]; todayMore: number; together: number; list: { l: List; n: number } | null;
   pinned: Task | null; pinnedMore: number; done: { t: Task; who: PersonKey } | null; empty: boolean;
+  page: { mine?: JournalEntry; theirs?: JournalEntry }; // today's shared journal page (never the private one)
 }
 const when = (ts: number): string => {
   const d = new Date(ts), diff = dayDiff(todayStr(), ymd(d));
@@ -76,6 +78,7 @@ export function boardData(): Board {
     list: ranked.length ? { l: ranked[0], n: counts.get(ranked[0].id) || 0 } : null,
     pinned: pins[0] || null, pinnedMore: Math.max(0, pins.length - 1),
     done: recent ? { t: recent, who: recent.doneBy as PersonKey } : null,
+    page: { mine: getPage(false, todayStr(), L.me), theirs: getPage(false, todayStr(), partnerKey()) },
     empty: !today.length && !pins.length && !ranked.length && !recent && !together && (msg.kind === 'hello' || msg.kind === 'invite'), // a request is never hidden
   };
 }
@@ -115,6 +118,23 @@ function MessageNote({ m }: { m: MsgNote }) {
       <span className="n-text">{m.text}</span>
       {stuck ? <span className="n-meta"><Icon name="clock" cls="xs" />{m.kind === 'failed' ? 'Not delivered' : 'Waiting to send'}</span>
         : <span className="n-go">{m.kind === 'new' || m.who !== L.me ? 'Reply' : m.when}<Icon name="chevR" cls="xs" /></span>}
+    </button>
+  );
+}
+
+/** Today's journal page: what your partner wrote (the shared journal only), or a prompt to start it */
+function PageNote({ p }: { p: Board['page'] }) {
+  const pk = partnerKey(), pt = firstWord(person(pk).name), theirs = hasWords(p.theirs) ? p.theirs! : null, mine = hasWords(p.mine);
+  const [who, head, body, go] = theirs ? [pk, `${pt} wrote today`, theirs.text, mine ? 'Read' : 'Read and write']
+    : mine ? [L.me, 'You wrote today', `${pt} hasn’t written yet.`, 'Open'] : [L.me, 'Today’s page', promptFor(todayStr()), 'Write'];
+  const wx = theirs && theirs.mood ? WEATHER.find(w => w[0] === theirs.mood) : null;
+  return (
+    <button className={`note n-page r7${theirs ? ' wrote' : ''}`} type="button" style={colorVar(color(who))} onClick={() => openJournal('us')}
+      aria-label={`${head}${theirs ? `: ${theirs.text.slice(0, 120)}` : ''}. Open the journal`}>
+      <Pin c={color(who)} />
+      <span className="n-h">{head}{wx ? <span className="n-wx" title={wx[2]}><Icon name={wx[1]} cls="xs" /></span> : null}</span>
+      <span className={`n-page-t${theirs ? '' : ' prompt'}`}>{body}</span>
+      <span className="n-go">{go}<Icon name="chevR" cls="xs" /></span>
     </button>
   );
 }
@@ -193,6 +213,7 @@ const Notes = memo(function Notes({ v, online }: { v: number; online: boolean })
           {b.pinnedMore ? <button className="n-go" type="button" onClick={() => openSmart('pinned')}>{b.pinnedMore} more pinned<Icon name="chevR" cls="xs" /></button> : null}
         </div>
       ) : <div className="slot s-pin">Pin a to-do and it stays here</div>}
+      <PageNote p={b.page} />
       {done ? <div className="strip r6"><Icon name="check" cls="xs" /><span>{nameOf(done.who)} ticked off {done.t.title}</span></div> : null}
     </main>
   );

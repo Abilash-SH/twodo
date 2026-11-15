@@ -7,7 +7,7 @@ import { Vault } from '@/lib/vault';
 import { island } from '@/ui/island';
 import { isIOS, isTouch, standalone } from '@/lib/util';
 import { renderNow } from '@/lib/render';
-import { openList, openSearch, openSmart, openWeek } from '@/ui/nav';
+import { openJournal, openList, openSearch, openSmart, openWeek } from '@/ui/nav';
 import { thisWeek, weekPlan } from '@/lib/week';
 import { Install } from '@/ui/install';
 import { colorVar, cssVars } from '../ui/Avatar';
@@ -66,6 +66,8 @@ export function HubView() {
     <div className="group plan-group">
       <button className="cell" type="button" onClick={() => openWeek()}><span className="list-ic" style={colorVar('teal')}><Icon name="week" cls="sm" /></span>
         <span className="grow">This week</span><span className="val">{weekLeft || ''}</span><Icon name="chevR" cls="chev" /></button>
+      <button className="cell" type="button" onClick={() => openJournal()}><span className="list-ic" style={colorVar('pink')}><Icon name="journal" cls="sm" /></span>
+        <span className="grow">Journal</span><Icon name="chevR" cls="chev" /></button>
     </div>
     <div className="sec-h sub">My Lists</div>
     <div className="group">
