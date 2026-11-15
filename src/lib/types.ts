@@ -5,7 +5,10 @@ export type PersonKey = 'a' | 'b';
 export type Assignee = PersonKey | 'both' | null;
 export type Priority = 0 | 1 | 2 | 3;
 
-export interface Person { name: string; color: Color; photo?: string; uid?: string | null; username?: string }
+export type CharKind = 'bun' | 'sprout' | 'pebble' | 'puff' | 'bolt' | 'drop';
+export type RoleKind = 'cheer' | 'calm' | 'cheeky' | 'poet';
+/** char and role: the character each of you picked for Home (docs/characters.md) */
+export interface Person { name: string; color: Color; photo?: string; uid?: string | null; username?: string; char?: CharKind; role?: RoleKind }
 export interface PeopleRec { kind: 'people'; id: 'people'; a: Person; b: Person; updatedAt: number; _s?: 1 }
 export interface List {
   kind: 'list'; id: string; name: string; emoji: string; color: Color; private: boolean; deleted: boolean;

@@ -147,3 +147,10 @@ The Pinboard was chosen over the recommendation above. What that changes from th
 - `home-concepts/build-mockups.py`: generates the HTML (`python3 build-mockups.py standalone <folder>`). Colours,
   type and shapes follow `design.md`. The Settings and To-dos icons are the ones the app already uses
   (lucide-react, ISC licence); every other drawing is original to these mockups.
+
+## Character Home (2026-11-15)
+
+The Pinboard was found too plain, and a decorated cork board was not wanted. Asked for instead: a Home where a
+character you pick, with a role, tells you about your day. Three concepts were drawn (pick screen; A, a little room
+where both characters live and things in the room are doors; B, your character tells you, then simple cards).
+**B was chosen and built.** See `docs/characters.md`.

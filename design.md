@@ -104,11 +104,12 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 - **Menus.** Open from the thing that was pressed, above the sheet layer. At most seven items; destructive last.
 - **The island.** One short line, an optional second line, at most one button. It never takes focus, never covers a
   focused field, and leaves by itself.
-- **The board (Home).** Notes on a dotted board, each pinned with a pin in the colour of whose it is and tilted by a
-  fixed small angle (−2° to 3°). Notes take slots in a two-column grid (`36-board.css`), never pixel positions, so
-  long titles, dark mode and 320 px phones never overlap. A note is a door (one tap, one screen) and says one thing.
-  Two filled buttons sit at the bottom and never move: *Message* in your partner's colour, *Add a to-do* in yours,
-  labels in `--on-color`. Nothing from a secret list, ever: not a title, not a count, not a pin.
+- **Home.** Your character at the top in a soft glow of your colour, with what it says in a bubble (tail towards
+  it), its role in a filled chip and *Change*. Then cards on a page tinted with your colour: your partner's latest
+  message with the writer's character, Today (rings in the colour of whose it is, times on the right), and three
+  doors (This week, Journal, Together). Two filled buttons sit at the bottom and never move: *Message* in your
+  partner's colour, *Add a to-do* in yours, labels in `--on-color`. Nothing from a secret list, ever: not a title, not
+  a count, not a word the character says. `docs/characters.md`.
 - **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
   how full the day is in both of your colours, and a dot marks a busy day (six open to-dos or more). Goals are a short
   list of three at most, ticked in the colour of whoever ticked them. The look back (from Friday) shows what you did,
@@ -124,17 +125,19 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 
 ## 6. Characters
 
-Two small original companions, one for each person. Their brief and prototype are Phase 5 of `ROADMAP.md`; these
-rules already apply.
+Six small original characters (Bun, Sprout, Pebble, Puff, Bolt, Drop); each of you picks one, and a role (Cheerleader,
+Calm friend, Cheeky, Poet) for how it talks to you. `docs/characters.md`.
 
 - **Original.** Drawn for Twodo. No resemblance to an existing character, mascot, game or brand.
-- **Readable small.** A clear silhouette at 44 px. Body in the person's colour, a light face, at most one accent.
-- **Placement.** The chat header, beside the names. Never over a name, the status line or a button, and never taking
-  taps meant for them. Elsewhere only in empty states and celebrations.
-- **Scale.** 44–56 px tall on a phone, up to 72 px on a tablet or desktop.
-- **Behaviour.** Still by default. A reaction lasts under 1.2 s and answers something real: a message arrived, a
-  to-do was ticked, your partner came online. No idle loops, no blinking on a timer.
-- **Fallback.** A static drawing is always there first; anything richer loads afterwards and may fail silently.
+- **Readable small.** A clear silhouette at 44 px. Body in the person's colour, a light face or tummy, darker feet,
+  dark eyes, at most one accent (a leaf, an antenna).
+- **Placement.** Home: yours at the top (96–120 px), the writer's on the latest message (50 px). The character
+  screen and Settings. Never over a name, a status line or a button.
+- **Words.** Short, kind, specific: what is on today, the next thing with a time, what your partner did. Fixed
+  sentences per role, written from your data; never a quote from a message; never anything from a secret list.
+- **Behaviour.** Still by default. A wave when Home appears and a hop when tapped, under 1.2 s, transform only.
+  No idle loops, no blinking on a timer. With Reduce Motion, none.
+- **Fallback.** Plain SVG drawn with the page: nothing to load, nothing that can fail.
 - **Privacy.** A character never reacts to anything in a secret list.
 
 ## 7. Motion
@@ -232,4 +235,3 @@ Places where the app does not yet meet this file. Fix them when touching the are
   Measured while building the planner (test 14 leaves task rows out of its own contrast check for this reason).
 - Complete, pin and delete on a task are easiest to find by swiping or holding. Roadmap item 8.
 - Phone layouts are stretched on tablets in several screens. Roadmap item 10.
-- The characters in section 6 do not exist yet. Roadmap Phase 5.

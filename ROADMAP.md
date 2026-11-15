@@ -29,7 +29,7 @@ and data checks, and a short iPhone checklist.
   storage, notifications and the vault. An assessment only; nothing is packaged or migrated.
 - **Done when:** the document exists and names what must be true of the PWA first.
 
-### 2. A new personal home screen — ✅ Phase 2 (#7, Pinboard chosen) · 🔎 Phase 3 (this PR)
+### 2. A new personal home screen — ✅ Phase 2 (#7) · ✅ Phase 3 (#9, Pinboard) · 🔎 character Home (this PR)
 - **Deliver:** three distinct concepts with phone mockups in empty, busy and offline states, the navigation model,
   advantages and tradeoffs of each, and a recommendation: `docs/home-concepts.md` and `docs/home-concepts/`.
 - **Done when (Phase 2):** a concept is chosen, or a fourth direction is asked for.
@@ -43,12 +43,16 @@ and data checks, and a short iPhone checklist.
 - **State:** built. Measured in headless Chrome at 4× CPU slowdown, not on an iPhone: see the PR. Still to confirm on
   a phone: the keyboard with *Add a to-do*, the edge swipe out of the chat next to iOS's own, and the feel of the tilt.
 
+- **Character Home (2026-11-15):** the Pinboard looked too plain, a decorated cork board was not wanted; asked for
+  instead: "a home screen where a character has a role play model to select". Concepts drawn (pick screen, A little
+  room, B your character tells you); **B chosen and built**: `docs/characters.md`. Test 13 rewritten.
+
 ### 3. The visual system — 🔎 Phase 2
 - **Deliver:** `design.md`: colour roles (both people), type, spacing, shapes, surfaces, components, characters,
   motion, accessibility, a "never" list, a consistency checklist and the known gaps.
 - **Done when:** merged, and referenced from `AGENTS.md`.
 
-### 4. Original 3D companions in the chat header — 📋 Phase 5
+### 4. Original 3D companions in the chat header — 📋 Phase 5 (2D characters now live on Home: item 2)
 - **Deliver:** a character brief (silhouettes, personalities, colours, a small set of reactions, how they sit beside
   the names), then a prototype with three.js and react-three-fiber in versions that work with this repository, loaded
   separately from the chat controls.
@@ -158,6 +162,9 @@ and data checks, and a short iPhone checklist.
 | 2026-11-15 | The planner plans existing to-dos by date; only the week's goals are new records | No time-blocking: to-dos have no durations, and a calendar of hours is not what was asked for |
 | 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
 | 2026-11-15 | A journal page has one record per person: only its writer edits it | Two people never edit the same record at once, so last-write-wins never loses words |
+| 2026-11-15 | Home is led by a character you pick, with a role that sets its voice (concept B) | Chosen over a decorated board and a scene; it keeps every door and the two buttons |
+| 2026-11-15 | What the character says is fixed sentences per role, written from data on the phone | No AI and nothing sent; it can never say anything from a secret list or quote a message |
+| 2026-11-15 | Character and role are two optional fields on each person in the people record | Synced like name and colour; older versions keep unknown fields; no new record or key |
 | 2026-11-15 | The journal is one shared thread of posts, newest first; no prompts, weather or private posts | Asked for "raw": just posting. Newest first keeps the box at the top, clear of the keyboard |
 | 2026-11-15 | Posts keep the `journal` record kind with their own ids | No new kind, key or sync change; older versions ignore posts until they update |
 | 2026-11-15 | The writing field grows in CSS (a hidden copy of the text sizes it), never by measuring | Measuring its height inside the tap cost 44 ms at 4× CPU |

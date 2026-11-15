@@ -24,10 +24,12 @@ after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
 
 Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
-Test 13 covers the board: what its notes say against the To-dos screen, every note as a door, adding and ticking in
-place (and the partner's board following), that nothing from a secret list reaches it (unlocked, ticked off, locked),
-offline and "Waiting to send", the states before pairing and with nothing to show, and text contrast for every
-colour in light and dark.
+Test 13 covers Home: the character's greeting in its role's voice and what it says is on today, the cards against
+the To-dos screen, every door (message, Today, Together, This week, Journal, Change), adding and ticking in place
+(and the partner's character telling them who ticked it off), picking a character and role (it reaches the partner
+and shows on your messages; Settings leads there too), that nothing from a secret list is shown or said (unlocked,
+ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, and text contrast for
+every colour in light and dark.
 
 Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
 on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-dos left open from before, looking

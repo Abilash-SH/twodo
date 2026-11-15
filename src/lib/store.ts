@@ -34,6 +34,7 @@ export const cEmoji = (v: unknown): string => { // one emoji (a single character
   try { return new Intl.Segmenter().segment(t)[Symbol.iterator]().next().value?.segment ?? ''; } catch { return [...t].slice(0, 2).join(''); }
 };
 type Loose = Record<string, unknown>;
+const CHAR_KINDS = ['bun', 'sprout', 'pebble', 'puff', 'bolt', 'drop'], ROLE_KINDS = ['cheer', 'calm', 'cheeky', 'poet'];
 export function cleanPerson(p: unknown, d: Person): Person {
   if (!p || typeof p !== 'object') return { ...d };
   const q = p as Loose;
@@ -41,6 +42,8 @@ export function cleanPerson(p: unknown, d: Person): Person {
   if (!(typeof q.photo === 'string' && q.photo.length < 150000 && PHOTO_RE.test(q.photo))) delete o.photo;
   if (o.uid !== undefined && o.uid !== null && typeof o.uid !== 'string') delete o.uid;
   if (o.username !== undefined && typeof o.username !== 'string') delete o.username;
+  if (o.char !== undefined && !CHAR_KINDS.includes(o.char as string)) delete o.char;  // the character on Home (docs/characters.md)
+  if (o.role !== undefined && !ROLE_KINDS.includes(o.role as string)) delete o.role;
   return o;
 }
 export function cleanRecord(r: unknown): Rec | null {
