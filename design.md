@@ -115,10 +115,12 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   how full the day is in both of your colours, and a dot marks a busy day (six open to-dos or more). Goals are a short
   list of three at most, ticked in the colour of whoever ticked them. The look back (from Friday) shows what you did,
   never a score or a streak. Wide screens: seven columns.
-- **The journal.** One thread for the two of you, newest first: a box to write in at the top (it grows with the text,
-  *Post* in your colour), then the posts, each with its writer's avatar and name in their colour and the time, grouped
-  under day labels. Your own posts have ⋯ for Edit and Delete; your partner's are read only. Nothing else: no prompts,
-  no weather, no tabs, no counts.
+- **The journal.** One thread for the two of you, newest first. At the top your two characters and "You and Deiva",
+  then a writing card (your character, "What's on your mind?", a lock that says only the two of you see it, *Post* in
+  your colour). Each post is a card with a soft wash of its writer's colour and their character; short posts are set
+  big in the rounded face, a few emoji alone bigger still; long ones fold after eight lines. A day pill separates
+  days. Your partner's posts have a heart (double-tap the post, or tap the heart; a heart blooms over the card); yours
+  say who loved them and have ⋯ for Edit and Delete. No prompts, no weather, no counts.
 - **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
   labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
 - **Launch and the first screen.** No app name is shown. Two hearts, one in each of your colours (yours on the

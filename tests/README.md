@@ -40,10 +40,11 @@ back, a secret to-do never showing (it creates a passcode in its own browser onl
 and contrast.
 
 Test 15 covers the journal thread: posting (the box empties, the post is at the top with your name and the time),
-your partner seeing it live in the thread and on their board with no way to edit it, newest first, editing and
-deleting your own post (deleted on both phones, its text gone from storage), a draft kept when you leave and come back,
-nothing private anywhere (no tabs, no lock, every post shared), text contrast for every colour in light and dark, and
-the wide layout.
+your partner seeing it live and Home's journal button saying so, with no way to edit it, newest first, hearts (a
+double tap gives one and a second double tap keeps it, the heart button takes it back, "Deiva loved this" on the
+other phone, a heart is its own record with no text), a draft kept when you leave and come back, editing and
+deleting your own post (deleted on both phones, its text gone from storage), nothing private anywhere, text contrast
+for every colour in light and dark, and the wide layout.
 
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,

@@ -93,3 +93,16 @@ Asked for: "a continuous thread with just posting … keep it raw", and no priva
 - **Older app versions** (the one live this morning) ignore post records (`cleanRecord` returns nothing for an id
   they don't know), so they just don't show new posts until they update.
 - Not stored: likes, read receipts, counts, streaks.
+
+## Hearts (2026-11-15)
+
+Asked for: a journal "more modern than Twitter, X or Threads". Besides the new look, a post can get a heart from the
+person who did not write it (a double tap, or the heart button; the button also takes it back).
+
+- **A heart is its own `journal` record**, id `us-h-<the post's id>-<who gave it>`, `text` always empty, never
+  private. Only the phone of the person who gave it writes it, so a heart never collides with an edit of the post.
+  Taking it back marks it deleted.
+- `cleanRecord` accepts a heart id only when its last letter matches `who`, and forces its text and prompt empty.
+- `posts()` never counts a heart as a post; your partner's heart shows a quiet note ("Deiva loved your post") when
+  the journal is not open.
+- Older versions ignore heart records (they don't know the id). No change to keys, encryption, sync or CSP.

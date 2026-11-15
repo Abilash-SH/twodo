@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 from helpers import TITLES, back_home, contrast_js
 
 JOURNAL = "Object.values(JSON.parse(localStorage.getItem('twodo:data')).journal || {})"
-FIRST = "(() => { const p = document.querySelector('.jt-thread .jt-post'); return p && [p.querySelector('.jt-meta b').textContent, p.querySelector('.jt-text').textContent, !!p.querySelector('.jt-more'), !!p.querySelector('time')]; })()"
+FIRST = "(() => { const p = document.querySelector('.jt-feed .jt-post'); return p && [p.querySelector('.jt-meta b').textContent, p.querySelector('.jt-text').textContent, !!p.querySelector('.jt-dots'), !!p.querySelector('time')]; })()"
 
 async def main():
     async with async_playwright() as p:
@@ -61,8 +61,30 @@ async def main():
         assert await until(B, FIRST, ['Abilash', mine, False, True]) == ['Abilash', mine, False, True], 'read only for the partner'
         await B.click('.jt-compose .jt-ta'); await B.keyboard.type(reply); await B.click('.jt-post-btn'); await B.wait_for_timeout(500)
         assert await until(A, FIRST, ['Deiva', reply, False, True]) == ['Deiva', reply, False, True], 'newest first, live on the other phone'
-        assert await q("document.querySelectorAll('.jt-thread .jt-post')[1].querySelector('.jt-text').textContent") == mine
+        assert await q("document.querySelectorAll('.jt-feed .jt-post')[1].querySelector('.jt-text').textContent") == mine
         print('PASS: your partner sees it live (and Home says so) without a way to edit it; their reply goes on top')
+
+        # ---------- hearts: your partner gives your post a heart (double tap, or the heart); you see who loved it
+        post_b = f'.jt-post[data-id="{rec["id"]}"]'
+        assert await B.locator(f'{post_b} .jt-heart').count() == 1 and not await B.locator(f'{post_b} .jt-dots').count(), "a heart on your partner's post, no menu"
+        assert not await A.locator(f'.jt-post[data-id="{rec["id"]}"] .jt-heart').count(), 'no heart on your own post'
+        await B.locator(post_b).evaluate("e => e.scrollIntoView({ block: 'center' })"); await B.wait_for_timeout(300)
+        box = await B.locator(f'{post_b} .jt-text').bounding_box()
+        await B.mouse.click(box['x'] + 20, box['y'] + 10); await B.wait_for_timeout(90); await B.mouse.click(box['x'] + 20, box['y'] + 10)
+        await B.wait_for_timeout(400)
+        assert await B.evaluate(f"document.querySelector('{post_b} .jt-heart').getAttribute('aria-pressed')") == 'true', 'a double tap gives it your heart'
+        hid = f"us-h-{rec['id']}-" + await B.evaluate("JSON.parse(localStorage.getItem('twodo:local')).me")
+        assert await B.evaluate(JOURNAL + f".some(e => e.id === {hid!r} && !e.deleted && e.text === '')"), 'a heart is its own record, with no text'
+        await B.mouse.click(box['x'] + 20, box['y'] + 10); await B.wait_for_timeout(90); await B.mouse.click(box['x'] + 20, box['y'] + 10); await B.wait_for_timeout(300)
+        assert await B.evaluate(f"document.querySelector('{post_b} .jt-heart').getAttribute('aria-pressed')") == 'true', 'a second double tap never takes it back'
+        loved = await until(A, f"(document.querySelector('.jt-post[data-id=\"{rec['id']}\"] .jt-loved') || {{}}).textContent || ''", 'Deiva loved this')
+        assert loved == 'Deiva loved this', loved
+        await B.click(f'{post_b} .jt-heart'); await B.wait_for_timeout(400)
+        assert await B.evaluate(f"document.querySelector('{post_b} .jt-heart').getAttribute('aria-pressed')") == 'false', 'the heart button takes it back'
+        assert await until(A, f"!document.querySelector('.jt-post[data-id=\"{rec['id']}\"] .jt-loved')", True), 'and it goes on the other phone'
+        await B.click(f'{post_b} .jt-heart'); await B.wait_for_timeout(300)   # and gives it again
+        assert await until(A, f"!!document.querySelector('.jt-post[data-id=\"{rec['id']}\"] .jt-loved')", True)
+        print('PASS: your partner gives your post a heart with a double tap or the heart button (a second double tap keeps it); you see "Deiva loved this"; the button takes it back')
 
         # ---------- a draft waits while you look elsewhere
         await A.click('.jt-compose .jt-ta'); await A.keyboard.type('half a thought')
@@ -74,13 +96,13 @@ async def main():
 
         # ---------- edit and delete your own post
         own = f'.jt-post[data-id="{rec["id"]}"]'
-        await A.click(f'{own} .jt-more'); await A.wait_for_timeout(200)
-        await A.click(f'{own} .jt-acts button:has-text("Edit")'); await A.wait_for_timeout(200)
+        await A.click(f'{own} .jt-dots'); await A.wait_for_timeout(200)
+        await A.click(f'{own} .jt-menu button:has-text("Edit")'); await A.wait_for_timeout(200)
         await A.fill(f'{own} .jt-edit .jt-ta', edited); await A.click(f'{own} .jt-edit .jt-post-btn'); await A.wait_for_timeout(600)
-        assert await q("document.querySelectorAll('.jt-thread .jt-post')[1].querySelector('.jt-text').textContent") == edited
-        assert await until(B, "document.querySelectorAll('.jt-thread .jt-post')[1].querySelector('.jt-text').textContent", edited) == edited, 'the edit reaches the other phone'
-        await A.click(f'{own} .jt-more'); await A.wait_for_timeout(200)
-        await A.click(f'{own} .jt-acts button:has-text("Delete")'); await A.wait_for_timeout(400)
+        assert await q("document.querySelectorAll('.jt-feed .jt-post')[1].querySelector('.jt-text').textContent") == edited
+        assert await until(B, "document.querySelectorAll('.jt-feed .jt-post')[1].querySelector('.jt-text').textContent", edited) == edited, 'the edit reaches the other phone'
+        await A.click(f'{own} .jt-dots'); await A.wait_for_timeout(200)
+        await A.click(f'{own} .jt-menu button:has-text("Delete")'); await A.wait_for_timeout(400)
         await A.click('.alert button[data-r="1"]'); await A.wait_for_timeout(800)
         assert not await q(f"[...document.querySelectorAll('.jt-text')].some(t => t.textContent === {edited!r})")
         gone = await q(JOURNAL + f".find(e => e.id === {rec['id']!r})")
