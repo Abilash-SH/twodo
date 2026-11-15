@@ -2,12 +2,14 @@
 /* Twodo · long-press menu on a task, and the "…" menu on a list */
 import { haptic } from '@/lib/feedback';
 import { scheduleRender } from '@/lib/render';
-import { D, L, commit, listOf, liveTasks, lists, partnerKey, save, updateTask } from '@/lib/store';
+import { D, DAY_RE, L, commit, listOf, liveTasks, lists, partnerKey, save, updateTask } from '@/lib/store';
+import { fromYmd } from '@/lib/util';
+import { weekDays } from '@/lib/week';
 import type { Task } from '@/lib/types';
 import { confirmDialog } from '@/ui/alert';
 import { island } from '@/ui/island';
 import { setMenuContent, showMenu } from '@/ui/menu';
-import { specKey, topSpec, viewPrefs, type Spec } from '@/ui/nav';
+import { plannerWeek, specKey, topSpec, viewPrefs, type Spec } from '@/ui/nav';
 import { deleteTask, duplicateTask, leaveThen, quickDue, shareList, toggleDone, togglePin } from '@/ui/tasks';
 import { openFocus } from '../overlays/FocusOverlay';
 import { openListSheet } from '../sheets/ListSheet';
@@ -15,6 +17,15 @@ import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { TaskRowInner } from './TaskRow';
 
+/** In the planner: the seven days of the week on view, to plan a to-do with one tap */
+function PlanDays({ t }: { t: Task }) {
+  if (topSpec().type !== 'week') return null;
+  return (
+    <div className="mrow wk-mdays"><span className="lbl">Plan</span><div className="opts">{weekDays(plannerWeek()).map(d => (
+      <button key={d} data-m="day" data-v={d} className={t.due === d ? 'on' : ''} type="button" aria-label={fromYmd(d).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}>
+        {fromYmd(d).toLocaleDateString([], { weekday: 'narrow' })}</button>))}</div></div>
+  );
+}
 function TaskMenu({ t }: { t: Task }) {
   const as: [string, React.ReactNode][] = [['', '–'], [L.me, <Avatar key="m" k={L.me} />], [partnerKey(), <Avatar key="p" k={partnerKey()} />], ['both', 'Us']];
   return (<>
@@ -23,6 +34,7 @@ function TaskMenu({ t }: { t: Task }) {
       <button data-m="due" data-v="1" type="button"><Icon name="sunrise" />Tomorrow</button>
       <button data-m="due" data-v="we" type="button"><Icon name="sofa" />Weekend</button>
       <button data-m="due" data-v="nw" type="button"><Icon name="calnext" />Next Week</button></div>
+    <PlanDays t={t} />
     <div className="mgap" />
     <button className="mi" data-m="done" type="button">{t.done ? 'Mark as Not Done' : 'Complete'}<Icon name="check" /></button>
     <button className="mi" data-m="pin" type="button">{t.pinned ? 'Unpin' : 'Pin'}<Icon name="pin" /></button>
@@ -50,6 +62,7 @@ export function openTaskMenu(row: HTMLElement): void {
     onPick: (m, v) => {
       switch (m) {
         case 'due': return quickDue(id, v);
+        case 'day': if (v && DAY_RE.test(v)) { updateTask(id, { due: v }); island({ e: '📅', text: `Planned for ${fromYmd(v).toLocaleDateString([], { weekday: 'long' })}`, ms: 1500 }); } return;
         case 'done': return toggleDone(id);
         case 'pin': return togglePin(id);
         case 'focus': return openFocus(id);

@@ -1,0 +1,97 @@
+/* Twodo · the journal (journal/JournalView.tsx): one page a day in two voices, each half tinted with its person's colour
+   and joined by a small heart. Writing is set in the system serif (New York on iPhone: nothing to download) on faint
+   ruled lines. Only transform and opacity move. Secondary text uses --soft (4.5:1 or more, design.md). */
+.jr { --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); --serif: ui-serif, 'New York', 'Iowan Old Style', Palatino, Georgia, serif; padding-bottom: 24px; }
+.vbody:has(> .jr) { max-width: 760px; }
+.jr-sub { display: flex; align-items: center; gap: 6px; color: var(--soft); }
+.jr-sub .link-btn { margin-left: auto; min-height: 44px; padding: 0 4px; font-weight: 600; color: color-mix(in srgb, var(--accent) 55%, var(--label)); }
+.jr .seg.jtab { margin: 0 16px 16px; }
+
+/* ---------- a page ---------- */
+.jr-page { margin: 0 16px 16px; border-radius: 22px; background: var(--cell); overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 30px -20px rgba(40,20,60,.4); }
+.jr-page.today { margin-bottom: 22px; }
+.jr-ph { display: flex; align-items: baseline; gap: 10px; padding: 16px 18px 8px; }
+.jr-date { margin: 0; font: 600 21px/27px var(--serif); letter-spacing: -.01em; }
+.jr-page.past .jr-date { font-size: 17px; line-height: 22px; }
+.jr-chip { padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--on-color, #1B1730); font-size: 12px; line-height: 16px; font-weight: 700; }
+
+.jr-half { position: relative; padding: 12px 18px 16px; background: color-mix(in srgb, var(--c) 9%, var(--cell)); }
+.jr-half + .jr-half, .jr-seam + .jr-half { margin-top: 2px; }
+.jr-who { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 14px; line-height: 18px; font-weight: 700; color: color-mix(in srgb, var(--c) 40%, var(--label)); }
+.jr-who .av { width: 24px; height: 24px; line-height: 24px; font-size: 12px; }
+.jr-wx { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--c) 18%, var(--cell)); color: var(--label); font-size: 12px; font-weight: 600; }
+.jr-saved { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--soft); }
+.jr-text { margin: 8px 0 0; font: 400 17px/26px var(--serif); white-space: pre-wrap; overflow-wrap: anywhere; }
+.jr-text.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.jr-wait { margin: 6px 0 2px; font: italic 400 16px/24px var(--serif); color: var(--soft); }
+.jr-q { display: flex; align-items: flex-start; gap: 6px; margin: 10px 0 2px; font: italic 600 16px/22px var(--serif); color: color-mix(in srgb, var(--c) 35%, var(--label)); }
+.jr-q span { flex: 1; }
+.jr-qx { width: 44px; height: 44px; margin: -11px -12px -11px 0; flex: none; border: 0; background: none; color: var(--soft); display: grid; place-items: center; }
+
+/* the weather: how your day was, in one tap */
+.jr-weather { display: flex; gap: 2px; margin: 4px 0 2px -8px; }
+.jr-weather button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: var(--soft); display: grid; place-items: center; transition: transform var(--dur-quick) var(--ease-bounce); }
+.jr-weather button .i { width: 22px; height: 22px; }
+.jr-weather button.on { background: color-mix(in srgb, var(--c) 30%, var(--cell)); color: var(--label); }
+.jr-weather button:active { transform: scale(.86); }
+
+/* a prompt for a blank page */
+.jr-prompt { margin: 8px 0 10px; padding: 12px 14px 10px; border-radius: 14px; background: var(--cell); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent); }
+.jr-ph-l { display: block; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.jr-prompt p { margin: 4px 0 8px; font: italic 400 17px/24px var(--serif); }
+.jr-pacts { display: flex; gap: 6px; flex-wrap: wrap; }
+.jr-use { min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--c); color: var(--on-color, #1B1730); font: inherit; font-size: 15px; font-weight: 600; }
+.jr-another { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: color-mix(in srgb, var(--c) 40%, var(--label)); font: inherit; font-size: 15px; font-weight: 600; }
+.jr-use:active, .jr-another:active { opacity: .6; }
+
+/* the writing: serif on faint lines in your colour */
+/* the textarea and a hidden copy of its text share one grid cell; the copy sets the height */
+.jr-grow { display: grid; margin: 6px 0 0; }
+.jr-grow::after { content: attr(data-v) " "; visibility: hidden; }
+.jr-grow::after, .jr-grow > .jr-ta { grid-area: 1 / 1; min-width: 0; min-height: 130px; box-sizing: border-box; padding: 0 0 4px;
+  font: 400 17px/26px var(--serif); white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
+.jr-ta { display: block; width: 100%; margin: 0; border: 0; resize: none; outline: none; overflow: hidden;
+  color: var(--label); caret-color: color-mix(in srgb, var(--c) 55%, var(--label));
+  background: repeating-linear-gradient(180deg, transparent 0 25px, color-mix(in srgb, var(--c) 30%, transparent) 25px 26px); background-attachment: local; }
+.jr-ta::placeholder { color: var(--soft); font-style: italic; }
+
+/* the two halves meet at a small heart */
+.jr-seam { position: relative; height: 0; z-index: 1; }
+.jr-seam span { position: absolute; left: 50%; top: -13px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--cell); color: color-mix(in srgb, var(--pt-c) 55%, var(--label)); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+.jr-seam .i { fill: currentColor; }
+
+.jr-acts { display: flex; gap: 4px; padding: 2px 10px 8px; }
+.jr-acts button { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 8px; border: 0; background: none; color: color-mix(in srgb, var(--accent) 55%, var(--label)); font: inherit; font-size: 15px; font-weight: 600; }
+
+/* a page from a week, a month or a year ago */
+.jr-otd { display: block; width: calc(100% - 32px); margin: 0 16px 22px; padding: 14px 16px; border: 0; border-radius: 18px; text-align: left; color: var(--label); font: inherit;
+  background: var(--cell); background-image: linear-gradient(135deg, color-mix(in srgb, var(--me-c) 15%, transparent), color-mix(in srgb, var(--pt-c) 15%, transparent)); }
+.jr-otd:active { transform: scale(.98); transition: transform var(--dur-quick) var(--ease-out); }
+.jr-otd-h { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.jr-otd-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin: 6px 0 4px; font: italic 400 17px/24px var(--serif); }
+.jr-otd-w { font-size: 13px; color: var(--soft); }
+
+.jr-earlier { margin: 8px 20px 10px; font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.jr-empty { margin: 4px 28px; color: var(--soft); font: italic 400 16px/24px var(--serif); text-align: center; }
+.jr-more { display: block; margin: 0 auto; min-height: 44px; padding: 0 16px; border: 0; background: none; color: color-mix(in srgb, var(--accent) 55%, var(--label)); font: inherit; font-size: 15px; font-weight: 600; }
+
+/* "Just me" before the passcode */
+.jr-gate { margin: 8px 16px; padding: 28px 22px 22px; border-radius: 22px; background: var(--cell); text-align: center; }
+.jr-gate-ic { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: color-mix(in srgb, var(--c-purple) 20%, var(--cell)); color: color-mix(in srgb, var(--c-purple) 45%, var(--label)); }
+.jr-gate h2 { margin: 12px 0 6px; font: 600 21px/27px var(--serif); }
+.jr-gate p { margin: 0 0 16px; color: var(--soft); font-size: 15px; line-height: 21px; }
+.jr-gate-acts { display: flex; flex-direction: column; gap: 8px; }
+.jr-gate .btn:not(.tint) { color: var(--on-color, #1B1730); } /* dark ink on the accent (design.md, Known gaps) */
+
+/* the planner's way into the journal */
+.wk-write { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 6px; padding: 0; border: 0; background: none; color: color-mix(in srgb, var(--accent) 55%, var(--label)); font: inherit; font-size: 15px; font-weight: 600; }
+
+/* wide screens: the two halves of today's page side by side */
+@media (min-width: 700px) {
+  .jr-page.today:has(> .jr-half.theirs) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 2px; }
+  .jr-page.today:has(> .jr-half.theirs) > .jr-ph { grid-column: 1 / -1; }
+  .jr-page.today .jr-seam { display: none; }
+  .jr-page.today .jr-half + .jr-half, .jr-page.today .jr-seam + .jr-half { margin-top: 0; }
+}

@@ -63,9 +63,11 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 | Callout | system | 15 / 20 | 400–600 | Buttons in rows, pill labels |
 | Footnote | system | 13 / 18 | 400 | Notes under groups, sub-titles |
 | Caption | system | 12 / 16 | 500–600 | Timestamps, the "New messages" line, badges |
+| Writing | `--serif` | 17 / 26 | 400 | Only the journal's pages: what you write and read there |
 
 - The system face is the device's own (`-apple-system`, `system-ui`). The rounded face is `ui-rounded`, with the
-  system face as fallback. No web fonts.
+  system face as fallback. The serif face is the device's own (`ui-serif`, New York on Apple devices), used only for
+  writing in the journal so a page reads like paper. No web fonts.
 - Nothing readable is smaller than 12 px. Anything a person must read to act is at least 15 px.
 - Text fields are at least 16 px so iOS does not zoom the page.
 - Numbers that change (timers, counts) use `font-variant-numeric: tabular-nums`.
@@ -109,6 +111,15 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   long titles, dark mode and 320 px phones never overlap. A note is a door (one tap, one screen) and says one thing.
   Two filled buttons sit at the bottom and never move: *Message* in your partner's colour, *Add a to-do* in yours,
   labels in `--on-color`. Nothing from a secret list, ever: not a title, not a count, not a pin.
+- **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
+  how full the day is in both of your colours, and a dot marks a busy day (six open to-dos or more). Goals are a short
+  list of three at most, ticked in the colour of whoever ticked them. The look back (from Friday) shows what you did,
+  never a score or a streak. Wide screens: seven columns.
+- **The journal.** One page a day, written in two voices: your half and your partner's, each tinted with its writer's
+  colour and joined by a small heart. You write on faint lines in the serif face; it saves itself. Your partner's
+  half is never editable on your phone. The weather (sunny to stormy) says how the day felt, without a score. A prompt
+  is offered for a blank half, never forced. *Just me* has one voice and sits behind the Secret-list passcode.
+  Wide screens: the two halves side by side.
 - **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
   labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
 - **Empty states.** One emoji or character, one sentence, one button. Friendly, never guilt.
@@ -220,6 +231,8 @@ Places where the app does not yet meet this file. Fix them when touching the are
   (test 13 measures every piece of text on the board). The rest of the app: same phase, same yes needed.
 - Eight styles use 11–11.5 px text (badges, the "me" tag, reaction counts, the status line under the name in the chat
   header). Target: 12 px. Roadmap Phase 6.
+- Priority marks (`!`, `!!`, `!!!`) in task rows use the plain palette blue, orange and red: about 3:1 on a white row.
+  Measured while building the planner (test 14 leaves task rows out of its own contrast check for this reason).
 - Complete, pin and delete on a task are easiest to find by swiping or holding. Roadmap item 8.
 - Phone layouts are stretched on tablets in several screens. Roadmap item 10.
 - The characters in section 6 do not exist yet. Roadmap Phase 5.

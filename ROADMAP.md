@@ -117,6 +117,26 @@ and data checks, and a short iPhone checklist.
 - Secret information stays out of the home screen, character reactions, notifications, analytics, shared views and
   exports.
 
+### 14. Weekly planner — 🔎 #10
+- **Asked for 2026-11-15:** a weekly planner, designed after looking at the best of what exists (paper-style weekly
+  planners, timeline planners, weekly planning and review rituals) and made for two.
+- **Built:** To-dos → *This week*. Up to three shared goals for the week; a sticky ribbon of seven days whose bars show
+  how full each day is and for whom; the days with their to-dos; *Not planned yet*; to-dos left open from before;
+  from Friday, a look back (no streaks, no scores). Hold a to-do to plan it for a day. Wide screens: seven columns.
+- **Data:** goals are a new record kind; planning only changes a to-do's date. `docs/journal-and-planner.md`.
+- **Done when:** test 14 passes; checked on an iPhone (the ribbon while scrolling, *Add to …* with the keyboard).
+- **Next:** the journal (item 15) adds "Write about the week" to the look back.
+
+### 15. Journal — 🔎 this PR
+- **Asked for 2026-11-15**, with the planner: a journal for the two of you and a private one each.
+- **Built:** To-dos → *Journal*. *Us*: one page a day in two voices (yours and your partner's), each half saved as
+  you write, with the day's weather and an optional prompt; your partner's half is read-only on your phone; a note on
+  the board when one of you has written today; pages from a week, a month or a year ago. *Just me*: the same page
+  with one voice, behind the Secret-list passcode and Face ID. Wide screens: the halves side by side.
+- **Data:** a new `journal` record kind; private pages only inside the vault. `docs/journal-and-planner.md`.
+- **Done when:** test 15 passes; checked on an iPhone (writing with the keyboard up, the passcode gate, the board
+  note on the other phone).
+
 ## Decisions
 
 | Date | Decision | Why |
@@ -136,6 +156,13 @@ and data checks, and a short iPhone checklist.
 | 2026-11-13 | The chat is a screen that only sits directly above the board, and stays mounted while closed | Back from the chat always leads to the board; drawing a long conversation inside the tap cost 217 ms at 4× CPU |
 | 2026-11-13 | A to-do added from the board is due today | It then appears on the board's Today note straight away, where it was added |
 | 2026-11-13 | In the chat the left 32 px belong to Back; a swipe on a message is only ever a reply | The chat is no longer Home, so it needs a way back that never fights the reply swipe |
+| 2026-11-15 | The planner plans existing to-dos by date; only the week's goals are new records | No time-blocking: to-dos have no durations, and a calendar of hours is not what was asked for |
+| 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
+| 2026-11-15 | A journal page has one record per person: only its writer edits it | Two people never edit the same record at once, so last-write-wins never loses words |
+| 2026-11-15 | *Just me* pages live only in the vault and need the existing passcode first | No new keys or encryption: the same protection and rules as secret lists, and nothing private is ever written in plain text |
+| 2026-11-15 | The journal has weather, never a mood score, streak or word count | How a day felt, without measuring anyone (roadmap item 9) |
+| 2026-11-15 | The writing field grows in CSS (a hidden copy of the text sizes it), never by measuring | Measuring its height inside the tap cost 44 ms at 4× CPU |
+| 2026-11-15 | A screen that opens draws its top inside the tap and the rest just after | Opening the week cost a 200 ms frame at 4× CPU; the slide runs on the compositor while the rest is drawn |
 
 ## How to pick up work
 

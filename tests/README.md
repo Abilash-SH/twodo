@@ -29,6 +29,17 @@ place (and the partner's board following), that nothing from a secret list reach
 offline and "Waiting to send", the states before pairing and with nothing to show, and text contrast for every
 colour in light and dark.
 
+Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
+on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-dos left open from before, looking
+back, a secret to-do never showing (it creates a passcode in its own browser only), seven columns on wide screens,
+and contrast.
+
+Test 15 covers the journal: your half saving itself (weather, a prompt, words), your partner reading it on their
+board and in the journal without a way to edit it, an emptied half being removed (from their board too), "A week
+ago", and *Just me*: only after a passcode, never stored in plain text, never in any request the phone sends, never
+on the partner's phone, the board or in a backup download, locked after a reload or the Lock button. Also the
+planner's "Write about the week" (from Friday; skipped earlier in the week), contrast and the wide layout.
+
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
 1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be

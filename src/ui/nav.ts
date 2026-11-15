@@ -6,14 +6,16 @@ import { MS } from '@/lib/motion';
 import { Auth } from '@/lib/firebase';
 import { Push } from '@/lib/push';
 import { renderNow, scheduleRender } from '@/lib/render';
-import { D, L, SMART, person, type SmartKey } from '@/lib/store';
+import { D, DAY_RE, L, SMART, person, type SmartKey } from '@/lib/store';
+import { thisWeek, weekDays } from '@/lib/week';
+import { todayStr } from '@/lib/util';
 import type { ViewPrefs } from '@/lib/types';
 import { firstWord } from '@/lib/util';
 import { flushSync } from 'react-dom';
 import { closeMenu } from './menu';
 import { createStore } from './store';
 
-export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips';
+export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips' | 'week' | 'journal';
 export interface Spec { type: ViewType; key?: SmartKey; id?: string }
 export interface Entry { id: number; spec: Spec; phase: 'in' | 'idle' | 'out' }
 export const navState = createStore<{ entries: Entry[] }>({ entries: [] });
@@ -76,6 +78,8 @@ export function viewTitle(spec: Spec): string {
   if (spec.type === 'search') return 'Search';
   if (spec.type === 'tips') return 'Tips';
   if (spec.type === 'todos') return 'To-dos';
+  if (spec.type === 'week') return 'Week';
+  if (spec.type === 'journal') return 'Journal';
   if (spec.type === 'list') { const l = D.lists[spec.id!]; return l ? l.name : 'Secret'; } // a locked secret list isn't loaded
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
   return SMART[spec.key!].title;
@@ -159,6 +163,18 @@ function revealChat(): void {
   popView(); // Home and the chat stay open: the trap stays as it is
 }
 export const openSmart = (key: SmartKey): void => { pushView({ type: 'smart', key }); };
+/** The journal: "Us" (shared) or "Just me" (private, behind the passcode) */
+export function openJournal(tab?: 'us' | 'me'): void { if (tab) viewPrefs('journal').tab = tab; if (topSpec().type === 'journal') return; pushView({ type: 'journal' }); }
+/** The planner always opens on this week, at today */
+export function openWeek(): void { const vp = viewPrefs('week'); vp.week = undefined; vp.day = undefined; pushView({ type: 'week' }); }
+/** the week the planner shows (its Monday) */
+export function plannerWeek(): string { const w = viewPrefs('week').week; return w && DAY_RE.test(w) ? w : thisWeek(); }
+/** the day new to-dos go to in the planner: the one picked, else today (this week) or the Monday */
+export function plannerDay(): string {
+  const start = plannerWeek(), days = weekDays(start), d = viewPrefs('week').day;
+  if (d && days.includes(d)) return d;
+  return days.includes(todayStr()) ? todayStr() : start;
+}
 export const composerState = createStore<{ listPick: string | null }>({ listPick: null });
 export const openList = (id: string): void => { composerState.set({ listPick: null }); pushView({ type: 'list', id }); };
 // The search field is focused inside the same tap that opened it: that's the only way an iPhone shows the keyboard

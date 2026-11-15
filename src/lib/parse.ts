@@ -42,7 +42,8 @@ function resolveList(tok: string): List | null {
 }
 
 type Rep = (substring: string, ...args: string[]) => unknown;
-export function parseTask(input: string, ignored: Set<string> = new Set()): Parsed {
+/** `day`: the day the screen is about (the planner's picked day): a time on its own then means that day */
+export function parseTask(input: string, ignored: Set<string> = new Set(), day: string | null = null): Parsed {
   const r: Parsed = { title: '', due: null, time: null, priority: null, tags: [], listId: null, assignee: null, repeat: null, chips: [], raw: {} };
   let s = ' ' + String(input).replace(/\s+/g, ' ').trim() + ' ';
   const now = new Date(), t0 = todayStr();
@@ -155,7 +156,7 @@ export function parseTask(input: string, ignored: Set<string> = new Set()): Pars
   // Fill in implied dates
   if (r.repeat && pendWd != null && !r.due) r.due = upcomingWd(pendWd, false);
   if (r.repeat && !r.due) r.due = t0;
-  if (r.time && !r.due && !ignored.has('due')) r.due = r.time <= nowHM() ? ymd(addDays(now, 1)) : t0;
+  if (r.time && !r.due && !ignored.has('due')) r.due = day || (r.time <= nowHM() ? ymd(addDays(now, 1)) : t0);
 
   r.title = s.replace(/\s+/g, ' ').trim().replace(/(?:^|\s)(?:on|at|by|due|in|every|for)$/i, '').trim() || String(input).trim();
 

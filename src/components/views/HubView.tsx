@@ -7,7 +7,8 @@ import { Vault } from '@/lib/vault';
 import { island } from '@/ui/island';
 import { isIOS, isTouch, standalone } from '@/lib/util';
 import { renderNow } from '@/lib/render';
-import { openList, openSearch, openSmart } from '@/ui/nav';
+import { openJournal, openList, openSearch, openSmart, openWeek } from '@/ui/nav';
+import { thisWeek, weekPlan } from '@/lib/week';
 import { Install } from '@/ui/install';
 import { colorVar, cssVars } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
@@ -47,6 +48,7 @@ export function HubView() {
   const all = liveTasks(), withSecret = liveTasks({ secret: true }), cnt = (k: SmartKey) => all.filter(SMART[k].match).length;
   const doneWeek = all.filter(t => t.done && (t.doneAt || 0) > Date.now() - 7 * 864e5).length;
   const streak = calcStreak();
+  const weekLeft = weekPlan(thisWeek()).days.reduce((n, d) => n + d.open.length, 0);
   const stats = [streak ? `🔥 ${streak}-day streak` : '', doneWeek ? `💞 ${doneWeek} done together this week` : ''].filter(Boolean).join(' · ');
   return (<>
     <h1 className="large-title">To-dos</h1>{stats ? <div className="subtitle">{stats}</div> : null}
@@ -61,6 +63,12 @@ export function HubView() {
       );
     })}</div>
     <button className="hub-done" type="button" onClick={() => openSmart('done')}><Icon name="check" cls="sm" /><span className="grow">Completed</span><span className="val">{doneWeek ? `${doneWeek} this week` : ''}</span><Icon name="chevR" cls="chev" /></button>
+    <div className="group plan-group">
+      <button className="cell" type="button" onClick={() => openWeek()}><span className="list-ic" style={colorVar('teal')}><Icon name="week" cls="sm" /></span>
+        <span className="grow">This week</span><span className="val">{weekLeft || ''}</span><Icon name="chevR" cls="chev" /></button>
+      <button className="cell" type="button" onClick={() => openJournal()}><span className="list-ic" style={colorVar('pink')}><Icon name="journal" cls="sm" /></span>
+        <span className="grow">Journal</span><Icon name="chevR" cls="chev" /></button>
+    </div>
     <div className="sec-h sub">My Lists</div>
     <div className="group">
       {lists().filter(l => !l.private).map(l => <ListRow key={l.id} l={l} n={withSecret.filter(t => !t.done && listOf(t).id === l.id).length} />)}
