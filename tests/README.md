@@ -34,11 +34,11 @@ on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-do
 back, a secret to-do never showing (it creates a passcode in its own browser only), seven columns on wide screens,
 and contrast.
 
-Test 15 covers the journal: your half saving itself (weather, a prompt, words), your partner reading it on their
-board and in the journal without a way to edit it, an emptied half being removed (from their board too), "A week
-ago", and *Just me*: only after a passcode, never stored in plain text, never in any request the phone sends, never
-on the partner's phone, the board or in a backup download, locked after a reload or the Lock button. Also the
-planner's "Write about the week" (from Friday; skipped earlier in the week), contrast and the wide layout.
+Test 15 covers the journal thread: posting (the box empties, the post is at the top with your name and the time),
+your partner seeing it live in the thread and on their board with no way to edit it, newest first, editing and
+deleting your own post (deleted on both phones, its text gone from storage), a draft kept when you leave and come back,
+nothing private anywhere (no tabs, no lock, every post shared), text contrast for every colour in light and dark, and
+the wide layout.
 
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,

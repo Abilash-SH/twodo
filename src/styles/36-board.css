@@ -82,13 +82,12 @@ span.n-go { margin-top: 8px; }
 .strip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .strip .i { color: color-mix(in srgb, var(--pt-c) 50%, var(--label)); }
 
-/* today's journal page: lined paper in the colour of whoever wrote */
+/* the journal: today's newest post, on lined paper in the colour of whoever wrote it */
 .n-page { padding: 16px 12px 12px 14px; background-color: color-mix(in srgb, var(--c) 12%, var(--bg2));
   background-image: repeating-linear-gradient(180deg, transparent 0 20px, color-mix(in srgb, var(--c) 26%, transparent) 20px 21px); background-position: 0 37px; }
 .n-page .n-h { display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 15px; line-height: 20px; font-weight: 700; }
-.n-wx { display: inline-flex; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
 .n-page-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 4px; font: 400 15px/21px ui-serif, 'New York', 'Iowan Old Style', Georgia, serif; overflow-wrap: anywhere; }
-.n-page-t.prompt { font-style: italic; }
+.n-page-t.none { color: var(--soft); }
 .n-page .n-go { color: color-mix(in srgb, var(--c) 45%, var(--label)); }
 
 /* where a pinned to-do goes, until there is one */

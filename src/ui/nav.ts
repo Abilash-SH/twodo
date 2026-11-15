@@ -164,7 +164,7 @@ function revealChat(): void {
 }
 export const openSmart = (key: SmartKey): void => { pushView({ type: 'smart', key }); };
 /** The journal: "Us" (shared) or "Just me" (private, behind the passcode) */
-export function openJournal(tab?: 'us' | 'me'): void { if (tab) viewPrefs('journal').tab = tab; if (topSpec().type === 'journal') return; pushView({ type: 'journal' }); }
+export function openJournal(): void { if (topSpec().type === 'journal') return; pushView({ type: 'journal' }); }
 /** The planner always opens on this week, at today */
 export function openWeek(): void { const vp = viewPrefs('week'); vp.week = undefined; vp.day = undefined; pushView({ type: 'week' }); }
 /** the week the planner shows (its Monday) */

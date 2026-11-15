@@ -72,11 +72,12 @@ export function cleanRecord(r: unknown): Rec | null {
     return { ...q, kind: 'goal', id: cStr(q.id, 80), week, text: cStr(q.text, 200), done: !!q.done, order: cNum(q.order),
       createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as Goal;
   }
-  if (q.kind === 'journal') { // one half of one day's page (docs/journal-and-planner.md)
+  if (q.kind === 'journal') { // a post in the shared thread, or an older day page (docs/journal-and-planner.md)
     const date = typeof q.date === 'string' && DAY_RE.test(q.date) ? q.date : null, who = q.who === 'a' || q.who === 'b' ? q.who : null;
     if (!date || !who) return null;
-    const priv = q.private === true, id = journalId(priv, date, who);
-    if (q.id !== id) return null; // a page can't pretend to be another day, person or journal
+    const priv = q.private === true, post = !priv && typeof q.id === 'string' && POST_RE.test(q.id);
+    const id = post ? q.id as string : journalId(priv, date, who);
+    if (q.id !== id) return null; // a page can't pretend to be another day, person or journal; a post is never private
     const mood = Math.floor(cNum(q.mood));
     return { ...q, kind: 'journal', id, date, who, private: priv, text: cStr(q.text, 20000), prompt: cStr(q.prompt, 200),
       mood: (mood >= 0 && mood <= 5 ? mood : 0) as Mood, createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as JournalEntry;
@@ -84,6 +85,7 @@ export function cleanRecord(r: unknown): Rec | null {
   return null;
 }
 export const journalId = (priv: boolean, date: string, who: PersonKey): string => `${priv ? 'me' : 'us'}-${date}-${who}`;
+const POST_RE = /^us-p[0-9a-z]{10,24}$/;
 export function cleanMap<T extends Rec>(m: unknown): Record<string, T> {
   const out: Record<string, T> = {};
   for (const [k, v] of Object.entries(m && typeof m === 'object' ? m : {})) { const c = cleanRecord(v); if (c && c.id === k) out[k] = c as T; }

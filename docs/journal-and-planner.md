@@ -1,8 +1,11 @@
 # Journal and weekly planner: what they store
 
 Roadmap rule: a feature that needs a schema, storage or security change is written down before it is built.
-This is that note for two features asked for on 2026-11-15: a **weekly planner** and a **journal** (a shared one for
-the two of you, and a private one each).
+This is that note for two features asked for on 2026-11-15: a **weekly planner** and a **journal**.
+
+> **Changed the same day (2026-11-15, second request):** the journal is now **one shared thread of posts**, "raw":
+> no prompts, no weather, no tabs and **no private journal**. See [The journal as a thread](#the-journal-as-a-thread)
+> below; the rest of this note describes the first version and still applies where it says so.
 
 ## Summary
 
@@ -67,3 +70,26 @@ interface JournalEntry {  // one person's half of one day's page, in one journal
 
 Streaks, word counts, reading receipts for journal entries, location, photos and analytics. Moods stay inside the
 entry they belong to.
+
+## The journal as a thread
+
+Asked for: "a continuous thread with just posting … keep it raw", and no private posts.
+
+| | Before (one page a day) | Now (a thread) |
+| --- | --- | --- |
+| Record | `journal`, id `us-<date>-<who>` (one half of one day) | `journal`, id `us-p<time><random>` (one post) |
+| Fields used | `text`, `mood` (weather), `prompt` | `text` only; `mood` stays 0 and `prompt` empty |
+| Who edits | its writer | its writer (⋯ → Edit or Delete) |
+| Private | *Just me* pages (`private: true`), only in the vault | none: every post is shared with your partner |
+
+- **Same record kind, same key (`j:<id>`), same sync and encryption.** `cleanRecord` accepts a post id only for a
+  shared record (`private` false, `^us-p[0-9a-z]{10,24}$`); a day page must still match `us-|me-<date>-<who>`. So a
+  post can never be private, and a record still can't pretend to be another day or person.
+- **Older pages** (one per person per day) appear in the thread as posts, at the time they were first written.
+  Their weather and prompt are no longer shown.
+- **Deleting a post** marks it deleted and empties its text, so the words leave both phones and the server copy.
+- **Private pages written before this change** stay encrypted in the vault, untouched (the vault code that keeps them
+  is unchanged), but the journal no longer shows or creates them. Nothing private is ever synced, exported or shown.
+- **Older app versions** (the one live this morning) ignore post records (`cleanRecord` returns nothing for an id
+  they don't know), so they just don't show new posts until they update.
+- Not stored: likes, read receipts, counts, streaks.

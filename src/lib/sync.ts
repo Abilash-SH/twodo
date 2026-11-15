@@ -14,6 +14,7 @@ import { Pair } from './pair';
 import { Remind } from './push';
 import { scheduleRender } from './render';
 import { D, L, cleanRecord, hooks, partnerKey, ptName, recKey, save, setPeopleRec } from './store';
+import { journalOpen } from './journal';
 import { applyTheme } from './theme';
 import type { JournalEntry, List, PeopleRec, Rec, Task } from './types';
 import { firstWord, todayStr } from './util';
@@ -120,10 +121,10 @@ export const Sync = {
     else if (!prev && t.createdBy === pk && (t.assignee === L.me || t.assignee === 'both'))
       this.note({ e: '✨', text: `${ptName()} added “${t.title}”`, sub: t.assignee === L.me ? 'For you' : 'For both of you' });
   },
-  /** your partner wrote on today's page: a quiet note (never the text itself) */
+  /** your partner posted in the journal: a quiet note (never the text itself) */
   notePage(prev: JournalEntry | undefined, e: JournalEntry) {
-    if (!this.ready || e.deleted || !e.text.trim() || e.who !== partnerKey() || e.date !== todayStr() || (prev && prev.text.trim())) return;
-    this.note({ e: '📖', text: `${ptName()} wrote on today’s page` });
+    if (!this.ready || journalOpen.now || e.deleted || e.private || !e.text.trim() || e.who !== partnerKey() || e.date !== todayStr() || (prev && prev.text.trim())) return;
+    this.note({ e: '📖', text: `${ptName()} posted in the journal` });
   },
   note(n: { e: string; text: string; sub?: string }) {
     this.notes.push(n);

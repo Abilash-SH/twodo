@@ -42,7 +42,7 @@ const TIPS: Tip[] = [
   { c: 'gestures', e: '↩️', t: 'Swipe a message to reply', d: 'In the chat, drag a message to the right and let go. Your reply quotes it. Tap the quote to jump back to the original.' },
   { c: 'gestures', e: '⬇️', t: 'Drag sheets down to close', d: 'Task details, Settings and other cards close when you pull them down.', demo: 'sheetdown' },
   // Organize
-  { c: 'together', e: '📖', t: 'A journal for two', d: 'To-dos → **Journal**, or the page on your board. One page a day: your half and theirs. Say how your weather was, take a prompt if the page feels blank. **Just me** is your private journal, locked with your passcode and never synced.' },
+  { c: 'together', e: '📖', t: 'A journal for two', d: 'To-dos → **Journal**, or the journal note on your board. One thread for both of you: write something and **Post**. Tap ⋯ on your own post to edit or delete it.' },
   { c: 'organize', e: '🗓️', t: 'Plan the week together', d: 'To-dos → **This week**: up to three goals for the week, then every day with what’s on it. The bar under each day shows how full it is, in your colours. Hold a to-do and tap a day to plan it.' },
   { c: 'organize', e: '☀️', t: 'Today, sorted for you', d: 'Today splits into Overdue, Morning, Afternoon and Tonight. Upcoming groups tasks by day, then by month.' },
   { c: 'organize', e: '👥', t: 'Filter by person', d: () => `Every list has an **All · ${shortName(myName())} · ${shortName(ptName())} · Us** switch at the top.` },
