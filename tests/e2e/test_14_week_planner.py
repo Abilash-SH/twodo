@@ -78,7 +78,11 @@ async def main():
 
         await A.click('.wk-tile >> nth=2'); await A.wait_for_timeout(700)   # Wednesday
         wed = await q("document.querySelectorAll('.wk-day')[2].id.slice(3)")
-        assert await q(LABEL) == '📥 Inbox · ' + await q(f"(() => {{ const d = new Date('{wed}T12:00'); return d.toLocaleDateString([], {{ month: 'short', day: 'numeric' }}); }})()"), await q(LABEL)
+        # the label names the day as everywhere else (fmtDate): Today, Tomorrow, a weekday within the week ahead, else the date
+        want = await q(f"""(() => {{ const d = new Date('{wed}T12:00'), t = new Date(); t.setHours(12, 0, 0, 0); const n = Math.round((d - t) / 864e5);
+          return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : n === -1 ? 'Yesterday' : n > 1 && n < 7 ? d.toLocaleDateString([], {{ weekday: 'short' }})
+            : d.toLocaleDateString([], {{ month: 'short', day: 'numeric' }}); }})()""")
+        assert await q(LABEL) == '📥 Inbox · ' + want, (await q(LABEL), want)
         await A.click('#cta'); await A.keyboard.type(f'Gym {stamp} 7am'); await A.keyboard.press('Enter'); await A.wait_for_timeout(700)
         await q("document.activeElement.blur()"); await A.wait_for_timeout(300)
         gym = await q(TASKS + f".find(t => t.title === 'Gym {stamp}')")
