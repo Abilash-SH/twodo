@@ -57,6 +57,7 @@ export const Sync = {
     if (!navigator.onLine) this.set('error', 'Offline — will sync when you’re back');
     this.live = Live.open({
       path: () => `spaces/${this.space}/r`,
+      records: true,
       on: (_type, msg) => { this.chain = this.chain.then(() => this.onEvent(msg)).catch(err => console.warn('sync', err)); },
       onDown: () => (L.auth && L.auth.expired ? this.set('error', 'Signed out — please sign in again')
         : this.set(navigator.onLine ? 'connecting' : 'error', navigator.onLine ? '' : 'Offline — will sync when you’re back')),
@@ -73,7 +74,6 @@ export const Sync = {
     } else {
       const parts = path.split('/').filter(Boolean);
       if (parts.length === 1) await this.apply(parts[0], data as Enc);
-      else await this.apply(parts[0], await dbGet<Enc>(`spaces/${this.space}/r/${encodeURIComponent(parts[0])}`));
     }
     if (this.state !== 'live') this.set('live');
   },

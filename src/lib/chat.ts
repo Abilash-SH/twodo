@@ -5,7 +5,7 @@
    Everything is encrypted with the space key; Firebase sees only who wrote and when. */
 import { CFG } from './config';
 import { decryptObj, encryptObj } from './crypto';
-import { dbGet, dbPatch, dbPut } from './firebase';
+import { dbPatch, dbPut } from './firebase';
 import { FX } from './fx';
 import { Live, type Stream, type StreamMsg } from './live';
 import { scheduleRender } from './render';
@@ -42,6 +42,7 @@ export const Chat = {
   space: null as string | null, msgs: {} as Record<string, Msg>, rx: {} as Record<string, Record<string, string>>, played: {} as Record<string, 1>,
   read: 0, ver: 0, loaded: false, loadedE: false,
   liveM: null as Stream | null, liveE: null as Stream | null, eTree: {} as ETree, dcache: new Map<string, unknown>(),
+  writeGen: 0, writes: new Map<string, Promise<void>>(),
   chainM: Promise.resolve(), chainE: Promise.resolve(),
   typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0,
   lastPxD: null as string | null, lastMxD: null as string | null, typingT: undefined as ReturnType<typeof setTimeout> | undefined,
@@ -79,15 +80,23 @@ export const Chat = {
     this.stop();
     if (!this.ready()) { this.updateBadge(); return; }
     if (this.space !== Sync.space) this.load();
-    this.liveM = Live.open({ path: () => this.base() + '/m', query: () => this.mQuery(),
-      on: (type, m) => { this.chainM = this.chainM.then(() => this.onM(type, m)).catch(err => console.warn('chat', err)); } });
+    const gen = this.writeGen;
+    this.liveM = Live.open({ path: () => this.base() + '/m', query: () => this.mQuery(), records: true,
+      on: (type, m) => { this.chainM = this.chainM.then(() => gen === this.writeGen ? this.onM(type, m) : undefined).catch(err => console.warn('chat', err)); } });
     this.liveE = Live.open({ path: () => this.base() + '/e',
-      on: (type, m) => { this.chainE = this.chainE.then(() => this.onE(type, m)).catch(err => console.warn('chat', err)); } });
+      on: (type, m) => { this.chainE = this.chainE.then(() => gen === this.writeGen ? this.onE(type, m) : undefined).catch(err => console.warn('chat', err)); } });
     this.updateBadge();
     for (const m of Object.values(this.msgs)) if (m.status === 'failed' && m.f === L.auth!.uid) this.retry(m.id);
     this.xPending = true; // say we're here once we know what we've already read (a new phone starts at 0)
   },
-  stop() { Live.close(this.liveM); Live.close(this.liveE); this.liveM = this.liveE = null; },
+  stop() {
+    Live.close(this.liveM); Live.close(this.liveE); this.liveM = this.liveE = null;
+    this.writeGen++;
+    // A new session retries its latest local state. Keep in-flight queues until
+    // they settle so a restart cannot let an older request overtake that retry.
+    for (const id of this.writes.keys()) if (this.msgs[id]?.status === 'sending') this.msgs[id].status = 'failed';
+    this.dcache.clear(); this.eTree = {}; this.lastPxD = this.lastMxD = null; this.loadedE = false;
+  },
   // On a reconnect only fetch what can have changed: anything newer than each person's latest message we already
   // have, minus 20 minutes (Undo Send works for 15). Message ids start with the sender's clock, so this is per sender.
   mQuery(): string {
@@ -103,18 +112,21 @@ export const Chat = {
   },
 
   async onM(_type: string, { path, data }: StreamMsg) {
+    const gen = this.writeGen;
     const parts = path.split('/').filter(Boolean);
     let entries: [string, Enc | null][];
     if (!parts.length) entries = Object.entries((data && typeof data === 'object' ? data : {}) as Record<string, Enc>);
     else if (parts.length === 1) entries = [[parts[0], data as Enc]];
-    else entries = [[parts[0], await dbGet<Enc>(`${this.base()}/m/${encodeURIComponent(parts[0])}`)]];
+    else return; // record streams reconstruct nested patches before dispatching
     const fresh: Msg[] = [];
     for (const [id, v] of entries) {
       if (!MSG_ID.test(id)) continue; // ids are ours (time + random): anything else isn't a message
       if (!v || typeof v.d !== 'string' || typeof v.f !== 'string') continue; // null = fell out of the 300-message window: keep the local copy
       const prev = this.msgs[id];
-      if (prev && prev._u === v.u) continue;
+      if (prev && prev._u >= cNum(v.u)) continue;
       let o: Record<string, unknown>; try { o = await decryptObj(Sync.key!, v.d); } catch { continue; }
+      if (gen !== this.writeGen) return;
+      if (this.msgs[id] && this.msgs[id]._u >= cNum(v.u)) continue; // local edit while decryption was pending
       if (!o || typeof o !== 'object') continue;
       const ot = o.task as Record<string, unknown> | null, orp = o.rp as Record<string, unknown> | null;
       const tk = ot && typeof ot === 'object' ? { id: cStr(ot.id, 80), title: cStr(ot.title, 2000), due: DAY_RE.test(String(ot.due)) ? ot.due as string : null, time: TIME_RE.test(String(ot.time)) ? ot.time as string : null } : null;
@@ -141,17 +153,27 @@ export const Chat = {
     if (type === 'put') return set(parts, data);
     for (const [k, v] of Object.entries((data && typeof data === 'object' ? data : {}) as Record<string, unknown>)) set([...parts, ...k.split('/').filter(Boolean)], v);
   },
-  async dec<T>(v: Enc | undefined): Promise<T | null> {
+  async dec<T>(v: Enc | undefined, cache = true): Promise<T | null> {
     if (!v || typeof v.d !== 'string') return null;
-    if (this.dcache.has(v.d)) return this.dcache.get(v.d) as T;
-    try { const o = await decryptObj<T>(Sync.key!, v.d); this.dcache.set(v.d, o); return o; } catch { return null; }
+    if (cache && this.dcache.has(v.d)) return this.dcache.get(v.d) as T;
+    const gen = this.writeGen;
+    try {
+      const o = await decryptObj<T>(Sync.key!, v.d);
+      if (gen !== this.writeGen) return null;
+      if (!cache) return o;
+      // Heartbeats continually create new ciphertext; never keep an unbounded history.
+      if (this.dcache.size >= 512) this.dcache.delete(this.dcache.keys().next().value!);
+      this.dcache.set(v.d, o); return o;
+    } catch { return null; }
   },
   async onE(type: string, { path, data }: StreamMsg) {
+    const gen = this.writeGen;
     this.mirror(type, path, data);
     const pu = this.partnerUid(), pv = pu ? this.eTree.x && this.eTree.x[pu] : undefined;
     if (pv && pv.d !== this.lastPxD) {
       this.lastPxD = pv.d || null;
-      const px = await this.dec<{ typing?: number; read?: number; at?: number; on?: number }>(pv);
+      const px = await this.dec<{ typing?: number; read?: number; at?: number; on?: number }>(pv, false);
+      if (gen !== this.writeGen) return;
       if (px) {
         // a heartbeat we hear live is "now" by our own clock; one from the first snapshot can be old, so trust its time
         const snap = type === 'put' && path.split('/').filter(Boolean).length === 0;
@@ -168,14 +190,21 @@ export const Chat = {
     const mv = this.eTree.x && L.auth ? this.eTree.x[L.auth.uid] : undefined;
     if (mv && mv.d !== this.lastMxD) {
       this.lastMxD = mv.d || null;
-      const mx = await this.dec<{ read?: number }>(mv);
+      const mx = await this.dec<{ read?: number }>(mv, false);
+      if (gen !== this.writeGen) return;
       if (mx && cNum(mx.read) > this.read) { this.read = cNum(mx.read); this.saveSoon(); this.updateBadge(); chatEvents.onReadElsewhere(); }
     }
     if (this.xPending) { this.xPending = false; void this.writeX(); }
+    // Reactions rarely change. Presence/typing updates must not walk and rebuild
+    // every reaction (or overwrite a reaction just applied optimistically).
+    const parts = path.split('/').filter(Boolean);
+    const changesRx = !parts.length ? type === 'put' || Object.keys((data || {}) as object).some(k => k === 'rx' || k.startsWith('rx/')) : parts[0] === 'rx';
+    if (!changesRx) { this.bump(); chatEvents.onState(); return; }
     const before = this.rx, rx: Record<string, Record<string, string>> = {};
     for (const [mid, byUid] of Object.entries(this.eTree.rx || {})) {
       for (const [uid, v] of Object.entries(byUid || {})) { const o = await this.dec<{ r?: string }>(v); if (o && typeof o.r === 'string' && TAPBACKS.includes(o.r)) (rx[mid] = rx[mid] || {})[uid] = o.r; }
     }
+    if (gen !== this.writeGen) return;
     if (this.loadedE && pu) for (const [mid, by] of Object.entries(rx)) {
       const r = by[pu], m = this.msgs[mid];
       if (r && (!before[mid] || before[mid][pu] !== r) && m && m.f === L.auth!.uid) chatEvents.onPartnerReaction(m, r);
@@ -222,19 +251,33 @@ export const Chat = {
     void this.write(m);
     return m;
   },
-  async write(m: Msg) {
-    try {
-      const d = await encryptObj(Sync.key!, { ts: m.ts, t: m.t, fx: m.fx, task: m.task, rp: m.rp || null, del: m.del });
-      await dbPut(`${this.base()}/m/${m.id}`, { f: m.f, u: m._u, d });
-      m.status = 'sent';
-      if (!m.del) this.notifyPartner(m);
-    } catch { m.status = 'failed'; }
-    this.bump(); this.saveSoon(); chatEvents.onState();
+  write(m: Msg): Promise<void> {
+    // Snapshot the optimistic state now. Serialize edits to the same message so a
+    // slow send can never arrive AFTER Undo Send and resurrect its original text.
+    const snapshot = { ...m }, gen = this.writeGen, key = Sync.key!, base = this.base();
+    const previous = this.writes.get(m.id) || Promise.resolve();
+    const write = previous.then(async () => {
+      if (gen !== this.writeGen) return;
+      let status: Msg['status'] = 'sent';
+      try {
+        const d = await encryptObj(key, { ts: snapshot.ts, t: snapshot.t, fx: snapshot.fx, task: snapshot.task, rp: snapshot.rp || null, del: snapshot.del });
+        if (gen !== this.writeGen) return;
+        await dbPut(`${base}/m/${snapshot.id}`, { f: snapshot.f, u: snapshot._u, d });
+      } catch { status = 'failed'; }
+      const current = this.msgs[snapshot.id];
+      if (gen !== this.writeGen || !current || current._u !== snapshot._u) return;
+      current.status = status;
+      if (status === 'sent' && !current.del) this.notifyPartner(current);
+      this.bump(); this.saveSoon(); chatEvents.onState();
+    });
+    this.writes.set(m.id, write);
+    void write.finally(() => { if (this.writes.get(m.id) === write) this.writes.delete(m.id); });
+    return write;
   },
   retry(id: string) { const m = this.msgs[id]; if (!m) return; m.status = 'sending'; this.bump(); chatEvents.onState(); void this.write(m); },
   unsend(id: string) {
     const m = this.msgs[id]; if (!m || m.f !== L.auth!.uid) return;
-    Object.assign(m, { del: true, t: '', task: null, fx: null, rp: null, _u: Date.now(), status: 'sending' });
+    Object.assign(m, { del: true, t: '', task: null, fx: null, rp: null, _u: Math.max(Date.now(), m._u + 1), status: 'sending' });
     this.bump(); this.saveSoon(); chatEvents.onState(); void this.write(m);
   },
   async react(id: string, r: string) {

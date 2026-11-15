@@ -7,11 +7,14 @@ import { initial } from '@/lib/util';
 export const cssVars = (v: Record<string, string | number>): CSSProperties => v as CSSProperties;
 export const colorVar = (c: string): CSSProperties => cssVars({ '--c': `var(--c-${c})` });
 
-export function Avatar({ k, cls = '' }: { k: PersonKey; cls?: string }) {
+export function Avatar({ k, cls = '', eager = false }: { k: PersonKey; cls?: string; eager?: boolean }) {
   const p = person(k);
   return (
-    <span className={`av ${cls}${p.photo ? ' ph' : ''}`} style={cssVars({ '--c': `var(--c-${p.color})`, ...(p.photo ? { backgroundImage: `var(--ph-${k})` } : {}) })} title={p.name}>
-      {p.photo ? '' : initial(p.name)}
+    <span className={`av ${cls}${p.photo ? ' ph' : ''}`} style={colorVar(p.color)} title={p.name}>
+      {initial(p.name)}
+      {/* Photos are sanitized data URLs. Lazy loading defers offscreen decoding;
+          the envelope was already synced, so it cannot save network bytes. */}
+      {p.photo ? <img src={p.photo} alt="" width={96} height={96} loading={eager ? 'eager' : 'lazy'} decoding="async" draggable={false} /> : null}
     </span>
   );
 }

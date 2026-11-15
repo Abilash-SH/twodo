@@ -4,9 +4,10 @@
    watches for Firebase's 30-second keep-alives, and is re-opened as soon as the app comes back. */
 import { streamUrl } from './firebase';
 import { L } from './store';
+import { RecordStream } from './recordStream';
 
 export interface StreamMsg { path: string; data: unknown }
-export interface StreamOpts { path: () => string; query?: () => string; on: (type: 'put' | 'patch', m: StreamMsg) => void; onDown?: (e?: unknown) => void; onCancel?: () => void }
+export interface StreamOpts { path: () => string; query?: () => string; records?: boolean; on: (type: 'put' | 'patch', m: StreamMsg) => void; onDown?: (e?: unknown) => void; onCancel?: () => void }
 export interface Stream extends StreamOpts { es: EventSource | null; last: number; tries: number; timer: ReturnType<typeof setTimeout> | null; gen: number; closed: boolean; opened: boolean }
 
 export const Live = {
@@ -34,6 +35,7 @@ export const Live = {
     }
     if (s.closed || gen !== s.gen) return;
     const es = new EventSource(url);
+    const records = s.records ? new RecordStream() : null;
     s.es = es; s.last = Date.now(); s.opened = false;
     const ev = (type: 'put' | 'patch' | 'keep-alive') => (e: MessageEvent) => {
       if (es !== s.es) return;
@@ -41,7 +43,7 @@ export const Live = {
       if (type === 'keep-alive') return;
       let m: StreamMsg; try { m = JSON.parse(e.data); } catch { return; }
       if (!m || typeof m.path !== 'string') return;
-      s.tries = 0; s.on(type, m);
+      s.tries = 0; s.on(type, records ? { path: '/', data: records.apply(type, m) } : m);
     };
     es.onopen = () => { if (es === s.es) { s.opened = true; s.last = Date.now(); } };
     es.addEventListener('put', ev('put'));

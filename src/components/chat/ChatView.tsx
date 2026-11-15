@@ -230,11 +230,11 @@ function ChatHeader() {
       <div className="ch-who">
         <div className={`lovebar${on ? ' live' : ''}`}>
           <button className="lb-av pt" type="button" aria-label="View photo" onClick={e => (paired ? viewPhoto(pk, e.currentTarget.querySelector('.av')) : openInviteSheet())}>
-            <span className="av-slot">{paired ? <Avatar k={pk} /> : <span className="av lb-ghost"><Icon name="plus" /></span>}</span></button>
+            <span className="av-slot">{paired ? <Avatar k={pk} eager /> : <span className="av lb-ghost"><Icon name="plus" /></span>}</span></button>
           <span className="lb-link" aria-hidden="true" onClick={() => { haptic('light'); const h = heart.current; if (!h) return; h.classList.remove('beat'); void h.getBoundingClientRect(); h.classList.add('beat'); }}>
             <svg viewBox="0 0 100 34" preserveAspectRatio="none"><defs><linearGradient id="lbLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" className="lb-s1" /><stop offset="1" className="lb-s2" /></linearGradient></defs><path className="lb-line" d="M3 27 Q50 -4 97 27" /></svg>
             <svg ref={heart} className="lb-heart" viewBox="0 0 24 24"><defs><linearGradient id="lbHeart" x1="0" y1="0" x2="1" y2="1"><stop offset="0" className="lb-s1" /><stop offset="1" className="lb-s2" /></linearGradient></defs><path d={HEART} fill="url(#lbHeart)" /></svg></span>
-          <button className="lb-av me" type="button" aria-label="View your photo" onClick={e => viewPhoto(L.me, e.currentTarget.querySelector('.av'))}><span className="av-slot"><Avatar k={L.me} /></span></button>
+          <button className="lb-av me" type="button" aria-label="View your photo" onClick={e => viewPhoto(L.me, e.currentTarget.querySelector('.av'))}><span className="av-slot"><Avatar k={L.me} eager /></span></button>
         </div>
         <div className="ch-pill"><div className="lb-name">{paired ? person(pk).name : 'Your partner'}</div><div ref={subRef} className={`c-sub${t ? ' typing' : ''}${on && !t ? ' online' : ''}`}>{sub}</div></div>
       </div>
