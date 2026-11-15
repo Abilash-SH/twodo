@@ -41,6 +41,7 @@ async def main():
         # add a task here (due today), then swipe it right to complete
         await A.click('#cta'); await A.keyboard.type('Buy flowers 💐'); await A.keyboard.press('Enter'); await A.wait_for_timeout(900)
         await A.evaluate("document.activeElement.blur()")
+        await q("[...document.querySelectorAll('.view:not(.under) .task')].find(x => x.textContent.includes('Buy flowers')).scrollIntoView({ block: 'center' })"); await A.wait_for_timeout(400)
         r = await q("(() => { const t = [...document.querySelectorAll('.view:not(.under) .task')].find(x => x.textContent.includes('Buy flowers')); const b = t.getBoundingClientRect(); return { x: b.left + 60, y: b.top + b.height / 2, id: t.dataset.id }; })()")
         await A.mouse.move(r['x'], r['y']); await A.mouse.down()
         for dx in (15, 40, 80, 120, 150): await A.mouse.move(r['x'] + dx, r['y']); await A.wait_for_timeout(20)

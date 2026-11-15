@@ -220,6 +220,8 @@ Places where the app does not yet meet this file. Fix them when touching the are
   (test 13 measures every piece of text on the board). The rest of the app: same phase, same yes needed.
 - Eight styles use 11–11.5 px text (badges, the "me" tag, reaction counts, the status line under the name in the chat
   header). Target: 12 px. Roadmap Phase 6.
+- Priority marks (`!`, `!!`, `!!!`) in task rows use the plain palette blue, orange and red: about 3:1 on a white row.
+  Measured while building the planner (test 14 leaves task rows out of its own contrast check for this reason).
 - Complete, pin and delete on a task are easiest to find by swiping or holding. Roadmap item 8.
 - Phone layouts are stretched on tablets in several screens. Roadmap item 10.
 - The characters in section 6 do not exist yet. Roadmap Phase 5.

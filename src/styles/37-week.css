@@ -1,0 +1,112 @@
+/* Twodo · the week (views/WeekView.tsx). Phone: goals, a sticky ribbon of seven days, then the days one after another.
+   From 700 px: the days stand side by side like a paper planner's spread, and the ribbon steps aside.
+   Only transform and opacity move; with Reduce Motion nothing slides. */
+.vbody:has(> .wk) { max-width: 1240px; }
+.wk { padding-bottom: 8px; --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); } /* secondary text at 4.5:1 or more (design.md, Known gaps) */
+.wk-sub { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px 10px 20px; color: var(--soft); font-size: 15px; margin-top: -2px; }
+.wk-switch { display: flex; align-items: center; flex: none; }
+.wk-switch .nav-btn .i { width: 24px; height: 24px; }
+.wk-now { min-height: 44px; padding: 0 6px; border: 0; background: none; color: color-mix(in srgb, var(--accent) 55%, var(--label)); font-family: inherit; font-size: 15px; font-weight: 600; }
+
+/* ---------- goals for the week ---------- */
+.wk-goals { margin: 4px 16px 18px; padding: 12px 14px 6px; border-radius: 16px; background: var(--cell);
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--me-c) 10%, transparent), color-mix(in srgb, var(--pt-c) 10%, transparent)); }
+.wk-gh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.wk-gh h2 { margin: 0; font: 700 17px/22px var(--round); }
+.wk-gh span { color: var(--soft); font-size: 14px; }
+.wk-glist { list-style: none; margin: 4px 0 0; padding: 0; }
+.wk-goal { display: flex; align-items: center; min-height: 48px; }
+.wk-goal + .wk-goal { box-shadow: 0 -.5px 0 var(--sep); }
+.wk-gchk { width: 44px; height: 44px; flex: none; margin-left: -9px; border: 0; padding: 0; background: none; display: grid; place-items: center; color: var(--soft); }
+.wk-gchk i { width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; display: grid; place-items: center; font: 700 13px/1 var(--round); font-style: normal;
+  border: 2px solid; border-color: var(--me-c) var(--pt-c) var(--pt-c) var(--me-c); transition: transform var(--dur-quick) var(--ease-bounce); }
+.wk-gchk:active i { transform: scale(.86); }
+.wk-goal.done .wk-gchk i { border-width: 13px; color: var(--on-color, #1B1730); }
+.wk-goal.done .wk-gchk .i { position: absolute; }
+.wk-goal.add .wk-gchk i { border-style: dashed; border-color: var(--label3); }
+.wk-gtext { flex: 1 1 0; min-width: 0; min-height: 44px; border: 0; padding: 0 0 0 4px; background: none; color: var(--label); font: inherit; font-size: 16px; line-height: 22px; outline: none; }
+.wk-gtext::placeholder { color: var(--soft); }
+.wk-goal.done .wk-gtext { color: var(--soft); text-decoration: line-through; }
+
+/* ---------- the ribbon: seven days, each with a bar in your colours ---------- */
+.wk-ribbon { position: sticky; top: calc(46px + var(--safe-top)); z-index: 5; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px;
+  margin: 0 0 6px; padding: 6px 12px 8px; background: var(--bg); box-shadow: 0 .5px 0 var(--sep); }
+.wk-tile { position: relative; min-height: 64px; border: 0; border-radius: 14px; padding: 6px 0 8px; background: none; color: var(--label);
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit; -webkit-tap-highlight-color: transparent; transition: transform var(--dur-quick) var(--ease-out); }
+.wk-tile:active { transform: scale(.94); }
+.wk-tile::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: color-mix(in srgb, var(--accent) 16%, var(--cell)); opacity: 0; transition: opacity var(--dur-quick); }
+.wk-tile.on::before { opacity: 1; }
+.wk-tile > * { position: relative; }
+.wk-wd { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--soft); text-transform: uppercase; }
+.wk-dn { font: 700 19px/24px var(--round); }
+.wk-tile.today .wk-dn { color: color-mix(in srgb, var(--accent) 55%, var(--label)); }
+.wk-tile.today .wk-wd { color: color-mix(in srgb, var(--accent) 55%, var(--label)); }
+.wk-tile.past .wk-dn { color: var(--soft); }
+.wk-load { display: flex; width: 70%; height: 5px; margin-top: 3px; border-radius: 3px; overflow: hidden; background: var(--fill); }
+.wk-load i, .wk-share i { display: block; min-width: 3px; flex-basis: 0; }
+.wk-load .me, .wk-share .me { background: var(--me-c); }
+.wk-load .pt, .wk-share .pt { background: var(--pt-c); }
+.wk-load .both { background: linear-gradient(90deg, var(--me-c), var(--pt-c)); }
+.wk-load .none { background: var(--label3); }
+.wk-load .gap { background: none; }
+.wk-tile.busy::after { content: ""; position: absolute; top: 6px; right: 18%; width: 7px; height: 7px; border-radius: 50%; background: var(--c-orange); box-shadow: 0 0 0 2px var(--bg); }
+
+.wk-overdue { display: flex; align-items: center; gap: 8px; margin: 2px 16px 10px; padding: 4px 6px 4px 14px; border-radius: 12px; background: color-mix(in srgb, var(--c-orange) 14%, var(--cell)); font-size: 15px; }
+.wk-overdue span { flex: 1; min-width: 0; }
+.wk-overdue .link-btn { min-height: 44px; padding: 0 10px; font-weight: 600; color: color-mix(in srgb, var(--c-orange) 40%, var(--label)); }
+
+/* ---------- the days ---------- */
+.wk-day { margin: 0 0 14px; scroll-margin-top: calc(46px + var(--safe-top) + 84px); }
+.wk-dh { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 20px 6px; }
+.wk-dh h3 { margin: 0; font: 700 17px/22px var(--round); }
+.wk-ddate { font-weight: 500; color: var(--soft); }
+.wk-day.today .wk-dname { color: color-mix(in srgb, var(--accent) 55%, var(--label)); }
+.wk-day.past .wk-dh h3 { color: var(--soft); }
+.wk-chip { padding: 2px 8px; border-radius: 999px; font-size: 12px; line-height: 16px; font-weight: 700; }
+.wk-chip.today { background: var(--accent); color: var(--on-color, #1B1730); }
+.wk-chip.busy { background: color-mix(in srgb, var(--c-orange) 22%, var(--cell)); color: color-mix(in srgb, var(--c-orange) 35%, var(--label)); }
+.wk-n { margin-left: auto; color: var(--soft); font-size: 14px; }
+.wk-day .group.tasks { margin-bottom: 4px; }
+.wk-add { display: flex; align-items: center; gap: 6px; min-height: 44px; margin: 0 16px; padding: 0 4px; border: 0; background: none; color: color-mix(in srgb, var(--accent) 55%, var(--label));
+  font: inherit; font-size: 15px; font-weight: 600; text-align: left; }
+.wk-add:active { opacity: .5; }
+.wk-none { margin: 0 20px; color: var(--soft); font-size: 15px; line-height: 36px; }
+
+/* ---------- not planned yet ---------- */
+.wk-later { margin: 6px 0 14px; }
+.wk-lh { display: flex; align-items: center; gap: 10px; width: calc(100% - 32px); min-height: 48px; margin: 0 16px 8px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--cell); color: var(--label); font: inherit; font-size: 16px; font-weight: 600; text-align: left; }
+.wk-lh .val { color: var(--soft); font-weight: 500; }
+.wk-lh .i { color: var(--soft); transition: transform var(--dur-standard) var(--ease-out); }
+.wk-lh .i.up { transform: rotate(180deg); }
+.wk-hint { margin: 6px 20px 0; color: var(--soft); font-size: 14px; }
+
+/* ---------- looking back ---------- */
+.wk-back { margin: 8px 16px 18px; padding: 16px; border-radius: 18px; background: var(--cell);
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--me-c) 16%, transparent), color-mix(in srgb, var(--pt-c) 16%, transparent)); }
+.wk-back h2 { margin: 0; font-size: 13px; line-height: 18px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); }
+.wk-big { margin: 4px 0 10px; font: 700 22px/28px var(--round); }
+.wk-share { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; }
+.wk-legend { display: flex; gap: 16px; margin: 8px 0 0; font-size: 14px; color: var(--soft); }
+.wk-legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; vertical-align: 0; }
+.wk-legend .me::before { background: var(--me-c); } .wk-legend .pt::before { background: var(--pt-c); }
+.wk-goalsum { margin: 10px 0 0; font-size: 15px; }
+.wk-back .btn-s { margin-top: 12px; min-height: 44px; background: var(--accent); color: var(--on-color, #1B1730); } /* dark ink on a person's colour (design.md) */
+.wk-foot { margin: 4px 20px 0; color: var(--soft); font-size: 13px; text-align: center; }
+
+/* the long-press menu in the planner: plan for a day with one tap */
+.wk-mdays .opts button { min-width: 34px; }
+
+/* ---------- side by side, like a paper planner ---------- */
+@media (min-width: 700px) {
+  .wk-ribbon { display: none; }
+  .wk-goals, .wk-back { max-width: 720px; }
+  .wk-days { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 10px; padding: 0 16px 10px; overflow-x: auto; scroll-snap-type: x proximity; align-items: start; }
+  .wk-day { margin: 0; scroll-snap-align: start; min-height: 220px; padding-bottom: 6px; border-radius: 18px; background: color-mix(in srgb, var(--cell) 55%, var(--bg)); }
+  .wk-day.today { background: color-mix(in srgb, var(--accent) 10%, var(--cell)); }
+  .wk-dh { flex-wrap: wrap; padding: 12px 12px 6px; }
+  .wk-n { margin-left: 0; width: 100%; }
+  .wk-day .group.tasks { margin-left: 6px; margin-right: 6px; }
+  .wk-day .ti { gap: 8px; padding: 9px 10px 9px 10px; } /* a column is narrower than a list: rows are tighter */
+  .wk-add { margin: 0 8px; }
+  .wk-none { margin: 0 12px; }
+}

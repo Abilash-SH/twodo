@@ -18,14 +18,19 @@ export interface Task {
   done: boolean; doneAt: number | null; doneBy?: PersonKey | null; createdAt: number; createdBy?: PersonKey; updatedAt: number;
   deleted: boolean; pomos: number; _s?: 1; ghost?: 1;
 }
-export type Rec = Task | List | PeopleRec;
-export interface Data { tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null }
+/** One goal for one week (the planner). docs/journal-and-planner.md */
+export interface Goal {
+  kind: 'goal'; id: string; week: string; text: string; done: boolean; order: number;
+  createdAt: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
+}
+export type Rec = Task | List | PeopleRec | Goal;
+export interface Data { tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null; goals: Record<string, Goal> }
 
 export interface Settings { theme: 'auto' | 'light' | 'dark'; accent: string; haptics: boolean; sounds: boolean; confetti: boolean; notify: boolean; dmy: boolean }
 export interface AuthState { uid: string; idToken: string; refresh: string; exp: number; email?: string; username?: string; expired?: boolean }
 export interface PairState { status: 'sent' | 'paired'; uid: string; username?: string; name: string; code?: string; ts?: number }
 export interface FocusState { taskId: string | null; mode: 'focus' | 'break'; total: number; remaining: number; endsAt: number | null; running: boolean }
-export interface ViewPrefs { sort?: string; showDone?: boolean; who?: string; cat?: string }
+export interface ViewPrefs { sort?: string; showDone?: boolean; who?: string; cat?: string; week?: string; day?: string; later?: boolean; tab?: string }
 export interface Local {
   me: PersonKey; onboarded: boolean; settings: Settings;
   sync: { url?: string; code?: string; space?: string };

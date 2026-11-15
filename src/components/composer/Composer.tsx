@@ -5,7 +5,7 @@ import { takeDraft } from '@/ui/update';
 import { blip, haptic } from '@/lib/feedback';
 import { KIND_LABEL, parseTask, type ChipKind } from '@/lib/parse';
 import { renderNow, scheduleRender } from '@/lib/render';
-import { D, L, commit, firstName, fmtDue, listOf, lists, makeTask, partnerKey, ptName } from '@/lib/store';
+import { D, L, commit, firstName, fmtDate, fmtDue, listOf, lists, makeTask, partnerKey, ptName } from '@/lib/store';
 import type { Task } from '@/lib/types';
 import { addDays, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
@@ -13,13 +13,15 @@ import { useTapKeep, useTapKeepWithin } from '@/hooks/useTapKeep';
 import { closeOpenRow } from '@/hooks/useStackGestures';
 import { island } from '@/ui/island';
 import { showMenu } from '@/ui/menu';
-import { boardAdd, boardHome, composerState, specKey, topSpec, viewPrefs } from '@/ui/nav';
+import { boardAdd, boardHome, composerState, plannerDay, specKey, topSpec, viewPrefs } from '@/ui/nav';
 import { Fresh } from '@/ui/tasks';
 import { useStore } from '@/ui/store';
 import { Avatar, colorVar, cssVars } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 
 interface Ctx { listId: string; due: string | null; assignee: Task['assignee']; pinned: boolean; label: string; color: string }
+// in the planner a time typed on its own ("gym 7am") belongs to the day picked there
+const plannerTime = (): string | null => (topSpec().type === 'week' ? plannerDay() : null);
 function composerCtx(): Ctx {
   const spec = topSpec(), pickId = composerState.get().listPick;
   const inbox = D.lists.inbox || { emoji: '📥', name: 'Inbox', color: 'blue' };
@@ -33,6 +35,8 @@ function composerCtx(): Ctx {
     const extra = ({ today: ['due', todayStr(), 'Today'], upcoming: ['due', ymd(addDays(new Date(), 1)), 'Tomorrow'], pinned: ['pinned', true, 'Pinned'], us: ['assignee', 'both', 'For both of you'] } as Record<string, [keyof Ctx, string | boolean, string]>)[spec.key!];
     if (extra) { (ctx as unknown as Record<string, unknown>)[extra[0]] = extra[1]; ctx.label += ' · ' + extra[2]; }
   }
+  // the planner: the day picked there (today by default)
+  if (spec.type === 'week') { const day = plannerDay(); ctx.due = day; ctx.label += ' · ' + fmtDate(day); }
   // added from the board: it is for today, so it shows up on the board's Today note straight away
   if (spec.type === 'home' && boardHome() && !pick) { ctx.due = todayStr(); ctx.label += ' · Today'; }
   if (spec.type !== 'home' && spec.type !== 'search' && !ctx.assignee) {
@@ -86,7 +90,7 @@ export function Composer({ hidden }: { hidden: boolean }) {
   }, []);
   const blurT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
-  const parsed = lines.length === 1 ? parseTask(lines[0], ignored) : null;
+  const parsed = lines.length === 1 ? parseTask(lines[0], ignored, plannerTime()) : null;
 
   useEffect(() => { const t = ta.current!; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 168) + 'px'; }, [text]);
   useEffect(() => { // rotating placeholder that teaches the syntax
@@ -102,7 +106,7 @@ export function Composer({ hidden }: { hidden: boolean }) {
   const insertToken = (kind: ChipKind, tok: string) => {
     const ls = ta.current!.value.split('\n');
     let last = ls.pop() || '';
-    const p = parseTask(last, new Set());
+    const p = parseTask(last, new Set(), plannerTime());
     const rawOld = p.raw[kind];
     if (rawOld) { const i = last.toLowerCase().indexOf(rawOld.toLowerCase()); if (i >= 0) last = (last.slice(0, i) + last.slice(i + rawOld.length)).replace(/\s{2,}/g, ' '); }
     last = (last.trimEnd() + ' ' + tok + ' ').replace(/^\s+/, '');
@@ -118,7 +122,7 @@ export function Composer({ hidden }: { hidden: boolean }) {
     if (!ls.length) return;
     const ctx = composerCtx(), created: Task[] = [];
     for (const line of ls) {
-      const p = parseTask(line, ls.length === 1 ? ignored : new Set());
+      const p = parseTask(line, ls.length === 1 ? ignored : new Set(), plannerTime());
       const t = makeTask({
         title: p.title.slice(0, 2000), due: p.due || ctx.due, time: p.time, priority: p.priority || 0, tags: p.tags,
         listId: p.listId || ctx.listId, assignee: p.assignee || ctx.assignee, repeat: p.repeat, pinned: ctx.pinned,

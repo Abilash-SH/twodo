@@ -17,7 +17,7 @@ BOARD = """(() => { const t = s => { const e = document.querySelector('.board ' 
 # what the To-dos screen counts (it must be open)
 HUB = """(() => { const v = document.querySelector('#stack > .view.pushed:not(.parked):not(.under)');
   return { cards: Object.fromEntries([...v.querySelectorAll('.hub-card')].map(c => [c.querySelector('.hub-t').textContent, +c.querySelector('.hub-n').textContent || 0])),
-    lists: [...v.querySelectorAll('.group:not(.secret-group) .cell:not(.accent)')].map(c => [c.querySelector('.grow').textContent, +c.querySelector('.val').textContent || 0]) }; })()"""
+    lists: [...v.querySelectorAll('.group:not(.secret-group):not(.plan-group) .cell:not(.accent)')].map(c => [c.querySelector('.grow').textContent, +c.querySelector('.val').textContent || 0]) }; })()"""
 TASKS = "Object.values(JSON.parse(localStorage.getItem('twodo:data')).tasks)"
 TRAP = "!!(history.state && history.state.t)"
 COMPOSER_UP = "!document.getElementById('composer').classList.contains('hide')"

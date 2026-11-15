@@ -80,7 +80,7 @@ export const Sync = {
   getRec(k: string): Rec | null | undefined {
     if (k === 'people') return D.people;
     const id = k.slice(2);
-    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : null;
+    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : null;
   },
   localU(k: string): number { const r = this.getRec(k); return r ? (r.updatedAt || 0) : 0; },
   isPrivate(r: Rec): boolean {
@@ -103,6 +103,7 @@ export const Sync = {
     if (k === 'people') { setPeopleRec(obj as PeopleRec); fixIdentity(); applyTheme(); Chat.ensure(); }
     else if (obj.kind === 'task') { this.noteTask(local as Task | undefined, obj); D.tasks[obj.id] = obj; }
     else if (obj.kind === 'list') D.lists[obj.id] = obj as List;
+    else if (obj.kind === 'goal') D.goals[obj.id] = obj;
     else return;
     save(); scheduleRender();
   },
@@ -128,6 +129,7 @@ export const Sync = {
     if (D.people) keys.push('people');
     for (const id in D.lists) keys.push('l:' + id);
     for (const id in D.tasks) keys.push('t:' + id);
+    for (const id in D.goals) keys.push('g:' + id);
     for (const k of keys) {
       const r = this.getRec(k); if (!r) continue;
       if ((r.updatedAt || 0) > ((map[k] && map[k].u) || 0)) this.q.add(k);

@@ -1,7 +1,7 @@
 /* Twodo · state, persistence and data helpers.
    D = synced data (tasks, lists, the two of you), L = this device only (settings, account, view prefs). */
 import { scheduleRender } from './render';
-import type { Data, List, Local, PeopleRec, Person, PersonKey, Rec, Task } from './types';
+import type { Data, Goal, List, Local, PeopleRec, Person, PersonKey, Rec, Task } from './types';
 import { addDays, dayDiff, firstWord, fromYmd, PALETTE, REPEATS, todayStr, uid, ymd, type Color, type Repeat } from './util';
 
 const KD = 'twodo:data', KL = 'twodo:local';
@@ -16,10 +16,10 @@ export const defaultLocal = (): Local => ({
   view: {}, notified: {}, focus: null, tips: {},
 });
 
-export let D: Data = { tasks: {}, lists: {}, people: null };
+export let D: Data = { tasks: {}, lists: {}, people: null, goals: {} };
 export let L: Local = defaultLocal();
 /** Replace all synced data (used when a different account signs in on this phone) */
-export function resetData(): void { D = { tasks: {}, lists: {}, people: null }; }
+export function resetData(): void { D = { tasks: {}, lists: {}, people: null, goals: {} }; }
 
 /* ---------- Never trust stored or synced records: anything shown on screen is checked here first ----------
    Colours must come from the palette, numbers must be numbers, photos must be small inline images. */
@@ -66,6 +66,12 @@ export function cleanRecord(r: unknown): Rec | null {
     if (q.title !== undefined) o.title = cStr(q.title, 2000); else delete (o as Loose).title;
     return o as Task;
   }
+  if (q.kind === 'goal') { // the planner's goals for a week (docs/journal-and-planner.md)
+    const week = typeof q.week === 'string' && DAY_RE.test(q.week) ? q.week : null;
+    if (!week) return null;
+    return { ...q, kind: 'goal', id: cStr(q.id, 80), week, text: cStr(q.text, 200), done: !!q.done, order: cNum(q.order),
+      createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as Goal;
+  }
   return null;
 }
 export function cleanMap<T extends Rec>(m: unknown): Record<string, T> {
@@ -77,7 +83,7 @@ export function cleanMap<T extends Rec>(m: unknown): Record<string, T> {
 export function load(): void {
   try {
     const d = JSON.parse(localStorage.getItem(KD) || 'null');
-    if (d) D = { tasks: cleanMap<Task>(d.tasks), lists: cleanMap<List>(d.lists), people: d.people ? cleanRecord(d.people) as PeopleRec : null };
+    if (d) D = { tasks: cleanMap<Task>(d.tasks), lists: cleanMap<List>(d.lists), people: d.people ? cleanRecord(d.people) as PeopleRec : null, goals: cleanMap<Goal>(d.goals) };
   } catch (e) { console.warn('load data', e); }
   try {
     const l = JSON.parse(localStorage.getItem(KL) || 'null');
@@ -94,7 +100,7 @@ export function publicData(): Data {
   const lists: Record<string, List> = {}, tasks: Record<string, Task> = {};
   for (const [id, l] of Object.entries(D.lists)) if (!l.private) lists[id] = l;
   for (const [id, t] of Object.entries(D.tasks)) if (!isSecret(t)) tasks[id] = t;
-  return { tasks, lists, people: D.people };
+  return { tasks, lists, people: D.people, goals: D.goals };
 }
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 export function save(): void { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 150); }
@@ -110,7 +116,7 @@ if (typeof window !== 'undefined') {
 }
 
 /* ---------- Records ---------- */
-export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : 'people';
+export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : 'people';
 export function stamp(rec: Rec): void { rec.updatedAt = Math.max(Date.now(), (rec.updatedAt || 0) + 1); }
 /** Sync registers itself here, so the data layer has no import cycle */
 export const hooks = { queue: (_k: string): void => {} };

@@ -117,6 +117,16 @@ and data checks, and a short iPhone checklist.
 - Secret information stays out of the home screen, character reactions, notifications, analytics, shared views and
   exports.
 
+### 14. Weekly planner — 🔎 this PR
+- **Asked for 2026-11-15:** a weekly planner, designed after looking at the best of what exists (paper-style weekly
+  planners, timeline planners, weekly planning and review rituals) and made for two.
+- **Built:** To-dos → *This week*. Up to three shared goals for the week; a sticky ribbon of seven days whose bars show
+  how full each day is and for whom; the days with their to-dos; *Not planned yet*; to-dos left open from before;
+  from Friday, a look back (no streaks, no scores). Hold a to-do to plan it for a day. Wide screens: seven columns.
+- **Data:** goals are a new record kind; planning only changes a to-do's date. `docs/journal-and-planner.md`.
+- **Done when:** test 14 passes; checked on an iPhone (the ribbon while scrolling, *Add to …* with the keyboard).
+- **Next:** the journal (item 15) adds "Write about the week" to the look back.
+
 ## Decisions
 
 | Date | Decision | Why |
@@ -136,6 +146,9 @@ and data checks, and a short iPhone checklist.
 | 2026-11-13 | The chat is a screen that only sits directly above the board, and stays mounted while closed | Back from the chat always leads to the board; drawing a long conversation inside the tap cost 217 ms at 4× CPU |
 | 2026-11-13 | A to-do added from the board is due today | It then appears on the board's Today note straight away, where it was added |
 | 2026-11-13 | In the chat the left 32 px belong to Back; a swipe on a message is only ever a reply | The chat is no longer Home, so it needs a way back that never fights the reply swipe |
+| 2026-11-15 | The planner plans existing to-dos by date; only the week's goals are new records | No time-blocking: to-dos have no durations, and a calendar of hours is not what was asked for |
+| 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
+| 2026-11-15 | A screen that opens draws its top inside the tap and the rest just after | Opening the week cost a 200 ms frame at 4× CPU; the slide runs on the compositor while the rest is drawn |
 
 ## How to pick up work
 

@@ -16,9 +16,16 @@ export function useFlip(container: React.RefObject<HTMLElement | null>, key: str
     if (!root) { prev.current = new Map(); return; }
     const page = (root.closest('.view') as HTMLElement | null) || root;
     const els = Array.from(root.querySelectorAll<HTMLElement>(itemSel));
-    const now = new Map<string, number>();
-    for (const el of els) if (el.dataset.id && !el.classList.contains('leaving')) now.set(el.dataset.id, layoutTop(el, page));
+    const measure = () => { const m = new Map<string, number>(); for (const el of els) if (el.isConnected && el.dataset.id && !el.classList.contains('leaving')) m.set(el.dataset.id, layoutTop(el, page)); return m; };
     const same = lastKey.current === key; lastKey.current = key;
+    // A list that just appeared (a screen being pushed): nothing can have moved yet. Note where the rows are after the
+    // first frame instead of now, so opening a screen never forces a layout inside the tap (AGENTS.md).
+    if (!same) {
+      prev.current = new Map();
+      const f = requestAnimationFrame(() => { if (lastKey.current === key && container.current === root) prev.current = measure(); });
+      return () => cancelAnimationFrame(f);
+    }
+    const now = measure();
     // only for the screen you're looking at, never while a finger is moving things, never with Reduce Motion
     if (same && !calm() && !page.classList.contains('under') && !document.getElementById('stack')?.classList.contains('dragging')) {
       const moves: [HTMLElement, number][] = [];
