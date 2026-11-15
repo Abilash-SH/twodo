@@ -56,7 +56,7 @@ export function PhotoViewer() {
       onPointerUp={e => { if (e.pointerType === 'mouse') endDrag(e.pointerId); }} onPointerCancel={e => { if (e.pointerType === 'mouse') endDrag(e.pointerId, true); }}>
       <div ref={bg} className="pv-bg" />
       <button className="pv-x" type="button" aria-label="Close" onClick={() => close()}><Icon name="x" /></button>
-      <div className="pv-main"><div ref={img} className="pv-img"><Avatar k={k} /></div><div className="pv-name">{p.name}</div>
+      <div className="pv-main"><div ref={img} className="pv-img"><Avatar k={k} eager /></div><div className="pv-name">{p.name}</div>
         {mine ? <div className="pv-acts">
           <button className="pv-b" type="button" onClick={() => close(() => pickPhoto(k))}><Icon name="camera" /><span>{p.photo ? 'Change' : 'Add photo'}</span></button>
           {p.photo ? <button className="pv-b red" type="button" onClick={() => close(() => setPhoto(k, null))}><Icon name="trash" /><span>Remove</span></button> : null}

@@ -140,6 +140,19 @@ and data checks, and a short iPhone checklist.
 - **Done when:** test 15 passes; checked on an iPhone (writing a long post with the keyboard up, posting, the
   partner's phone).
 
+### 16. Data and rendering performance — 🔎 this PR
+- **Request:** audit repeated queries, index coverage, stable-data caches, below-fold photos and optimistic UI.
+- **Built:** per-connection encrypted record snapshots remove per-field GETs and handle atomic multi-path
+  patches; typing reuses reaction state; decrypt caching is bounded and scoped to the chat session; lazy
+  avatar photos with eager headers/viewer; optimistic message writes serialize by message and reject stale echoes.
+- **Index decision:** the only ordered server query uses Firebase's automatically indexed `$key`.
+  Search/sort of encrypted fields is local. No unused indexes, plaintext metadata or schema changes added.
+- **Acceptance:** zero extra record GETs for nested notifications, partner convergence for atomic patches,
+  task/message UI before acknowledgement, no late send resurrecting removed text, stable photo geometry,
+  no private API responses cached. Required checks and the complete browser suite before the PR.
+- **Files/evidence/iPhone checks:** `docs/performance-audit.md`, `src/lib/recordStream.ts`, `live.ts`, `sync.ts`,
+  `chat.ts`, `Avatar.tsx`, `40-lazy-photos.css`, `tests/performance.cjs`, `tests/e2e/test_16_data_performance.py`.
+
 ## Decisions
 
 | Date | Decision | Why |

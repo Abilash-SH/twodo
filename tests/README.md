@@ -12,6 +12,7 @@ python3 -m http.server 8003 --directory .test-out &
 python3 tests/e2e/test_1_pair_and_chat.py      # creates both accounts and pairs them (run this first, on a freshly started mock)
 for t in $(ls tests/e2e/test_*.py | sort -t_ -k2 -n | tail -n +2); do python3 "$t" || break; done   # every other test, in order
 node tests/velocity.cjs
+node tests/performance.cjs
 ```
 `test_4_offline_onboarding.py` needs a build without Firebase settings (no accounts), served on port 8004:
 `NEXT_PUBLIC_FIREBASE_API_KEY= NEXT_PUBLIC_FIREBASE_DATABASE_URL= NEXT_PUBLIC_BASE_PATH= npm run build`.
@@ -24,6 +25,8 @@ after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
 
 Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
+Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
+Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
 Test 13 covers Home: the character's greeting in its role's voice and what it says is on today, the cards against
 the To-dos screen, every door (message, Today, Together, This week, Journal, Change), adding and ticking in place
 (and the partner's character telling them who ticked it off), picking a character and role (it reaches the partner
