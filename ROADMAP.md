@@ -29,7 +29,7 @@ and data checks, and a short iPhone checklist.
   storage, notifications and the vault. An assessment only; nothing is packaged or migrated.
 - **Done when:** the document exists and names what must be true of the PWA first.
 
-### 2. A new personal home screen — ✅ Phase 2 (#7, Pinboard chosen) · 🔎 Phase 3 (this PR)
+### 2. A new personal home screen — ✅ Phase 2 (#7, Pinboard chosen) · ✅ Phase 3 (#9) · 🔎 decorated (this PR)
 - **Deliver:** three distinct concepts with phone mockups in empty, busy and offline states, the navigation model,
   advantages and tradeoffs of each, and a recommendation: `docs/home-concepts.md` and `docs/home-concepts/`.
 - **Done when (Phase 2):** a concept is chosen, or a fourth direction is asked for.
@@ -42,6 +42,9 @@ and data checks, and a short iPhone checklist.
   the board; `test_13_board_home.py` is new).
 - **State:** built. Measured in headless Chrome at 4× CPU slowdown, not on an iPhone: see the PR. Still to confirm on
   a phone: the keyboard with *Add a to-do*, the edge swipe out of the chat next to iOS's own, and the feel of the tilt.
+- **Decorated (2026-11-15):** a cork board with a string of lights (`docs/home-concepts.md`, "Decorated like home"):
+  lit in the evening, tap to send a glow, the next plan on the polaroid. Test 16. Still to see on a phone: the
+  Noteworthy handwriting and the lights at night.
 
 ### 3. The visual system — 🔎 Phase 2
 - **Deliver:** `design.md`: colour roles (both people), type, spacing, shapes, surfaces, components, characters,
@@ -158,6 +161,9 @@ and data checks, and a short iPhone checklist.
 | 2026-11-13 | In the chat the left 32 px belong to Back; a swipe on a message is only ever a reply | The chat is no longer Home, so it needs a way back that never fights the reply swipe |
 | 2026-11-15 | The planner plans existing to-dos by date; only the week's goals are new records | No time-blocking: to-dos have no durations, and a calendar of hours is not what was asked for |
 | 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
+| 2026-11-15 | The board is decorated as cork and string lights (the recommended direction) | A design was asked for without a pick; it keeps every note and door of the Pinboard and changes only materials |
+| 2026-11-15 | A glow is an ordinary chat message ("Thinking of you ✨"), recognised by its text | No new record, field or sync change; older versions and the chat show it as a message |
+| 2026-11-15 | The lights follow the phone's clock, not the theme | Evening is a time of day; dark mode is a preference |
 | 2026-11-15 | A journal page has one record per person: only its writer edits it | Two people never edit the same record at once, so last-write-wins never loses words |
 | 2026-11-15 | *Just me* pages live only in the vault and need the existing passcode first | No new keys or encryption: the same protection and rules as secret lists, and nothing private is ever written in plain text |
 | 2026-11-15 | The journal has weather, never a mood score, streak or word count | How a day felt, without measuring anyone (roadmap item 9) |

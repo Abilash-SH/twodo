@@ -129,6 +129,19 @@ The Pinboard was chosen over the recommendation above. What that changes from th
   560 px width; the two buttons stay centred).
 - **Without accounts** Home stays the To-dos screen: there is no partner or chat to pin.
 
+## Decorated like home (2026-11-15)
+
+Asked for: "design the home screen, like we generally do in the home to make it aesthetic". Three decorated
+directions were drawn (cork board and string lights, a fridge door, a letter board and shelf), each by day and in the
+evening. With no pick made and a request to "add a design", the recommended one was built: **cork and string
+lights**, because it keeps every note, door and slot of the Pinboard and only changes the materials. The other two
+stay in the design canvas and could become a choice in Settings later.
+
+- Same notes, new materials: a letter with washi tape, a notepad, a polaroid, a kraft tag, a sticky note, a torn strip.
+- The lights follow the phone's clock (lit 6 pm to 6 am). Tapping them offers to send a glow, an ordinary message
+  that makes the partner's lights twinkle in the sender's colour until it is read. Nothing new is stored or synced.
+- The polaroid names the next plan for the two of you; to-dos on the notepad show their time.
+
 ## What was built
 
 | Note | Shows | Opens |

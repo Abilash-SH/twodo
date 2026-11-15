@@ -1,0 +1,190 @@
+/* Twodo · the board, decorated like home: a cork board in an oak frame, a string of lights across the top, notes on
+   paper (a letter with washi tape, a notepad, a polaroid, a kraft tag on twine, a sticky note, a torn strip), a sprig
+   of lavender. The lights glow in the evening (6 pm to 6 am) and twinkle when tapped. design.md, "The board".
+   Paper is paper in both themes: everything written on it uses dark ink (--ink), so it keeps 4.5:1 (test 13).
+   Only opacity and transform animate; the cork and the frame are painted once. */
+
+.view.boardview {
+  --wall: #F4EEE6; --title-ink: #2A211B; --btn-bg: #FFFDF8;
+  --frame: linear-gradient(160deg, #C99B6B, #A97A4D); --cork: #C59C72; --on-cork: #2A211B;
+  --speck1: radial-gradient(rgba(96,58,26,.36) 1px, transparent 1.6px);
+  --speck2: radial-gradient(rgba(255,238,210,.3) 1px, transparent 1.7px);
+  --speck3: radial-gradient(rgba(110,70,35,.22) 1.6px, transparent 2.4px);
+  --paper: #FFFBF2; --photo: #FFFFFF; --kraft: #D8BB90; --sticky: #FBE49A; --sticky-top: #FCEBA9;
+  --ink: #2A2320; --ink-soft: #66594F;
+  --note-sh: 0 1px 2px rgba(60,35,15,.18), 0 12px 22px -12px rgba(60,35,15,.45);
+  --hand: 'Noteworthy', 'Bradley Hand', 'Segoe Print', 'Chalkboard SE', cursive;
+  background-color: var(--wall);
+}
+[data-theme="dark"] .view.boardview {
+  --wall: #1C1714; --title-ink: #F3E9DD; --btn-bg: #2E2823;
+  --frame: linear-gradient(160deg, #6A4C33, #4E3624); --cork: #6E5138; --on-cork: #F3E9DD;
+  --speck1: radial-gradient(rgba(30,18,8,.45) 1px, transparent 1.6px);
+  --speck2: radial-gradient(rgba(190,150,105,.22) 1px, transparent 1.7px);
+  --speck3: radial-gradient(rgba(35,22,10,.3) 1.6px, transparent 2.4px);
+  --paper: #F2EADC; --photo: #F4EFE7; --kraft: #CFB083; --sticky: #F0D98C; --sticky-top: #F4E19E;
+  --note-sh: 0 2px 3px rgba(0,0,0,.35), 0 14px 24px -12px rgba(0,0,0,.6);
+}
+
+/* ---------- the wall: the title in handwriting, two round buttons ---------- */
+.boardview .board-top { min-height: 48px; }
+.boardview .board-title { font: 700 27px/32px var(--hand); color: var(--title-ink); letter-spacing: .01em; }
+.boardview .fab-btn { width: 44px; height: 44px; margin-top: 0; background: var(--btn-bg); color: var(--title-ink);
+  box-shadow: 0 1px 2px rgba(40,20,10,.08), 0 8px 20px -10px rgba(40,20,10,.3); }
+.boardview .board-tray { background: linear-gradient(to top, var(--wall) 72%, color-mix(in srgb, var(--wall) 0%, transparent)); }
+.boardview .tray-btn { box-shadow: 0 10px 22px -14px rgba(40,20,10,.55); }
+
+/* ---------- the board: cork inside an oak frame ---------- */
+.board {
+  --label: var(--ink); --soft: var(--ink-soft); --bg2: var(--paper); --ring: color-mix(in srgb, var(--ink) 45%, transparent);
+  border: 10px solid transparent; border-radius: 24px; padding: 58px 12px 26px; gap: 22px 12px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  background-color: var(--cork);
+  background-image: var(--speck1), var(--speck2), var(--speck3), var(--frame);
+  background-size: 7px 9px, 11px 7px, 17px 13px, 100% 100%;
+  background-position: 0 0, 3px 4px, 8px 2px, 0 0;
+  background-repeat: repeat, repeat, repeat, no-repeat;
+  background-origin: padding-box, padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, padding-box, border-box;
+  box-shadow: 0 1px 2px rgba(40,20,10,.2), 0 18px 34px -20px rgba(40,20,10,.6), inset 0 2px 9px rgba(30,15,5,.45);
+}
+@media (min-width: 700px) { .board { max-width: 600px; } }
+/* evening: warm light falls from the bulbs onto the cork */
+.boardview.evening .board::before { content: ''; position: absolute; inset: 0; border-radius: 14px; pointer-events: none;
+  background: radial-gradient(ellipse 120% 170px at 50% 0, rgba(255,186,100,.3), transparent 72%); }
+
+/* ---------- where the notes go ---------- */
+.board .r1 { --r: -2.5deg; --i: 0; grid-column: 1; grid-row: 1; }                                    /* the latest message */
+.board .r3 { --r: 4deg; --i: 1; grid-column: 2; grid-row: 1; width: 90%; justify-self: end; margin-top: -6px; }   /* the polaroid */
+.board .r2 { --r: -1deg; --i: 2; grid-column: 1 / span 2; grid-row: 2; width: 96%; justify-self: center; margin-top: 0; } /* today */
+.board .r4 { --r: -4deg; --i: 3; grid-column: 1; grid-row: 3; align-self: start; margin-top: 18px; }     /* a list, on a tag */
+.board .r5, .board .slot.s-pin { --r: 3.5deg; --i: 4; grid-column: 2; grid-row: 3; }                     /* pinned */
+.board .r7 { --r: -1.5deg; --i: 5; grid-column: 1; grid-row: 4; }                                       /* today's journal page */
+.board .lavender { grid-column: 2; grid-row: 4; justify-self: center; align-self: center; }
+.board .r6 { --r: -1.5deg; --i: 6; grid-column: 1 / span 2; grid-row: 5; justify-self: center; }        /* ticked off */
+
+/* ---------- paper, pins and tape ---------- */
+.board .note { border-radius: 3px; background-color: var(--paper); box-shadow: var(--note-sh); }
+.board .pin { width: 16px; height: 16px; z-index: 3;
+  background: radial-gradient(circle at 34% 30%, rgba(255,255,255,.75) 0 2px, var(--c) 3.5px, color-mix(in srgb, var(--c) 70%, #000) 100%);
+  box-shadow: 0 2px 2px rgba(40,20,10,.35), 1px 4px 6px -2px rgba(40,20,10,.35); }
+.washi { position: absolute; left: 50%; top: -10px; z-index: 3; width: 78px; height: 20px; margin-left: -39px; transform: rotate(3deg);
+  clip-path: polygon(3% 0, 97% 0, 100% 20%, 97% 40%, 100% 60%, 97% 80%, 100% 100%, 3% 100%, 0 80%, 3% 60%, 0 40%, 3% 20%, 0 0); }
+.washi.dots { background: radial-gradient(circle, rgba(255,255,255,.85) 1.6px, transparent 2.2px) 0 0 / 8px 8px, color-mix(in srgb, var(--c) 72%, transparent); }
+.washi.kraft { width: 54px; height: 18px; margin-left: -27px; transform: rotate(-6deg); background: rgba(214,184,140,.8); }
+
+/* the latest message: a letter, taped up, the name in handwriting */
+.board .n-msg { padding: 20px 15px 12px; }
+.board .n-msg .n-who { gap: 8px; }
+.board .n-msg .n-name { font: 700 22px/26px var(--hand); color: color-mix(in srgb, var(--c) 42%, var(--ink)); }
+
+/* today: a notepad torn from a spiral pad, two pins in your colours, a margin and ruled lines */
+.board .n-today { padding: 28px 12px 10px 16px; background-color: var(--paper); }
+.n-today .holes { position: absolute; left: 14px; right: 10px; top: 9px; height: 9px;
+  background: radial-gradient(circle at 4.5px 5.4px, var(--cork) 0 3.5px, transparent 3.9px) 0 0 / 25px 9px repeat-x,
+    radial-gradient(circle at 4.5px 4.5px, rgba(40,20,5,.55) 0 4px, transparent 4.4px) 0 0 / 25px 9px repeat-x; }
+.n-today::before { content: ''; position: absolute; left: 36px; top: 26px; bottom: 0; width: 1px; background: rgba(214,110,110,.4); }
+.n-th { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.board .n-today .n-h.link { font: 700 27px/30px var(--hand); margin: -7px 0 -7px; gap: 4px; }
+.n-date { flex: none; font: 700 17px/22px var(--hand); color: var(--ink-soft); }
+.board .bn-task { border-bottom: 1px solid rgba(117,146,219,.3); }
+.bn-time { flex: none; padding: 12px 0 0 6px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.board .n-today button.n-go { margin: 0 0 -10px; }
+
+/* together: a polaroid of the two of you, taped on */
+.board .n-us { padding: 8px 8px 10px; border-radius: 2px; background-color: var(--photo); }
+.board .n-photo { height: 84px; border-radius: 1px; background: linear-gradient(170deg, #F7D9C4, #E9C2D7 55%, #C9CDEE); }
+.board .n-photo .av { width: 42px; height: 42px; line-height: 42px; font-size: 19px; box-shadow: 0 0 0 2.5px #FFFFFF; }
+.board .n-photo .av + .av { margin-left: -8px; }
+.board .n-us .n-h { font: 700 21px/24px var(--hand); }
+.board .n-us .n-sub { font-size: 13px; line-height: 17px; }
+.n-next { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 6px; padding-top: 6px; border-top: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+  font-size: 13px; line-height: 17px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+
+/* a list: a kraft tag hung on twine from a pin */
+.board .n-list { padding: 14px 12px 12px 38px; min-height: 76px; background: none; box-shadow: none; border-radius: 0; color: #3B2A1A; }
+.n-list .kraft { position: absolute; inset: 0; z-index: 0; filter: drop-shadow(0 6px 6px rgba(40,20,10,.3)); }
+.n-list .kraft::before { content: ''; position: absolute; inset: 0; background: var(--kraft); clip-path: polygon(17% 0, 100% 0, 100% 100%, 17% 100%, 0 72%, 0 28%); }
+.n-list .kraft::after { content: ''; position: absolute; left: 13px; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; background: var(--cork);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.5), 0 0 0 2px color-mix(in srgb, var(--kraft) 85%, #000); }
+.n-list .twine { position: absolute; left: 4px; top: -24px; z-index: 2; width: 40px; height: 62px; overflow: visible; }
+.n-list .twine path { fill: none; stroke: #A47C4F; stroke-width: 2; stroke-linecap: round; }
+.n-list .twine path.b { stroke: #B88E5E; stroke-width: 1.6; }
+.board .n-list .pin { top: -28px; }
+.n-list .n-ic, .n-list .n-col { position: relative; z-index: 1; }
+.n-list .n-col { background-color: var(--kraft); } /* the same kraft as the tag: says what the text sits on */
+.board .n-list .n-sub { color: #4F3B26; }
+.board .n-list .n-ic { background: color-mix(in srgb, var(--c) 22%, #F6EBD8); }
+
+/* pinned: a sticky note */
+.board .n-pin { padding: 20px 12px 12px; border-radius: 2px; background-color: var(--sticky); background-image: linear-gradient(180deg, var(--sticky-top), var(--sticky)); }
+.board .n-pin .n-tag { color: #74490C; }
+.board .n-pin .n-sub { color: #5E4A2E; }
+.board .n-pin .pin { --c: #D9534F; }
+
+/* today's journal page: lined paper with a paper clip */
+.board .n-page { padding-top: 18px; }
+.n-page .clip { position: absolute; right: 16px; top: -14px; z-index: 3; width: 14px; height: 36px; overflow: visible; }
+.n-page .clip path { fill: none; stroke: #8D939C; stroke-width: 1.8; stroke-linecap: round; }
+
+/* ticked off: a torn strip of paper with a tick in the colour of who did it */
+.board .strip { padding: 11px 16px; gap: 8px; background: none; box-shadow: none; border-radius: 0; font-size: 14px; line-height: 19px; font-weight: 500; }
+.strip .torn { position: absolute; inset: 0; z-index: 0; filter: drop-shadow(0 4px 4px rgba(40,20,10,.25)); }
+.strip .torn::before { content: ''; position: absolute; inset: 0; background: var(--paper);
+  clip-path: polygon(0 8%, 4% 0, 8% 8%, 12% 0, 16% 8%, 20% 0, 24% 8%, 28% 0, 32% 8%, 36% 0, 40% 8%, 44% 0, 48% 8%, 52% 0, 56% 8%, 60% 0, 64% 8%, 68% 0, 72% 8%, 76% 0, 80% 8%, 84% 0, 88% 8%, 92% 0, 96% 8%, 100% 0,
+    100% 92%, 96% 100%, 92% 92%, 88% 100%, 84% 92%, 80% 100%, 76% 92%, 72% 100%, 68% 92%, 64% 100%, 60% 92%, 56% 100%, 52% 92%, 48% 100%, 44% 92%, 40% 100%, 36% 92%, 32% 100%, 28% 92%, 24% 100%, 20% 92%, 16% 100%, 12% 92%, 8% 100%, 4% 92%, 0 100%); }
+.strip .strip-chk { position: relative; z-index: 1; flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: var(--on-color); }
+.board .strip .strip-chk .i { color: var(--on-color); }
+.board .strip > span { position: relative; z-index: 1; background-color: var(--paper); }
+
+/* a sprig of lavender */
+.lavender { width: 26px; height: 96px; overflow: visible; transform: rotate(-16deg); pointer-events: none; }
+.lavender .stem { stroke: #7E9A6B; stroke-width: 1.4; }
+.lavender .bud { fill: #A08ED6; } .lavender .bud.a { fill: #8E7BC4; }
+.lavender .tie { fill: none; stroke: #B48A5A; stroke-width: 2; stroke-linecap: round; }
+
+/* ---------- the string of lights ---------- */
+.lights { position: absolute; left: 0; right: 0; top: 0; z-index: 2; height: 48px; padding: 0; border: 0; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.lights .wire { position: absolute; left: 0; top: 0; width: 100%; height: 40px; overflow: visible; }
+.lights .wire path { fill: none; stroke: #6B5646; stroke-width: 1.6; }
+.evening .lights .wire path, [data-theme="dark"] .lights .wire path { stroke: #3A2C22; }
+.bulb { position: absolute; width: 10px; height: 18px; margin-left: -5px; }
+.bulb::before { content: ''; position: absolute; left: 2.5px; top: -1px; width: 5px; height: 5px; border-radius: 1px; background: #8C7663; }
+.bulb::after { content: ''; position: absolute; left: .5px; top: 3px; width: 9px; height: 13px; box-sizing: border-box; border-radius: 50%; background: #FFF3D2; border: .8px solid #E2CFA8; }
+.bulb .glow { position: absolute; left: 50%; top: 10px; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; opacity: 0; will-change: opacity; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,212,138,.9) 0, rgba(255,194,107,.35) 45%, rgba(255,194,107,0) 70%); }
+.bulb:nth-of-type(1) { left: 4%; top: 8px; --k: 0; }
+.bulb:nth-of-type(2) { left: 15.5%; top: 17px; --k: 1; }
+.bulb:nth-of-type(3) { left: 27%; top: 21px; --k: 2; }
+.bulb:nth-of-type(4) { left: 38.5%; top: 17px; --k: 3; }
+.bulb:nth-of-type(5) { left: 50%; top: 9px; --k: 4; }
+.bulb:nth-of-type(6) { left: 61.5%; top: 16px; --k: 5; }
+.bulb:nth-of-type(7) { left: 73%; top: 21px; --k: 6; }
+.bulb:nth-of-type(8) { left: 84.5%; top: 17px; --k: 7; }
+.bulb:nth-of-type(9) { left: 96%; top: 9px; --k: 8; }
+/* evening: lit, each bulb breathing at its own pace */
+.evening .bulb::before { background: #4A3A2E; }
+.evening .bulb::after { background: #FFD584; border-color: #E8B860; }
+.evening .bulb .glow { opacity: .95; animation: twinkle 3.6s ease-in-out infinite; animation-delay: calc(var(--k) * -.7s); }
+@keyframes twinkle { 0%, 100% { opacity: .95; } 50% { opacity: .55; } }
+/* your partner sent a glow you haven't read: the bulbs take their colour and a wave runs along the string */
+.lights.from .bulb::after { background: color-mix(in srgb, var(--c) 45%, #FFF6E0); border-color: color-mix(in srgb, var(--c) 70%, #FFFFFF); }
+.lights.from .bulb .glow { background: radial-gradient(circle, color-mix(in srgb, var(--c) 70%, #FFFFFF) 0, color-mix(in srgb, var(--c) 40%, transparent) 45%, transparent 70%);
+  animation: glowWave 1.5s ease-in-out infinite; animation-delay: calc(var(--k) * 110ms); }
+@keyframes glowWave { 0%, 100% { opacity: .35; } 45% { opacity: 1; } }
+/* nothing breathes under another screen, and nothing moves with Reduce Motion */
+.view.under .bulb .glow, .view.parked .bulb .glow { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .bulb .glow { animation: none !important; } .lights.from .bulb .glow { opacity: 1; } }
+
+/* ---------- offline, and the empty board ---------- */
+.board .tape { top: -16px; z-index: 4; background: var(--paper); color: var(--ink); }
+.board .slot { color: var(--on-cork); border-color: color-mix(in srgb, var(--on-cork) 50%, transparent); }
+.board.empty { min-height: 480px; }
+.board.empty .slot.s1 { top: 66px; }
+.board.empty .slot.s2 { top: 86px; }
+.board.empty .n-empty { top: 276px; }
+
+/* ink in a person's colour, on paper: dark enough for 4.5:1 with all twelve colours, in both themes */
+.board .n-go, .board .n-h.link .i { color: color-mix(in srgb, var(--accent) 38%, var(--ink)); }
+.board .n-msg .n-go, .board .n-page .n-go, .board .n-wx { color: color-mix(in srgb, var(--c) 38%, var(--ink)); }
+.board .n-msg .n-name { color: color-mix(in srgb, var(--c) 38%, var(--ink)); }

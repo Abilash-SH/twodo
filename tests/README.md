@@ -40,6 +40,11 @@ ago", and *Just me*: only after a passcode, never stored in plain text, never in
 on the partner's phone, the board or in a backup download, locked after a reload or the Lock button. Also the
 planner's "Write about the week" (from Friday; skipped earlier in the week), contrast and the wide layout.
 
+Test 16 covers the decorated board: the lights off in the day and lit in the evening (by the phone's time zone),
+resting under another screen and still with Reduce Motion; a tap only asks (nothing is sent without *Send*); a glow
+arriving as an ordinary message and the partner's lights twinkling in the sender's colour until it is read; the
+next plan for the two of you on the polaroid; times on today's to-dos; and that the board stores nothing.
+
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
 1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be

@@ -64,10 +64,12 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 | Footnote | system | 13 / 18 | 400 | Notes under groups, sub-titles |
 | Caption | system | 12 / 16 | 500–600 | Timestamps, the "New messages" line, badges |
 | Writing | `--serif` | 17 / 26 | 400 | Only the journal's pages: what you write and read there |
+| Handwriting | `--hand` | 22–27 / 1.15 | 700 | Only on the board: its title, names and headings on its notes |
 
 - The system face is the device's own (`-apple-system`, `system-ui`). The rounded face is `ui-rounded`, with the
   system face as fallback. The serif face is the device's own (`ui-serif`, New York on Apple devices), used only for
-  writing in the journal so a page reads like paper. No web fonts.
+  writing in the journal so a page reads like paper. The handwriting face is the device's own too (Noteworthy on
+  Apple devices, `cursive` elsewhere), only for a few words on the board. No web fonts.
 - Nothing readable is smaller than 12 px. Anything a person must read to act is at least 15 px.
 - Text fields are at least 16 px so iOS does not zoom the page.
 - Numbers that change (timers, counts) use `font-variant-numeric: tabular-nums`.
@@ -106,9 +108,17 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 - **Menus.** Open from the thing that was pressed, above the sheet layer. At most seven items; destructive last.
 - **The island.** One short line, an optional second line, at most one button. It never takes focus, never covers a
   focused field, and leaves by itself.
-- **The board (Home).** Notes on a dotted board, each pinned with a pin in the colour of whose it is and tilted by a
-  fixed small angle (−2° to 3°). Notes take slots in a two-column grid (`36-board.css`), never pixel positions, so
-  long titles, dark mode and 320 px phones never overlap. A note is a door (one tap, one screen) and says one thing.
+- **The board (Home).** A cork board in an oak frame on a warm wall, decorated like home (`39-cork.css`): a string of
+  lights across the top, the latest message on a letter held by washi tape in its writer's colour, *Today* on a
+  notepad with two pins in your colours, *Together* on a polaroid (with the next plan for the two of you), a list on a
+  kraft tag hung on twine, a pinned to-do on a sticky note, today's journal page with a paper clip, the last thing
+  ticked off on a torn strip, a sprig of lavender. Paper is paper in both themes, so text on it always uses dark ink
+  (`--ink`). Notes are tilted by a fixed small angle (−4° to 4°) and take slots in a two-column grid, never pixel
+  positions, so long titles, dark mode and 320 px phones never overlap.
+- **The lights.** Off in the day, lit from 6 pm to 6 am by the phone's clock, each bulb breathing slowly (opacity
+  only, paused under another screen, still with Reduce Motion). A tap twinkles them and offers, on the island, to send
+  your partner a glow; it is an ordinary message ("Thinking of you ✨"), and their lights twinkle in your colour
+  until they read it. A note is a door (one tap, one screen) and says one thing.
   Two filled buttons sit at the bottom and never move: *Message* in your partner's colour, *Add a to-do* in yours,
   labels in `--on-color`. Nothing from a secret list, ever: not a title, not a count, not a pin.
 - **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
