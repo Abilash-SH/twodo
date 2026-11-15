@@ -16,6 +16,7 @@ import { HubView } from '../views/HubView';
 import { SearchView } from '../views/SearchView';
 import { TaskListView } from '../views/TaskListView';
 import { TipsView } from '../views/TipsView';
+import { WeekView } from '../views/WeekView';
 import { openViewMenu } from '../views/taskMenus';
 import { vaultBlocks } from '../vault/VaultUI';
 
@@ -33,6 +34,7 @@ const PageBody = memo(function PageBody({ spec, v, viewRef, q, setQ }: { spec: E
   if (spec.type === 'home' || spec.type === 'todos') return <HubView />;
   if (spec.type === 'tips') return <TipsView viewRef={viewRef} />;
   if (spec.type === 'search') return <SearchView q={q} setQ={setQ} />;
+  if (spec.type === 'week') return <WeekView />;
   return <TaskListView spec={spec} />;
 });
 

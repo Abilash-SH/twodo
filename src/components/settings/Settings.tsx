@@ -13,7 +13,7 @@ import { D, L, cleanMap, cleanRecord, commit, ensureBasics, person, ptName, publ
 import { Vault } from '@/lib/vault';
 import { Inbox, Sync } from '@/lib/sync';
 import { applyTheme } from '@/lib/theme';
-import type { List, PeopleRec, PersonKey, Task } from '@/lib/types';
+import type { Goal, List, PeopleRec, PersonKey, Task } from '@/lib/types';
 import { PALETTE, downloadFile, firstWord, initial, isIOS, shortName, standalone, todayStr } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { confirmDialog } from '@/ui/alert';
@@ -202,6 +202,7 @@ export async function importBackup(f: File): Promise<void> {
     const skip = Vault.locked() ? new Set(Object.values(lists).filter(l => l.private).map(l => l.id)) : new Set<string>();
     for (const [id, l] of Object.entries(lists)) if (!skip.has(id) && (!D.lists[id] || (l.updatedAt || 0) > (D.lists[id].updatedAt || 0))) { D.lists[id] = l; commit(l, { silent: true }); n++; }
     for (const [id, t] of Object.entries(tasks)) if (!skip.has(t.listId) && (!D.tasks[id] || (t.updatedAt || 0) > (D.tasks[id].updatedAt || 0))) { D.tasks[id] = t; commit(t, { silent: true }); n++; }
+    for (const [id, g] of Object.entries(cleanMap<Goal>(d.goals))) if (!D.goals[id] || (g.updatedAt || 0) > (D.goals[id].updatedAt || 0)) { D.goals[id] = g; commit(g, { silent: true }); n++; }
     const pp = d.people ? cleanRecord(d.people) as PeopleRec | null : null;
     if (pp && pp.kind === 'people' && (!D.people || (pp.updatedAt || 0) > (D.people.updatedAt || 0))) { setPeopleRec(pp); commit(D.people!, { silent: true }); }
     ensureBasics(); applyTheme(); scheduleRender(); island({ e: '📦', text: `Imported ${n} item${n === 1 ? '' : 's'}`, sub: skip.size ? 'Unlock secret lists and import again for the secret ones' : undefined, ms: skip.size ? 4500 : undefined });

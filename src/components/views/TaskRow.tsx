@@ -7,7 +7,7 @@ import { Fresh, Leaving, Pending, Popping } from '@/ui/tasks';
 import { AssigneeBadge, colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 
-export interface RowCtx { showList?: boolean; doneView?: boolean; hideToday?: boolean }
+export interface RowCtx { showList?: boolean; doneView?: boolean; hideToday?: boolean; timeOnly?: boolean } // timeOnly: the day is already the heading (the planner)
 
 /** the visible part of the row (also used as the lifted preview in the long-press menu) */
 export function TaskRowInner({ t, ctx = {} }: { t: Task; ctx?: RowCtx }) {
@@ -16,7 +16,7 @@ export function TaskRowInner({ t, ctx = {} }: { t: Task; ctx?: RowCtx }) {
   if (ctx.doneView && t.done) meta.push(<span key="d"><Icon name="check" cls="xs" /> {t.doneBy === L.me ? 'You' : person(t.doneBy || 'a').name} · {new Date(t.doneAt || 0).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>);
   else if (t.due || t.time) {
     const od = !t.done && !!t.due && (t.due < t0 || (t.due === t0 && !!t.time && t.time < nowHM()));
-    const label = ctx.hideToday && t.due === t0 ? fmtTime(t.time) : fmtDue(t.due, t.time);
+    const label = ctx.timeOnly || (ctx.hideToday && t.due === t0) ? fmtTime(t.time) : fmtDue(t.due, t.time);
     if (label) meta.push(<span key="due" className={od ? 'od' : ''}><Icon name="cal" cls="xs" /> {label}</span>);
   }
   if (t.repeat) meta.push(<span key="r"><Icon name="repeat" cls="xs" /> {REPEATS[t.repeat] || ''}</span>);
