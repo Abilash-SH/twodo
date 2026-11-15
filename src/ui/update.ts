@@ -29,7 +29,7 @@ let applying = false, hadController = false, lastOffer = -1e9;
 
 const secretTop = (): boolean => { const s = topSpec(); return s.type === 'list' && !!(D.lists[s.id!] && D.lists[s.id!].private); };
 // screens we can reopen: never a secret list (it is locked after a reload, and which list it was stays private)
-const resumable = (s: Spec): boolean => s.type === 'todos' || s.type === 'chat' || s.type === 'week' || (s.type === 'smart' && !!s.key && !!SMART[s.key])
+const resumable = (s: Spec): boolean => s.type === 'todos' || s.type === 'chat' || s.type === 'week' || s.type === 'journal' || (s.type === 'smart' && !!s.key && !!SMART[s.key])
   || (s.type === 'list' && !!s.id && !!D.lists[s.id] && !D.lists[s.id].private && !D.lists[s.id].deleted);
 
 /** true while a reload would interrupt something: typing, an open editor or overlay, a passcode, a swipe */

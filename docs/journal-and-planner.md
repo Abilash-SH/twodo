@@ -37,6 +37,8 @@ interface JournalEntry {  // one person's half of one day's page, in one journal
   rejected, so a record cannot pretend to be another day, another person or the other journal.
 - **One page per person per day per journal.** Only its author writes a half (the editor is read-only for the other
   person), so the two of you never edit the same record at the same time and last-write-wins never loses words.
+- A half with no words, no weather and no prompt is marked deleted (a prompt alone is kept, so the week's prompt
+  waits for you). Empty halves are never shown or put on the board.
 - Goals are one record each, so ticking one goal never overwrites another one being edited on the other phone.
 
 ## Privacy rules

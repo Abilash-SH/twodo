@@ -12,7 +12,8 @@ import { addDays, firstWord, fromYmd, reducedMotion, todayStr, ymd } from '@/lib
 import { BUSY, MAX_GOALS, addGoal, shiftWeek, thisWeek, updateGoal, weekGoals, weekName, weekPlan, weekRange, type Day } from '@/lib/week';
 import { useFlip } from '@/hooks/useFlip';
 import { island } from '@/ui/island';
-import { plannerDay, plannerWeek, viewPrefs } from '@/ui/nav';
+import { openJournal, plannerDay, plannerWeek, viewPrefs } from '@/ui/nav';
+import { WEEK_PROMPT, getPage, writePage } from '@/lib/journal';
 import { cssVars } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { TaskRow, type RowCtx } from './TaskRow';
@@ -126,6 +127,12 @@ function LookBack({ start, left }: { start: string; left: Task[] }) {
       {done.length ? <p className="wk-legend"><span className="me">You {mine}</span><span className="pt">{pt} {theirs}</span></p> : null}
       {goals.length ? <p className="wk-goalsum">{reached === goals.length ? `All ${goals.length} goals reached` : `${reached} of ${goals.length} goals reached`}</p> : null}
       {left.length ? <button className="btn-s" type="button" onClick={move}>Move {left.length} unfinished to the week after</button> : null}
+      {start === thisWeek() ? (
+        <button className="wk-write" type="button" onClick={() => {
+          const mine = getPage(false, todayStr(), L.me);
+          if (!mine || (!mine.prompt && !mine.text.trim())) writePage(false, todayStr(), { prompt: WEEK_PROMPT });
+          openJournal('us');
+        }}><Icon name="journal" cls="sm" />Write about the week together</button>) : null}
     </section>
   );
 }

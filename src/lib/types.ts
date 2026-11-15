@@ -23,8 +23,16 @@ export interface Goal {
   kind: 'goal'; id: string; week: string; text: string; done: boolean; order: number;
   createdAt: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
 }
-export type Rec = Task | List | PeopleRec | Goal;
-export interface Data { tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null; goals: Record<string, Goal> }
+/** 0 not set · 1 sunny · 2 bright spells · 3 cloudy · 4 rainy · 5 stormy */
+export type Mood = 0 | 1 | 2 | 3 | 4 | 5;
+/** One person's half of one day's page in one journal. id = `${private ? 'me' : 'us'}-${date}-${who}`.
+ *  Private entries live only inside the vault and never sync (docs/journal-and-planner.md). */
+export interface JournalEntry {
+  kind: 'journal'; id: string; date: string; who: PersonKey; private: boolean; text: string; mood: Mood; prompt: string;
+  createdAt: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
+}
+export type Rec = Task | List | PeopleRec | Goal | JournalEntry;
+export interface Data { tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null; goals: Record<string, Goal>; journal: Record<string, JournalEntry> }
 
 export interface Settings { theme: 'auto' | 'light' | 'dark'; accent: string; haptics: boolean; sounds: boolean; confetti: boolean; notify: boolean; dmy: boolean }
 export interface AuthState { uid: string; idToken: string; refresh: string; exp: number; email?: string; username?: string; expired?: boolean }

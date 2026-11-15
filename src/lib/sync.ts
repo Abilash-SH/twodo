@@ -15,8 +15,8 @@ import { Remind } from './push';
 import { scheduleRender } from './render';
 import { D, L, cleanRecord, hooks, partnerKey, ptName, recKey, save, setPeopleRec } from './store';
 import { applyTheme } from './theme';
-import type { List, PeopleRec, Rec, Task } from './types';
-import { firstWord } from './util';
+import type { JournalEntry, List, PeopleRec, Rec, Task } from './types';
+import { firstWord, todayStr } from './util';
 
 export type SyncState = 'off' | 'connecting' | 'live' | 'error';
 interface Enc { u?: number; d?: string }
@@ -80,12 +80,13 @@ export const Sync = {
   getRec(k: string): Rec | null | undefined {
     if (k === 'people') return D.people;
     const id = k.slice(2);
-    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : null;
+    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : k[0] === 'j' ? D.journal[id] : null;
   },
   localU(k: string): number { const r = this.getRec(k); return r ? (r.updatedAt || 0) : 0; },
   isPrivate(r: Rec): boolean {
     if (r.kind === 'list') return !!r.private;
     if (r.kind === 'task') { const l = D.lists[r.listId]; return !!(l && l.private); }
+    if (r.kind === 'journal') return r.private;
     return false;
   },
 
@@ -104,6 +105,10 @@ export const Sync = {
     else if (obj.kind === 'task') { this.noteTask(local as Task | undefined, obj); D.tasks[obj.id] = obj; }
     else if (obj.kind === 'list') D.lists[obj.id] = obj as List;
     else if (obj.kind === 'goal') D.goals[obj.id] = obj;
+    else if (obj.kind === 'journal') {
+      if (obj.private) return; // nobody can put a page into your private journal
+      this.notePage(local as JournalEntry | undefined, obj); D.journal[obj.id] = obj;
+    }
     else return;
     save(); scheduleRender();
   },
@@ -114,6 +119,11 @@ export const Sync = {
     if (t.done && (!prev || !prev.done) && t.doneBy === pk) this.note({ e: '💞', text: `${ptName()} completed “${t.title}”` });
     else if (!prev && t.createdBy === pk && (t.assignee === L.me || t.assignee === 'both'))
       this.note({ e: '✨', text: `${ptName()} added “${t.title}”`, sub: t.assignee === L.me ? 'For you' : 'For both of you' });
+  },
+  /** your partner wrote on today's page: a quiet note (never the text itself) */
+  notePage(prev: JournalEntry | undefined, e: JournalEntry) {
+    if (!this.ready || e.deleted || !e.text.trim() || e.who !== partnerKey() || e.date !== todayStr() || (prev && prev.text.trim())) return;
+    this.note({ e: '📖', text: `${ptName()} wrote on today’s page` });
   },
   note(n: { e: string; text: string; sub?: string }) {
     this.notes.push(n);
@@ -130,6 +140,7 @@ export const Sync = {
     for (const id in D.lists) keys.push('l:' + id);
     for (const id in D.tasks) keys.push('t:' + id);
     for (const id in D.goals) keys.push('g:' + id);
+    for (const id in D.journal) if (!D.journal[id].private) keys.push('j:' + id);
     for (const k of keys) {
       const r = this.getRec(k); if (!r) continue;
       if ((r.updatedAt || 0) > ((map[k] && map[k].u) || 0)) this.q.add(k);

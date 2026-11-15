@@ -1,7 +1,7 @@
 /* Twodo · state, persistence and data helpers.
    D = synced data (tasks, lists, the two of you), L = this device only (settings, account, view prefs). */
 import { scheduleRender } from './render';
-import type { Data, Goal, List, Local, PeopleRec, Person, PersonKey, Rec, Task } from './types';
+import type { Data, Goal, JournalEntry, List, Local, Mood, PeopleRec, Person, PersonKey, Rec, Task } from './types';
 import { addDays, dayDiff, firstWord, fromYmd, PALETTE, REPEATS, todayStr, uid, ymd, type Color, type Repeat } from './util';
 
 const KD = 'twodo:data', KL = 'twodo:local';
@@ -16,10 +16,10 @@ export const defaultLocal = (): Local => ({
   view: {}, notified: {}, focus: null, tips: {},
 });
 
-export let D: Data = { tasks: {}, lists: {}, people: null, goals: {} };
+export let D: Data = { tasks: {}, lists: {}, people: null, goals: {}, journal: {} };
 export let L: Local = defaultLocal();
 /** Replace all synced data (used when a different account signs in on this phone) */
-export function resetData(): void { D = { tasks: {}, lists: {}, people: null, goals: {} }; }
+export function resetData(): void { D = { tasks: {}, lists: {}, people: null, goals: {}, journal: {} }; }
 
 /* ---------- Never trust stored or synced records: anything shown on screen is checked here first ----------
    Colours must come from the palette, numbers must be numbers, photos must be small inline images. */
@@ -72,8 +72,18 @@ export function cleanRecord(r: unknown): Rec | null {
     return { ...q, kind: 'goal', id: cStr(q.id, 80), week, text: cStr(q.text, 200), done: !!q.done, order: cNum(q.order),
       createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as Goal;
   }
+  if (q.kind === 'journal') { // one half of one day's page (docs/journal-and-planner.md)
+    const date = typeof q.date === 'string' && DAY_RE.test(q.date) ? q.date : null, who = q.who === 'a' || q.who === 'b' ? q.who : null;
+    if (!date || !who) return null;
+    const priv = q.private === true, id = journalId(priv, date, who);
+    if (q.id !== id) return null; // a page can't pretend to be another day, person or journal
+    const mood = Math.floor(cNum(q.mood));
+    return { ...q, kind: 'journal', id, date, who, private: priv, text: cStr(q.text, 20000), prompt: cStr(q.prompt, 200),
+      mood: (mood >= 0 && mood <= 5 ? mood : 0) as Mood, createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as JournalEntry;
+  }
   return null;
 }
+export const journalId = (priv: boolean, date: string, who: PersonKey): string => `${priv ? 'me' : 'us'}-${date}-${who}`;
 export function cleanMap<T extends Rec>(m: unknown): Record<string, T> {
   const out: Record<string, T> = {};
   for (const [k, v] of Object.entries(m && typeof m === 'object' ? m : {})) { const c = cleanRecord(v); if (c && c.id === k) out[k] = c as T; }
@@ -83,7 +93,8 @@ export function cleanMap<T extends Rec>(m: unknown): Record<string, T> {
 export function load(): void {
   try {
     const d = JSON.parse(localStorage.getItem(KD) || 'null');
-    if (d) D = { tasks: cleanMap<Task>(d.tasks), lists: cleanMap<List>(d.lists), people: d.people ? cleanRecord(d.people) as PeopleRec : null, goals: cleanMap<Goal>(d.goals) };
+    if (d) D = { tasks: cleanMap<Task>(d.tasks), lists: cleanMap<List>(d.lists), people: d.people ? cleanRecord(d.people) as PeopleRec : null, goals: cleanMap<Goal>(d.goals),
+      journal: Object.fromEntries(Object.entries(cleanMap<JournalEntry>(d.journal)).filter(([, e]) => !e.private)) }; // private pages only ever come from the vault
   } catch (e) { console.warn('load data', e); }
   try {
     const l = JSON.parse(localStorage.getItem(KL) || 'null');
@@ -100,7 +111,9 @@ export function publicData(): Data {
   const lists: Record<string, List> = {}, tasks: Record<string, Task> = {};
   for (const [id, l] of Object.entries(D.lists)) if (!l.private) lists[id] = l;
   for (const [id, t] of Object.entries(D.tasks)) if (!isSecret(t)) tasks[id] = t;
-  return { tasks, lists, people: D.people, goals: D.goals };
+  const journal: Record<string, JournalEntry> = {};
+  for (const [id, e] of Object.entries(D.journal)) if (!e.private) journal[id] = e; // private pages: only in the vault
+  return { tasks, lists, people: D.people, goals: D.goals, journal };
 }
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 export function save(): void { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 150); }
@@ -116,7 +129,7 @@ if (typeof window !== 'undefined') {
 }
 
 /* ---------- Records ---------- */
-export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : 'people';
+export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : r.kind === 'journal' ? 'j:' + r.id : 'people';
 export function stamp(rec: Rec): void { rec.updatedAt = Math.max(Date.now(), (rec.updatedAt || 0) + 1); }
 /** Sync registers itself here, so the data layer has no import cycle */
 export const hooks = { queue: (_k: string): void => {} };

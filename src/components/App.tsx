@@ -160,7 +160,7 @@ export default function App() {
   if (!ready) return null;
   const top = topSpec(), noEntries = !navState.get().entries.length;
   // the task box belongs to the to-do screens; on the board it comes up when you tap "Add a to-do"; the chat has its own
-  const composerHidden = noEntries || !L.onboarded || top.type === 'search' || top.type === 'tips' || top.type === 'chat' || (top.type === 'home' && boardHome() && !adding)
+  const composerHidden = noEntries || !L.onboarded || top.type === 'search' || top.type === 'tips' || top.type === 'chat' || top.type === 'journal' || (top.type === 'home' && boardHome() && !adding)
     || (top.type === 'list' && vaultBlocks(top.id));
   return (<>
     <div id="app"><NavStack /><Composer hidden={composerHidden} /></div>
