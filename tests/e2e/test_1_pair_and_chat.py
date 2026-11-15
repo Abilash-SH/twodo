@@ -25,7 +25,7 @@ async def main():
         await signup(A, 'Abilash', 'Deiva', 'a@x.com', 'abilash')
         await signup(B, 'Deiva', 'Abilash', 'd@x.com', 'deiva')
         # Home is the board. Not connected yet: its first note and its message button both lead to "add your partner"
-        print('B board', await B.evaluate("[document.querySelector('.note.n-msg .n-h').textContent, document.querySelector('.board-tray .tray-btn.chat').textContent]"))
+        print('B board', await B.evaluate("[document.querySelector('.stage-char.pt .stage-name')?.textContent, document.querySelector('.board-tray .tray-btn.chat').textContent]"))
         # B finds @abilash and sends a request
         await B.click(OPEN_CHAT); await B.wait_for_timeout(700)
         await B.fill('input[aria-label="Partner username"]', 'abilash'); await B.click('text=Search'); await B.wait_for_timeout(1500)
@@ -36,14 +36,14 @@ async def main():
         await B.click('.sheet.open [data-s="done"]'); await B.wait_for_timeout(700)
         # A sees the request on Home and accepts it
         await A.wait_for_timeout(2500)
-        print('A home', await A.evaluate("(document.querySelector('.note.n-msg .n-h')||{}).textContent"))
-        await A.click('.note.n-msg'); await A.wait_for_timeout(800)
+        print('A home', await A.evaluate("(document.querySelector('.stage-char.pt .stage-name')||{}).textContent"))
+        await A.click('.stage-char.pt'); await A.wait_for_timeout(800)
         await A.click('.fr-card button:has-text("Accept")'); await A.wait_for_timeout(1200)
         print('confirm', await A.evaluate("(document.querySelector('.alert p')||{}).textContent"))
         await A.click('.alert button[data-r="1"]'); await A.wait_for_timeout(2500)
         print('A island after accept', await A.evaluate("document.getElementById('isl').innerText"), await A.evaluate("JSON.stringify(JSON.parse(localStorage.getItem('twodo:local')).pair)"))
         await A.wait_for_timeout(1500)
-        print('A board', await A.evaluate("[document.querySelector('.note.n-msg .n-h')?.textContent, document.querySelector('.board-tray .tray-btn.chat').textContent]"))
+        print('A board', await A.evaluate("[document.querySelector('.stage-char.pt .stage-name')?.textContent, document.querySelector('.board-tray .tray-btn.chat').textContent]"))
         await open_chat(A)
         print('A paired', await A.evaluate("({ name: document.querySelector('.lb-name').textContent, sub: document.querySelector('.c-sub').textContent, empty: (document.querySelector('.c-empty h3')||{}).textContent })"))
         await B.wait_for_timeout(2500)

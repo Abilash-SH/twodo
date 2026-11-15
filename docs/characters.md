@@ -10,9 +10,11 @@ is built. The characters are original, drawn for Twodo.
   or tummy and darker feet (`src/components/home/Character.tsx`, styles in `39-characters.css`).
 - **Four roles:** Cheerleader, Calm friend, Cheeky, Poet. The role is how your character tells you about your day:
   the same facts, a different voice.
-- **Home:** your character at the top, with what it says in a bubble, its role and *Change*. Tap the character for the
-  next thing it has to tell you (1/3, 2/3…). Then your partner's latest message with the writer's character on it,
-  Today (tick in place, with times), and three doors: This week, Journal, Together. The two buttons stay at the bottom.
+- **Home:** what your character says in a bubble (its role and *Change* under it), then the two of you side by side:
+  your character (tap it for the next thing it has to tell you: 1/3, 2/3…) and your partner's, turned towards you
+  (tap it to open your chat; a number says how many messages are new, never what they say). Then Today (tick in
+  place, with times) with *This week* one tap away. Journal and To-dos are the round buttons at the top. The two
+  buttons stay at the bottom.
 - **Your character** (Home → *Change*, or Settings → *Your character*): pick a character and a role. It applies at
   once and reaches your partner's phone. Each of you picks your own.
 

@@ -55,8 +55,8 @@ async def main():
 
         # ---------- your partner sees it live, on their board too, and can't edit it
         cb, B = await phone('/tmp/twodo-B.json')
-        assert await until(B, "(document.querySelector('.board .n-page .n-sub') || {}).textContent", 'Abilash posted today') == 'Abilash posted today', 'Home says who posted today'
-        await B.click('.board .note.n-page'); await B.wait_for_timeout(1000)
+        assert await until(B, "document.querySelector('.boardview .fab-btn[aria-label^=\"Journal\"]').getAttribute('aria-label')", 'Journal, new today') == 'Journal, new today', 'Home says there is something new in the journal'
+        await B.click('.boardview .fab-btn[aria-label^="Journal"]'); await B.wait_for_timeout(1000)
         assert await B.evaluate(TITLES) == ['Board', 'Journal']
         assert await until(B, FIRST, ['Abilash', mine, False, True]) == ['Abilash', mine, False, True], 'read only for the partner'
         await B.click('.jt-compose .jt-ta'); await B.keyboard.type(reply); await B.click('.jt-post-btn'); await B.wait_for_timeout(500)

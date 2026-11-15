@@ -17,39 +17,39 @@ button.hcard:active { transform: scale(.98); }
 .board .note { animation: homeIn var(--dur-page) var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
 @keyframes homeIn { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: none; } }
 
-/* ---------- your character, and what it says ---------- */
-.stage { position: relative; display: flex; align-items: flex-end; gap: 4px; min-height: 186px; padding: 12px 4px 0; border-radius: 28px;
-  background: radial-gradient(120% 95% at 22% 30%, color-mix(in srgb, var(--c) 26%, transparent), transparent 72%); }
-.stage-char { flex: none; width: 120px; height: 124px; margin: 0 0 -2px; padding: 0; border: 0; background: none; display: grid; place-items: end center; -webkit-tap-highlight-color: transparent; }
-.stage-say { flex: 1 1 0; min-width: 0; align-self: center; margin-bottom: 34px; }
+/* ---------- the two of you: what yours says, then both characters side by side ---------- */
+.board-acts { display: flex; gap: 10px; }
+.stage { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 14px 14px 10px; border-radius: 30px;
+  background: radial-gradient(80% 70% at 28% 78%, color-mix(in srgb, var(--me-c) 24%, transparent), transparent 70%),
+    radial-gradient(70% 70% at 76% 80%, color-mix(in srgb, var(--pt-c) 22%, transparent), transparent 70%); }
+.stage-say { position: relative; }
 .say { position: relative; margin: 0; padding: 12px 15px; border-radius: 20px; background: var(--bg2); color: var(--label); box-shadow: var(--card-sh); font-size: 16px; line-height: 21px; overflow-wrap: anywhere; }
-.stage .say::after { content: ''; position: absolute; left: -6px; bottom: 16px; width: 16px; height: 16px; border-radius: 3px; background: inherit; transform: rotate(45deg); }
-.stage-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; min-width: 0; }
+.stage .say::after { content: ''; position: absolute; left: 62px; bottom: -6px; width: 16px; height: 16px; border-radius: 3px; background: inherit; transform: rotate(45deg); }
+.stage-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding-left: 4px; min-width: 0; }
 .role { padding: 4px 10px; border-radius: 999px; background: var(--c); color: var(--on-color); font-size: 13px; line-height: 18px; font-weight: 700; }
 .role-change { min-height: 44px; margin: -10px 0; padding: 0 10px; border: 0; background: none; color: color-mix(in srgb, var(--c) 45%, var(--label)); font: inherit; font-size: 14px; font-weight: 700; }
 .say-n { margin-left: auto; font-size: 12px; line-height: 16px; color: var(--soft); font-variant-numeric: tabular-nums; }
+.stage-floor { display: flex; align-items: flex-end; justify-content: space-around; gap: 8px; padding: 0 6px; }
+.stage-char { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 96px; padding: 0 4px 2px; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
+.stage-char.pt .cr { transform: scaleX(-1); } /* turned towards you */
+.stage-name { font-size: 13px; line-height: 18px; font-weight: 700; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+.pt-badge { position: absolute; top: 4px; right: 4px; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 11px; background: var(--c); color: var(--on-color);
+  font-size: 12px; line-height: 22px; font-weight: 800; text-align: center; box-shadow: 0 0 0 2.5px var(--bg2); }
 
-/* ---------- your partner's latest message, with their character ---------- */
-.n-msg { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px 12px 10px; --i: 1; }
-.msg-char { flex: none; margin-top: -4px; }
-.msg-ic { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 20%, var(--bg2)); color: color-mix(in srgb, var(--c) 45%, var(--label)); }
-.msg-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
-.n-who { display: flex; align-items: center; gap: 8px; font-size: 15px; line-height: 20px; font-weight: 700; }
-.n-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.n-when { font-size: 13px; font-weight: 500; color: var(--soft); }
-.n-badge { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--c); color: var(--on-color); font-size: 12px; line-height: 16px; font-weight: 700; }
-.n-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 2px; font-size: 16px; line-height: 21px; overflow-wrap: anywhere; }
-.n-meta { display: flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--soft); }
+/* shared bits of the cards */
 .n-h { display: block; font-size: 16px; line-height: 21px; font-weight: 700; overflow-wrap: anywhere; }
 .n-sub { display: block; font-size: 13px; line-height: 18px; color: var(--soft); }
 .n-go { display: inline-flex; align-items: center; gap: 2px; margin-top: 6px; border: 0; background: none; padding: 0; color: color-mix(in srgb, var(--accent) 45%, var(--label)); font: inherit; font-size: 13px; line-height: 18px; font-weight: 600; }
-.n-msg .n-go { color: color-mix(in srgb, var(--c) 45%, var(--label)); }
 
 /* ---------- today: tick in place; the ring says whose it is (two colours: for both of you) ---------- */
-.n-today { padding: 8px 14px 6px 6px; --i: 2; }
-.n-th { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 10px; }
-.n-h.link { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; border: 0; background: none; padding: 0; color: var(--label); font: 700 17px/22px var(--round); }
-.n-date { flex: none; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--soft); }
+.n-today { padding: 8px 14px 6px 6px; --i: 1; }
+.n-th { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0 2px 10px; }
+.n-h.link { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; border: 0; background: none; padding: 0; color: var(--label); font: 700 19px/24px var(--round); text-align: left; }
+.n-hcol { display: flex; flex-direction: column; }
+.n-date { font: 500 13px/18px -apple-system, system-ui, sans-serif; color: var(--soft); }
+.n-week { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; margin: 4px 0; padding: 0 12px; border: 0; border-radius: 18px;
+  background: color-mix(in srgb, var(--me-c) 16%, var(--bg2)); color: color-mix(in srgb, var(--me-c) 40%, var(--label)); font: inherit; font-size: 14px; font-weight: 700; }
+.n-week:active { transform: scale(.96); }
 .bn-task { display: flex; align-items: flex-start; min-height: 44px; padding-left: 6px; }
 .bn-task + .bn-task { border-top: 1px solid color-mix(in srgb, var(--label) 9%, transparent); }
 .bn-chk { width: 44px; height: 44px; margin: 0 -5px 0 -6px; flex: none; border: 0; background: none; padding: 0; display: grid; place-items: center; }
@@ -67,13 +67,6 @@ button.hcard:active { transform: scale(.98); }
 .bn-time { flex: none; padding: 12px 0 0 8px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--soft); font-variant-numeric: tabular-nums; }
 .n-today > .n-sub { padding: 2px 10px 10px; font-size: 15px; line-height: 20px; }
 .n-today > .n-go { min-height: 44px; margin: 0 0 0 10px; }
-
-/* ---------- three doors ---------- */
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 96px; padding: 14px 12px 12px; border-radius: 20px; --i: 3; }
-.tile > .i { width: 22px; height: 22px; margin-bottom: 4px; color: color-mix(in srgb, var(--me-c) 55%, var(--label)); }
-.tile .n-h { font-size: 15px; line-height: 20px; }
-.tile .n-sub { font-size: 13px; line-height: 17px; }
 
 /* offline: said once, quietly */
 .tape { display: flex; align-items: center; gap: 8px; align-self: center; padding: 7px 14px; border-radius: 999px; background: var(--bg2); color: var(--label); font-size: 13px; line-height: 18px; font-weight: 600; box-shadow: var(--card-sh); }
@@ -96,7 +89,7 @@ button.hcard:active { transform: scale(.98); }
   .boardview { padding-left: calc(10px + var(--safe-left)); padding-right: calc(10px + var(--safe-right)); }
   .board-tray { gap: 8px; margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
   .tray-btn { flex: 1 1 auto; gap: 6px; padding: 0 10px; font-size: 15px; } .tray-btn.chat { flex-grow: 1; } .tray-btn span:last-child { flex: none; }
-  .stage-char { width: 96px; } .stage-char .cr { width: 92px; height: 92px; } .say-n { display: none; }
+  .stage-char { min-width: 84px; } .stage-char .cr { width: 88px; height: 88px; } .say-n { display: none; }
 }
 @media (min-width: 700px) { .board-tray { justify-content: center; } .board-tray .tray-btn { flex: 0 1 260px; } }
 

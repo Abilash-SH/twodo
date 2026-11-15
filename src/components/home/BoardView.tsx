@@ -1,10 +1,10 @@
 'use client';
-/* Twodo · Home when you're signed in: your character tells you about your day (in the voice of the role you picked),
-   then your partner's latest message (their character on it), today's to-dos to tick in place, and three doors: the
-   week, the journal, things for the two of you. Two actions never move: message your partner, add a to-do.
-   Nothing is stored for Home itself; your character and role live in the people record (docs/characters.md).
+/* Twodo · Home when you're signed in: the two of you, as your characters. Yours tells you about your day in the voice
+   of the role you picked; tap your partner's to open your chat (a number says how many are new). Then today's to-dos
+   to tick in place, with the week one tap away. Two actions never move: message your partner, add a to-do.
+   Nothing is stored for Home itself; characters and roles live in the people record (docs/characters.md).
    Privacy: everything here comes from liveTasks(), the chat and the shared journal, so nothing from a secret list
-   (content, titles, counts) can appear, and the character never mentions one. */
+   (content, titles, counts) can appear, and the character never mentions one. It never shows a message's text. */
 import { memo, useEffect, useRef, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
 import { charName, charOf, lines, roleName, roleOf, type Facts } from '@/lib/characters';
@@ -96,21 +96,24 @@ function ringStyle(t: Task) {
 }
 const whose = (t: Task) => (t.assignee === 'both' ? ', for both of you' : !t.assignee ? '' : t.assignee === L.me ? ', for you' : `, for ${firstWord(person(t.assignee).name)}`);
 
-/** Your character and what it says. Tap it for the next thing it has to tell you. */
-function Stage({ facts }: { facts: Facts }) {
-  const me = L.me, kind = charOf(me), role = roleOf(me), said = lines(facts, role);
-  const [i, setI] = useState(0), [play, setPlay] = useState('wave');
+/** The two of you. Yours speaks (tap it for the next thing); your partner's is the way into your chat. */
+function Stage({ facts, unread }: { facts: Facts; unread: number }) {
+  const me = L.me, pk = partnerKey(), kind = charOf(me), role = roleOf(me), said = lines(facts, role);
+  const paired = !!(L.pair && L.pair.status === 'paired'), pt = firstWord(person(pk).name);
+  const [i, setI] = useState(0), [play, setPlay] = useState('wave'), [ptPlay, setPtPlay] = useState('');
   const line = said[i % said.length];
+  const still = reducedMotion.matches;
   const next = () => {
     setI(n => n + 1); haptic('light');
-    if (!reducedMotion.matches) { setPlay(''); requestAnimationFrame(() => setPlay('hop')); }
+    if (!still) { setPlay(''); requestAnimationFrame(() => setPlay('hop')); }
+  };
+  const toPartner = () => {
+    if (!still) { setPtPlay(''); requestAnimationFrame(() => setPtPlay('wave')); }
+    if (paired) ChatCtl.open(); else openInviteSheet();
   };
   return (
-    <section className="stage" style={colorVar(color(me))} aria-label="Your character">
-      <button className="stage-char" type="button" onClick={next} aria-label={`${charName(kind)}, your character. Tap for what’s next`}>
-        <Character kind={kind} size={112} cls={reducedMotion.matches ? '' : play} />
-      </button>
-      <div className="stage-say">
+    <section className="stage" aria-label="The two of you">
+      <div className="stage-say" style={colorVar(color(me))}>
         <p className="say" aria-live="polite">{line}</p>
         <div className="stage-chips">
           <span className="role">{roleName(role)}</span>
@@ -118,34 +121,18 @@ function Stage({ facts }: { facts: Facts }) {
           {said.length > 1 ? <span className="say-n" aria-hidden="true">{(i % said.length) + 1}/{said.length}</span> : null}
         </div>
       </div>
+      <div className="stage-floor">
+        <button className="stage-char me" type="button" style={colorVar(color(me))} onClick={next} aria-label={`${charName(kind)}, your character. Tap for what’s next`}>
+          <Character kind={kind} size={108} cls={still ? '' : play} /><span className="stage-name">You</span>
+        </button>
+        <button className="stage-char pt" type="button" style={colorVar(color(pk))} onClick={toPartner}
+          aria-label={paired ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
+          <Character kind={charOf(pk)} size={92} cls={still ? '' : ptPlay} />
+          {unread ? <b className="pt-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
+          <span className="stage-name">{paired ? pt : 'Add partner'}</span>
+        </button>
+      </div>
     </section>
-  );
-}
-
-function MessageNote({ m }: { m: MsgNote }) {
-  const pk = partnerKey(), pt = firstWord(person(pk).name), them = <span className="msg-char" aria-hidden="true"><Character kind={charOf(m.who === L.me ? L.me : pk)} size={50} /></span>;
-  if (m.kind === 'invite' || m.kind === 'request' || m.kind === 'sent' || m.kind === 'hello') {
-    const [title, sub, go] = m.kind === 'request' ? [`${m.text} wants to connect`, 'Accept to chat and share to-dos.', 'See request']
-      : m.kind === 'sent' ? [`Waiting for ${m.text}`, 'Your chat starts here as soon as they accept.', 'Open']
-      : m.kind === 'invite' ? ['Add your partner', 'Connect to chat and share to-dos.', 'Connect'] : [`Say hi to ${pt}`, 'No messages yet.', 'Write'];
-    return (
-      <button className="note n-msg hcard" type="button" style={colorVar(color(m.who))} onClick={() => (m.kind === 'hello' ? ChatCtl.open() : openInviteSheet())}>
-        {m.kind === 'hello' ? them : <span className="msg-ic" aria-hidden="true"><Icon name={m.kind === 'invite' ? 'person' : 'chat'} /></span>}
-        <span className="msg-col"><span className="n-h">{title}</span><span className="n-sub">{sub}</span><span className="n-go">{go}<Icon name="chevR" cls="xs" /></span></span>
-      </button>
-    );
-  }
-  const stuck = m.kind === 'waiting' || m.kind === 'failed';
-  return (
-    <button className={`note n-msg hcard${stuck ? ' stuck' : ''}`} type="button" style={colorVar(color(m.who))} onClick={() => ChatCtl.open()}
-      aria-label={`${m.kind === 'new' ? `${m.n} new from ${pt}` : m.who === L.me ? 'You wrote' : `${pt} wrote`}: ${m.text}. Open the chat`}>
-      {them}
-      <span className="msg-col">
-        <span className="n-who"><span className="n-name">{m.who === L.me ? 'You' : pt}</span>{m.kind === 'new' ? <b className="n-badge">{m.n > 9 ? '9+' : m.n} new</b> : <span className="n-when">{m.when}</span>}</span>
-        <span className="n-text">{m.text}</span>
-        {stuck ? <span className="n-meta"><Icon name="clock" cls="xs" />{m.kind === 'failed' ? 'Not delivered' : 'Waiting to send'}</span> : null}
-      </span>
-    </button>
   );
 }
 
@@ -157,8 +144,8 @@ function TodayNote({ b }: { b: Board }) {
   return (
     <section className="note n-today hcard" aria-label="Today">
       <div className="n-th">
-        <button className="n-h link" type="button" onClick={() => openSmart('today')}>Today<Icon name="chevR" cls="xs" /></button>
-        <span className="n-date">{dateLine()}</span>
+        <button className="n-h link" type="button" onClick={() => openSmart('today')}><span className="n-hcol">Today<span className="n-date">{dateLine()}</span></span><Icon name="chevR" cls="xs" /></button>
+        <button className="n-week" type="button" onClick={openWeek} aria-label={`This week: ${b.week ? `${b.week} planned` : 'nothing planned'}. Open the planner`}><Icon name="week" cls="xs" />This week</button>
       </div>
       <div ref={rows}>
         {b.today.map(t => {
@@ -182,20 +169,12 @@ function TodayNote({ b }: { b: Board }) {
 /** Home's content only draws again when the data changes (or the connection does), never when a screen slides over it. */
 const Notes = memo(function Notes({ v, online }: { v: number; online: boolean }) {
   void v;
-  const b = boardData(), pt = firstWord(person(partnerKey()).name);
-  const journal = b.posted ? `${b.posted === L.me ? 'You' : pt} posted today` : 'Write something';
+  const b = boardData(), paired = !!(L.pair && L.pair.status === 'paired');
   return (
     <main className="board home">
       {online ? null : <div className="tape" role="status"><Icon name="cloud" cls="xs" />Offline. Everything is saved here.</div>}
-      <Stage facts={b.facts} />
-      <MessageNote m={b.msg} />
+      <Stage facts={b.facts} unread={paired && Chat.ready() ? Chat.unread() : 0} />
       <TodayNote b={b} />
-      <nav className="tiles" aria-label="More">
-        <button className="note hcard tile n-week" type="button" onClick={openWeek}><Icon name="week" /><span className="n-h">This week</span><span className="n-sub">{b.week ? `${b.week} planned` : 'Nothing planned'}</span></button>
-        <button className="note hcard tile n-page" type="button" onClick={() => openJournal()}><Icon name="journal" /><span className="n-h">Journal</span><span className="n-sub">{journal}</span></button>
-        <button className="note hcard tile n-us" type="button" onClick={() => openSmart('us')} aria-label={`Together: ${b.together} to do as a pair. Open`}>
-          <Icon name="heart" /><span className="n-h">Together</span><span className="n-sub">{b.together ? `${b.together} to do` : 'Nothing yet'}</span></button>
-      </nav>
     </main>
   );
 });
@@ -206,6 +185,7 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
   const paired = !!(L.pair && L.pair.status === 'paired');
   const warn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
   const unread = paired && Chat.ready() ? Chat.unread() : 0, pt = firstWord(person(partnerKey()).name);
+  const posted = posts().some(e => e.date === todayStr() && e.who === partnerKey()); // your partner posted in the journal today
   useEffect(() => { // the offline note and "Waiting to send" follow the connection
     const net = () => renderNow();
     addEventListener('online', net); addEventListener('offline', net);
@@ -216,7 +196,10 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
       <header className="board-top">
         <button className="fab-btn" type="button" aria-label="Settings" onClick={() => openSettings()}><Icon name="gear" /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} /></button>
         <h1 className="board-title">Home</h1>
-        <button className="fab-btn" type="button" aria-label="To-dos and reminders" onClick={() => navTo({ type: 'todos' })}><Icon name="todo" /><i className="fab-dot" hidden={!todoDot} /></button>
+        <span className="board-acts">
+          <button className="fab-btn" type="button" aria-label={posted ? 'Journal, new today' : 'Journal'} onClick={() => openJournal()}><Icon name="journal" /><i className="fab-dot" hidden={!posted} /></button>
+          <button className="fab-btn" type="button" aria-label="To-dos and reminders" onClick={() => navTo({ type: 'todos' })}><Icon name="todo" /><i className="fab-dot" hidden={!todoDot} /></button>
+        </span>
       </header>
       <Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} />
       <nav className="board-tray" aria-label="Main actions">
