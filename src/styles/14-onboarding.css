@@ -14,14 +14,14 @@
 .ob-page h1 { font-size: 34px; line-height: 1.1; margin: 0 0 10px; letter-spacing: .2px; }
 .ob-page p.lead { font-size: 17px; color: var(--label2); margin: 0 0 28px; line-height: 1.45; }
 .ob-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.ob-logo { width: 150px; height: 110px; margin-bottom: 26px; }
-.ob-logo .c1 { animation: slideL 1.1s var(--spring) both .1s; }
-.ob-logo .c2 { animation: slideR 1.1s var(--spring) both .1s; }
-.ob-logo .ck { stroke-dasharray: 60; stroke-dashoffset: 60; animation: draw .7s var(--spring) forwards 1s; }
-@keyframes slideL { from { transform: translateX(-40px); opacity: 0; } }
-@keyframes slideR { from { transform: translateX(40px); opacity: 0; } }
-@keyframes draw { to { stroke-dashoffset: 0; } }
-.ob-hero h1 { font-size: 44px; animation: rise .8s var(--spring) both .35s; }
+.ob-logo { width: 160px; height: 100px; margin-bottom: 26px; overflow: visible; }
+.ob-logo path { stroke: var(--bg); stroke-width: 4; stroke-linejoin: round; transform-box: fill-box; transform-origin: 50% 60%; }
+.ob-logo .h1 { fill: var(--sp-a, var(--c-blue)); animation: obHeartA 1s var(--spring) both .1s; }
+.ob-logo .h2 { fill: var(--sp-b, var(--c-pink)); animation: obHeartB 1s var(--spring) both .16s; }
+@keyframes obHeartA { from { transform: translateX(-50px) rotate(-30deg) scale(.6); opacity: 0; } to { transform: rotate(-10deg); opacity: 1; } }
+@keyframes obHeartB { from { transform: translateX(50px) rotate(30deg) scale(.6); opacity: 0; } to { transform: rotate(10deg); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ob-logo .h1 { animation: none; transform: rotate(-10deg); } .ob-logo .h2 { animation: none; transform: rotate(10deg); } }
+.ob-hero h1 { font-size: 32px; line-height: 1.15; animation: rise .8s var(--spring) both .35s; }
 .ob-hero p { animation: rise .8s var(--spring) both .5s; }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } }
 .ob-actions { display: flex; flex-direction: column; gap: 8px; animation: rise .8s var(--spring) both .7s; }

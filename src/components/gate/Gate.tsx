@@ -50,7 +50,7 @@ export function Gate({ first }: { first: GatePage }) {
     const e = name === cur ? err || un.err : '';
     switch (name as GatePage) {
       case 'welcome': return (<>
-        <div className="ob-hero"><Logo /><h1>Twodo</h1><p className="lead">Your to-dos, together.<br />Private, encrypted, made for two.</p></div>
+        <div className="ob-hero"><Logo /><h1>Two souls, one space.</h1><p className="lead">Your to-dos, your chat and your journal, together.<br />Private and encrypted.</p></div>
         <div className="ob-actions"><button className="btn" type="button" onClick={() => go('create')}>Create account</button>
           <button className="btn ghost" type="button" onClick={() => go('signin')}>I already have an account</button></div></>);
       case 'create': return (<>
@@ -75,7 +75,7 @@ export function Gate({ first }: { first: GatePage }) {
         <div className="ob-field"><label htmlFor="gEmail">Email</label><input id="gEmail" type="email" autoComplete="email" autoCapitalize="off" placeholder="you@example.com" maxLength={254} defaultValue={st.current.email} onInput={ev => { st.current.email = ev.currentTarget.value.trim(); setErr(''); }} /></div>
         <Password id="gPass" auto="current-password" />
         <div className="err">{e}</div>
-        <button className="btn ghost" type="button" style={{ height: 'auto', padding: 0, margin: '-6px 0 0', fontSize: 15, width: 'auto', alignSelf: 'flex-start' }} onClick={() => void confirmDialog({ title: 'Forgot your password?', message: 'Twodo can’t reset it — your password is your encryption key, and nobody else has it. Whoever owns the Firebase project can delete your account (Authentication → Users) so you can create it again and re-pair. Tasks on this phone are kept.', ok: 'OK', cancel: null })}>Forgot password?</button>
+        <button className="btn ghost" type="button" style={{ height: 'auto', padding: 0, margin: '-6px 0 0', fontSize: 15, width: 'auto', alignSelf: 'flex-start' }} onClick={() => void confirmDialog({ title: 'Forgot your password?', message: 'It can’t be reset: your password is your encryption key, and nobody else has it. Whoever owns the Firebase project can delete your account (Authentication → Users) so you can create it again and re-pair. Tasks on this phone are kept.', ok: 'OK', cancel: null })}>Forgot password?</button>
         <div className="spacer" />
         <BusyButton className="btn" data-submit="" onRun={async () => {
           const form = { email: val('gEmail'), password: val('gPass') };
@@ -99,14 +99,14 @@ export function Gate({ first }: { first: GatePage }) {
           catch (x) { fail((x as Error).message); }
         }}>Continue</BusyButton></>);
       case 'ready': return (<>
-        <h1>You’re in, {firstWord(myName())} 💞</h1><p className="lead">A few things that make Twodo feel like magic:</p>
+        <h1>You’re in, {firstWord(myName())} 💞</h1><p className="lead">A few things that make it feel like magic:</p>
         <ul className="tips">
           <li><span className="e">💌</span><div>Pair with {firstWord(ptName()) === 'Partner' ? 'your partner' : firstWord(ptName())}<small>Tap “Add partner” on Home and search their @username.</small></div></li>
           <li><span className="e">✅</span><div>To-dos, one tap away<small>Tap the button at the top right and just type: “Movie night fri 8pm @us !!”.</small></div></li>
           <li><span className="e">👉</span><div>Swipe right to complete<small>Swipe left to pin or delete. Long-press for more.</small></div></li>
           <li><span className="e">📌</span><div>Home is your board<small>The latest message and today’s to-dos pin themselves there. Tap Message to chat.</small></div></li>
         </ul><div className="spacer" />
-        <button className="btn" type="button" onClick={() => { haptic('success'); enter({ e: '✨', text: `You’re @${L.auth!.username}`, sub: 'Share it with your partner to pair' }); }}>Start using Twodo</button>
+        <button className="btn" type="button" onClick={() => { haptic('success'); enter({ e: '✨', text: `You’re @${L.auth!.username}`, sub: 'Share it with your partner to pair' }); }}>Get started</button>
         <button className="btn ghost" type="button" onClick={() => { haptic('light'); enter(); setTimeout(() => openTips(), 420); }}>💡 Show me all the tips</button></>);
     }
   };

@@ -56,8 +56,8 @@ self.addEventListener('push', e => {
     let msg = {}; try { msg = e.data ? e.data.json() : {}; } catch (err) { /* ignore */ }
     let r = null; try { r = await decryptReminder(msg); } catch (err) { /* wrong key → generic text */ }
     const chat = (r && r.k === 'chat') || String(msg.id || '').startsWith('chat_');
-    await self.registration.showNotification(r ? (chat ? r.t : `⏰ ${r.t}`) : chat ? '💬 New message' : '⏰ Twodo reminder', {
-      body: r ? r.b : chat ? 'Open Twodo to read it.' : 'You have a task due.', tag: chat ? 'chat' : 'rem-' + (msg.id || Date.now()),
+    await self.registration.showNotification(r ? (chat ? r.t : `⏰ ${r.t}`) : chat ? '💬 New message' : '⏰ Reminder', {
+      body: r ? r.b : chat ? 'Open the app to read it.' : 'You have a task due.', tag: chat ? 'chat' : 'rem-' + (msg.id || Date.now()),
       icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: chat ? './#chat' : './' },
     });
   })());

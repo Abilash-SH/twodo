@@ -20,16 +20,16 @@ export function Onboarding() {
     onClick={() => { setSt(s => ({ ...s, [k]: { ...s[k], color: c } })); if (k === 'a') document.documentElement.style.setProperty('--accent', `var(--c-${c})`); haptic('light'); }} />)}</div>;
   const page = (name: string) => {
     if (name === 'welcome') return (<>
-      <div className="ob-hero"><Logo /><h1>Twodo</h1><p className="lead">Your to-dos, together.<br />A little app made for the two of you.</p></div>
+      <div className="ob-hero"><Logo /><h1>Two souls, one space.</h1><p className="lead">Your to-dos, together.<br />A little app made for the two of you.</p></div>
       <div className="ob-actions"><button className="btn" type="button" onClick={() => go('names')}>Get started</button></div></>);
     if (name === 'names') return (<>
-      <h1>Who’s this for?</h1><p className="lead">Twodo is made for two. Add you both — you can change this any time.</p>
+      <h1>Who’s this for?</h1><p className="lead">Made for two. Add you both. You can change this any time.</p>
       <div className="ob-field"><label htmlFor="obA">Your name</label><input id="obA" placeholder="e.g. Alex" autoComplete="given-name" maxLength={24} defaultValue={st.a.name} onInput={e => { const v = e.currentTarget.value.trim(); setSt(s => ({ ...s, a: { ...s.a, name: v } })); }} />{colors('a')}</div>
       <div className="ob-field"><label htmlFor="obB">Your partner’s name</label><input id="obB" placeholder="e.g. Sam" maxLength={24} defaultValue={st.b.name} onInput={e => { const v = e.currentTarget.value.trim(); setSt(s => ({ ...s, b: { ...s.b, name: v } })); }} />{colors('b')}</div>
       <div className="spacer" /><button className="btn" type="button" disabled={!(st.a.name && st.b.name)} onClick={() => go('ready')}>Continue</button>
       <button className="btn ghost" type="button" onClick={() => go('welcome')}>Back</button></>);
     return (<>
-      <h1>You’re all set, {firstWord(st.a.name)} 💞</h1><p className="lead">A few things that make Twodo feel like magic:</p>
+      <h1>You’re all set, {firstWord(st.a.name)} 💞</h1><p className="lead">A few things that make it feel like magic:</p>
       <ul className="tips">
         <li><span className="e">⌨️</span><div>Just type naturally<small>“Dinner with @{firstWord(st.b.name).toLowerCase()} fri 8pm !!” sets the person, date, time and priority.</small></div></li>
         <li><span className="e">👉</span><div>Swipe right to complete<small>Swipe left to pin or delete. Long-press for more.</small></div></li>
@@ -42,7 +42,7 @@ export function Onboarding() {
         seedLists(); seedTasks(); applyTheme(); haptic('success');
         setOut(true); setTimeout(() => gateStore.set(null), 600);
         L.onboarded = true; save(); boot.run();
-      }}>Start using Twodo</button></>);
+      }}>Get started</button></>);
   };
   return <div id="ob" ref={wrap} className={out ? 'out' : undefined}><ObPages pages={pages} setPages={setPages} render={page} wrap={wrap} /></div>;
 }

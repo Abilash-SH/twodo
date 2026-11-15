@@ -26,11 +26,11 @@ const TIPS: Tip[] = [
   { c: 'basics', e: '📌', t: 'Home is your board', d: 'What matters today pins itself there: the latest message, today’s to-dos, what’s for both of you. Tap a note to open it, or tick a to-do right on it. **Message** and **Add a to-do** stay at the bottom; the small button at the **top right** opens To-dos & reminders, the one at the **top left** opens Settings.' },
   { c: 'basics', e: '➕', t: 'Add a task by typing', d: 'Tap **Add a to-do** on your board and type: it lands in today. In To-dos (top right) the box at the bottom adds to the list you’re in, or your Inbox.' },
   { c: 'basics', e: '📥', t: 'Choose where it goes', d: 'Tap the list name inside the box (like **📥 Inbox ⌄**) to pick another list, or just type **#groceries**.' },
-  { c: 'basics', e: '📋', t: 'Paste a whole list', d: 'Paste several lines and Twodo adds one task per line. Perfect for groceries.' },
+  { c: 'basics', e: '📋', t: 'Paste a whole list', d: 'Paste several lines and each one becomes a task. Perfect for groceries.' },
   { c: 'basics', e: '📝', t: 'Tap a task for details', d: 'Notes, date, time, repeat, priority, who it’s for, list, tags and subtasks. Everything saves instantly.' },
   { c: 'basics', e: '↩️', t: 'Undo anything', d: 'Completed or deleted something by mistake? Tap **Undo** in the black pill at the top.' },
   // Typing
-  { c: 'typing', e: '🪄', t: 'Just say it', d: 'Twodo reads dates, times, people, priority, lists and repeats straight from your words.', demo: 'chips' },
+  { c: 'typing', e: '🪄', t: 'Just say it', d: 'Dates, times, people, priority, lists and repeats are read straight from your words.', demo: 'chips' },
   { c: 'typing', e: '🧾', t: 'Cheat sheet', d: 'Mix and match any of these in one line:', demo: 'sheet' },
   { c: 'typing', e: '🙅', t: 'Tap a chip to ignore it', d: 'Wrong guess, like “Watch _Friday_ Night Lights”? Tap the date chip and the word stays in the title.' },
   { c: 'typing', e: '💊', t: 'Quick pills', d: 'While you type, pills above the box add a date, person, priority, list or repeat with one tap.' },
@@ -75,7 +75,7 @@ const TIPS: Tip[] = [
   { c: 'focus', e: '📅', t: 'Alerts that always fire', d: 'In a task’s details, tap **Add to Calendar** to get your phone’s own calendar alert.' },
   { c: 'focus', e: '🎉', t: 'Clear the day', d: 'Finish everything due today for a little celebration.' },
   // App & privacy
-  { c: 'app', e: '📲', t: 'Add to Home Screen', d: 'In Safari: Share → **Add to Home Screen**. You get full screen, push reminders and a faster launch. Always open Twodo from that icon.' },
+  { c: 'app', e: '📲', t: 'Add to Home Screen', d: 'In Safari: Share → **Add to Home Screen**. You get full screen, push reminders and a faster launch. Always open it from that icon.' },
   { c: 'app', e: '✈️', t: 'Works offline', d: 'Keep going without signal. Everything syncs as soon as you’re back online.' },
   { c: 'app', e: '🎨', t: 'Make it yours', d: 'Settings → your photo, name and colour (it’s your message colour and the app’s accent), theme, haptics, sounds and celebrations.', act: ['settings', 'Open Settings'] },
   { c: 'app', e: '🔐', t: 'Private by design', d: 'Tasks and messages are encrypted on your phones before they’re saved. Your password never leaves your phone.' },
@@ -140,7 +140,7 @@ export function TipsView({ viewRef }: { viewRef: React.RefObject<HTMLElement | n
   }, [cat, viewRef]);
   const pick = (k: string) => { viewPrefs('tips').cat = k; save(); haptic('light'); renderNow(); };
   return (<>
-    <h1 className="large-title">Tips</h1><div className="subtitle">Little things that make Twodo feel like magic ✨</div>
+    <h1 className="large-title">Tips</h1><div className="subtitle">Little things that make it feel like magic ✨</div>
     <div ref={row} className="tip-pills">{([['all', '💡', 'All']] as string[][]).concat(TIP_CATS).map(([k, e, n]) => (
       <button key={k} className={`tip-pill${k === cat ? ' on' : ''}`} type="button" onClick={() => pick(k)}>{e} {n}</button>))}</div>
     <div ref={secs} className="tip-secs"><Sections cat={cat} /></div>

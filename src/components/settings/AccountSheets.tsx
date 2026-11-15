@@ -49,7 +49,7 @@ function AuthForm({ up }: { up: boolean }) {
     <div className="err" style={{ margin: '-12px 32px 12px' }}>{err}</div>
     <div className="tw:px-4"><BusyButton ref={goRef} className="btn" onRun={run}>{up ? 'Create account' : 'Sign in'}</BusyButton></div>
     <p className="note-s" style={{ marginTop: 14 }}>{up
-      ? 'Your password never leaves this phone. Twodo turns it into a separate login secret plus an encryption key, so not even Firebase can read your tasks. If you forget it, see the README.'
+      ? 'Your password never leaves this phone. It is turned into a separate login secret plus an encryption key, so not even Firebase can read your tasks. If you forget it, see the README.'
       : 'Signing in on a new phone restores your encrypted lists and your pairing.'}</p>
   </>);
 }
@@ -201,7 +201,7 @@ function AddPartner() {
     <div className="sec-h sub">Your username</div>
     <div className="group"><div className="cell"><span className="grow" style={{ fontSize: 20, fontWeight: 700 }}>@{L.auth?.username}</span>
       <button className="btn-s gray" type="button" onClick={async () => {
-        const text = `Add me on Twodo 💞 My username is @${L.auth!.username}\n${location.origin}${location.pathname}`;
+        const text = `Add me 💞 My username is @${L.auth!.username}\n${location.origin}${location.pathname}`;
         if (navigator.share) { try { await navigator.share({ text }); return; } catch (x) { if ((x as Error).name === 'AbortError') return; } }
         if (await copyText(text)) island({ e: '📋', text: 'Copied', ms: 1500 });
       }}>Share</button></div></div>

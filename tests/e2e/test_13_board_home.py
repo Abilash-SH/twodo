@@ -300,7 +300,7 @@ async def main():
         await C.fill('#gName', 'Kavin'); await C.fill('#gPartner', 'Deiva'); await C.fill('#gEmail', f'k{stamp}@x.com'); await C.fill('#gPass', 'password 123')
         await C.click('[data-p="create"] [data-submit]'); await C.wait_for_timeout(3500)
         await C.fill('#gUser', f'kavin{stamp}'); await C.click('[data-p="username"] [data-submit]'); await C.wait_for_timeout(2000)
-        await C.click('text=Start using Twodo'); await C.wait_for_timeout(1500)
+        await C.click('text=Get started'); await C.wait_for_timeout(1500)
         first = await C.evaluate(BOARD)
         assert await C.evaluate("document.querySelector('.board .n-msg .n-h').textContent") == 'Add your partner' and first['rows'], first
         assert await C.evaluate("document.querySelector('.board-tray .tray-btn.chat').textContent") == 'Add partner'

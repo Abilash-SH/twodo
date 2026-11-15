@@ -32,7 +32,7 @@ async def main():
         await P.click('text=Get started'); await P.wait_for_timeout(600)
         await P.fill('#obA', 'Abilash'); await P.fill('#obB', 'Deiva')
         await P.click('[data-p=names] .btn:has-text("Continue")'); await P.wait_for_timeout(600)
-        await P.click('text=Start using Twodo'); await P.wait_for_timeout(1400)
+        await P.click('text=Get started'); await P.wait_for_timeout(1400)
         sec_id = await q("Object.values(JSON.parse(localStorage.getItem('twodo:data')).lists).find(l => l.private).id")
         await P.click('.secret-group .cell:has-text("Secret")'); await P.wait_for_timeout(900)
         print('gate', await q("[document.querySelector('.vault-gate h3').textContent, !!document.querySelector('#composer.hide')]"))

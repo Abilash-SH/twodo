@@ -58,7 +58,7 @@ function runBoot() {
   // straight after an update: back on the screen you were on (your typing returns in ChatBar / Composer)
   const back = resume();
   for (const spec of back.stack) pushView(spec);
-  if (back.updated) setTimeout(() => island({ e: '✨', text: 'Twodo is up to date', ms: 2200 }), 1700);
+  if (back.updated) setTimeout(() => island({ e: '✨', text: 'Up to date', ms: 2200 }), 1700);
   if (!Sync.live) void startCloud();
   if (L.focus && L.focus.running) showLive();
   checkReminders();

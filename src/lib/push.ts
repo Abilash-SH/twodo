@@ -17,13 +17,13 @@ export const Push = {
   why(): string {
     if (!cloudReady() || !this.configured()) return 'Push isn’t set up yet (README, “Push reminders”).';
     if (!Auth.user()) return 'Sign in to use push reminders.';
-    if (isIOS() && !standalone()) return 'On iPhone, open Twodo from your Home Screen first.';
+    if (isIOS() && !standalone()) return 'On iPhone, open the app from your Home Screen first.';
     if (!this.supported()) return 'This browser can’t receive push notifications.';
     return '';
   },
   async enable() {
     const why = this.why(); if (why) throw new Error(why);
-    if (await Notification.requestPermission() !== 'granted') throw new Error('Notifications are blocked. Allow them in Settings for Twodo.');
+    if (await Notification.requestPermission() !== 'granted') throw new Error('Notifications are blocked. Allow them in Settings for this app.');
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64url(CFG.vapidPublicKey) });

@@ -141,7 +141,7 @@ function Pad({ mode, then }: { mode: Mode; then?: () => void }) {
 async function forgot(): Promise<void> {
   const ok = await confirmDialog({
     title: 'Erase secret lists?', destructive: true, ok: 'Erase',
-    message: 'Without the passcode nobody can open them, not even Twodo. Erasing removes them from this phone so you can start again. Your other lists aren’t touched.',
+    message: 'Without the passcode nobody can open them, not even this app. Erasing removes them from this phone so you can start again. Your other lists aren’t touched.',
   });
   if (!ok) return;
   Vault.reset(); closeSheet(); island({ e: '🗑️', text: 'Secret lists erased' }); renderNow();
@@ -197,6 +197,6 @@ export function VaultSettings() {
         <p>They lock as soon as you leave the app, and their to-dos never show in Today, search or counts. If you forget the passcode, they can’t be recovered.</p>
       </LearnMore>
     </div>
-    <p className="note-s">Only on this phone. Locks when you leave Twodo.</p>
+    <p className="note-s">Only on this phone. Locks when you leave the app.</p>
   </>);
 }
