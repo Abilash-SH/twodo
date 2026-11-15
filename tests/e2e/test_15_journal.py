@@ -55,15 +55,14 @@ async def main():
 
         # ---------- your partner sees it live, on their board too, and can't edit it
         cb, B = await phone('/tmp/twodo-B.json')
-        assert await until(B, "(document.querySelector('.board .n-page .n-page-t') || {}).textContent", mine) == mine
-        assert await B.evaluate("document.querySelector('.board .n-page .n-h').textContent") == 'Abilash posted today'
+        assert await until(B, "(document.querySelector('.board .n-page .n-sub') || {}).textContent", 'Abilash posted today') == 'Abilash posted today', 'Home says who posted today'
         await B.click('.board .note.n-page'); await B.wait_for_timeout(1000)
         assert await B.evaluate(TITLES) == ['Board', 'Journal']
         assert await until(B, FIRST, ['Abilash', mine, False, True]) == ['Abilash', mine, False, True], 'read only for the partner'
         await B.click('.jt-compose .jt-ta'); await B.keyboard.type(reply); await B.click('.jt-post-btn'); await B.wait_for_timeout(500)
         assert await until(A, FIRST, ['Deiva', reply, False, True]) == ['Deiva', reply, False, True], 'newest first, live on the other phone'
         assert await q("document.querySelectorAll('.jt-thread .jt-post')[1].querySelector('.jt-text').textContent") == mine
-        print('PASS: your partner sees it live (and on their board) without a way to edit it; their reply goes on top')
+        print('PASS: your partner sees it live (and Home says so) without a way to edit it; their reply goes on top')
 
         # ---------- a draft waits while you look elsewhere
         await A.click('.jt-compose .jt-ta'); await A.keyboard.type('half a thought')

@@ -9,6 +9,7 @@ import { useStore } from '@/ui/store';
 import { toggleDone, togglePin, deleteTask } from '@/ui/tasks';
 import { ChatView } from '../chat/ChatView';
 import { BoardView } from '../home/BoardView';
+import { CharacterView } from '../home/CharacterView';
 import { openTaskSheet } from '../sheets/TaskSheet';
 import { openSettings } from '../settings/Settings';
 import { Icon } from '../ui/Icon';
@@ -37,6 +38,7 @@ const PageBody = memo(function PageBody({ spec, v, viewRef, q, setQ }: { spec: E
   if (spec.type === 'search') return <SearchView q={q} setQ={setQ} />;
   if (spec.type === 'week') return <WeekView />;
   if (spec.type === 'journal') return <JournalView />;
+  if (spec.type === 'character') return <CharacterView />;
   return <TaskListView spec={spec} />;
 });
 

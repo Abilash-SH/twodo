@@ -95,7 +95,7 @@ async def main():
 
         ctx, pg = await phone(8003,'/tmp/twodo-A.json')
         # Home is the board; the chat is one tap away and slides in already drawn
-        assert await pg.locator('.board-title').text_content() == 'Our board'
+        assert await pg.locator('.board-title').text_content() == 'Home'
         await pg.locator('.board-tray .tray-btn.chat').tap(); await pg.wait_for_timeout(900)
         assert await pg.locator('.lb-name').text_content() == 'Deiva'
         await pg.fill('.cb-in','Native regression message')

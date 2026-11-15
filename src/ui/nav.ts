@@ -15,7 +15,7 @@ import { flushSync } from 'react-dom';
 import { closeMenu } from './menu';
 import { createStore } from './store';
 
-export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips' | 'week' | 'journal';
+export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips' | 'week' | 'journal' | 'character';
 export interface Spec { type: ViewType; key?: SmartKey; id?: string }
 export interface Entry { id: number; spec: Spec; phase: 'in' | 'idle' | 'out' }
 export const navState = createStore<{ entries: Entry[] }>({ entries: [] });
@@ -73,13 +73,14 @@ export function openBoardAdd(): void {
 }
 export const alertsOn = (): boolean => !!L.settings.notify || (Push.configured() && Push.on());
 export function viewTitle(spec: Spec): string {
-  if (spec.type === 'home') return boardHome() ? 'Board' : 'To-dos';
+  if (spec.type === 'home') return boardHome() ? 'Home' : 'To-dos';
   if (spec.type === 'chat') return 'Chat';
   if (spec.type === 'search') return 'Search';
   if (spec.type === 'tips') return 'Tips';
   if (spec.type === 'todos') return 'To-dos';
   if (spec.type === 'week') return 'Week';
   if (spec.type === 'journal') return 'Journal';
+  if (spec.type === 'character') return 'Your character';
   if (spec.type === 'list') { const l = D.lists[spec.id!]; return l ? l.name : 'Secret'; } // a locked secret list isn't loaded
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
   return SMART[spec.key!].title;
@@ -165,6 +166,8 @@ function revealChat(): void {
 export const openSmart = (key: SmartKey): void => { pushView({ type: 'smart', key }); };
 /** The journal: "Us" (shared) or "Just me" (private, behind the passcode) */
 export function openJournal(): void { if (topSpec().type === 'journal') return; pushView({ type: 'journal' }); }
+/** pick your character and its role (from Home or Settings) */
+export function openCharacter(): void { if (topSpec().type === 'character') return; pushView({ type: 'character' }); }
 /** The planner always opens on this week, at today */
 export function openWeek(): void { const vp = viewPrefs('week'); vp.week = undefined; vp.day = undefined; pushView({ type: 'week' }); }
 /** the week the planner shows (its Monday) */

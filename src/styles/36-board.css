@@ -1,53 +1,58 @@
-/* Twodo · the board: Home for the two of you (design.md; the concept is in docs/home-concepts.md).
-   Notes sit in a two-column grid, each tilted a little, so real content of any length still fits; nothing is placed
-   by pixel. Only transform and opacity animate. Text on a person's colour uses --on-color (dark, 4.5:1 on all twelve). */
+/* Twodo · Home when signed in: your character tells you about your day, then your partner's latest message, today's
+   to-dos and three doors (design.md, "Home"; docs/characters.md). Cards on a page tinted with your colour. Only
+   transform and opacity animate. Text on a person's colour uses --on-color (dark, 4.5:1 on all twelve). */
 :root { --on-color: #1B1730; }
-.boardview { display: flex; flex-direction: column; gap: 12px; padding: calc(var(--safe-top) + 6px) calc(12px + var(--safe-right)) 0 calc(12px + var(--safe-left));
-  --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); --ring: color-mix(in srgb, var(--label) 45%, transparent); }
-.board-top { flex: none; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; justify-items: center; min-height: 44px; }
-.board-title { margin: 0; font: 700 20px/25px var(--round); }
+.view.boardview { background: color-mix(in srgb, var(--me-c) 7%, var(--bg)); }
+.boardview { display: flex; flex-direction: column; gap: 10px; padding: calc(var(--safe-top) + 6px) calc(16px + var(--safe-right)) 0 calc(16px + var(--safe-left));
+  --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); --ring: color-mix(in srgb, var(--label) 45%, transparent);
+  --card-sh: 0 1px 2px rgba(27,23,48,.08), 0 10px 24px -18px rgba(27,23,48,.45); }
+.board-top { position: relative; flex: none; display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+.board-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } /* for screen readers: the character is the heading you see */
+.boardview .fab-btn { width: 44px; height: 44px; margin-top: 0; background: var(--bg2); box-shadow: var(--card-sh); }
 
-.board { position: relative; flex: 1 0 auto; width: 100%; max-width: 560px; margin: 0 auto; box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px 12px;
-  align-content: start; align-items: start; padding: 28px 14px 24px; border-radius: 28px; background-color: var(--bg3);
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--label) 13%, transparent) 1.2px, transparent 1.6px); background-size: 20px 20px; }
+.board.home { position: relative; flex: 1 0 auto; width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 12px; }
+.hcard { position: relative; box-sizing: border-box; width: 100%; margin: 0; border: 0; border-radius: 22px; background: var(--bg2); color: var(--label); box-shadow: var(--card-sh);
+  font: inherit; text-align: left; -webkit-tap-highlight-color: transparent; transition: transform var(--dur-quick) var(--ease-out); }
+button.hcard:active { transform: scale(.98); }
+.board .note { animation: homeIn var(--dur-page) var(--ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes homeIn { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: none; } }
 
-/* ---------- a note ---------- */
-.note, .strip { position: relative; box-sizing: border-box; margin: 0; border: 0; color: var(--label); font: inherit; text-align: left; box-shadow: var(--shadow);
-  transform: rotate(var(--r, 0deg)); animation: noteIn var(--dur-page) var(--ease-spring) both; animation-delay: calc(var(--i, 0) * 45ms); -webkit-tap-highlight-color: transparent; }
-.note { display: block; width: 100%; padding: 16px 14px 12px; border-radius: 14px; background: var(--bg2); transition: transform var(--dur-quick) var(--ease-out); }
-button.note:active, .n-pin:has(.n-open:active) { transform: rotate(var(--r, 0deg)) scale(.97); }
-@keyframes noteIn { from { opacity: 0; transform: translate3d(0, 14px, 0) rotate(calc(var(--r, 0deg) - 3deg)) scale(.96); } to { opacity: 1; transform: rotate(var(--r, 0deg)); } }
-.pin { position: absolute; left: 50%; top: -7px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--c); box-shadow: inset 0 -2px 0 rgba(27,23,48,.22), 0 2px 3px rgba(27,23,48,.3); }
-.r1 { --r: -2deg; --i: 0; grid-column: 1; grid-row: 1; }
-.r2 { --r: 2deg; --i: 1; grid-column: 2; grid-row: 1 / span 2; margin-top: 24px; }
-.r3 { --r: 3deg; --i: 2; grid-column: 1; grid-row: 2 / span 2; width: 88%; }
-.r4 { --r: -1.5deg; --i: 3; grid-column: 2; grid-row: 3; align-self: end; }
-.r5 { --r: 1.2deg; --i: 4; grid-column: 1; grid-row: 4; }
-.r7 { --r: 2.2deg; --i: 5; grid-column: 2; grid-row: 4; } /* today's journal page */
-.r6 { --r: -1deg; --i: 6; grid-column: 1 / span 2; grid-row: 5; justify-self: center; }
+/* ---------- your character, and what it says ---------- */
+.stage { position: relative; display: flex; align-items: flex-end; gap: 4px; min-height: 186px; padding: 12px 4px 0; border-radius: 28px;
+  background: radial-gradient(120% 95% at 22% 30%, color-mix(in srgb, var(--c) 26%, transparent), transparent 72%); }
+.stage-char { flex: none; width: 120px; height: 124px; margin: 0 0 -2px; padding: 0; border: 0; background: none; display: grid; place-items: end center; -webkit-tap-highlight-color: transparent; }
+.stage-say { flex: 1 1 0; min-width: 0; align-self: center; margin-bottom: 34px; }
+.say { position: relative; margin: 0; padding: 12px 15px; border-radius: 20px; background: var(--bg2); color: var(--label); box-shadow: var(--card-sh); font-size: 16px; line-height: 21px; overflow-wrap: anywhere; }
+.stage .say::after { content: ''; position: absolute; left: -6px; bottom: 16px; width: 16px; height: 16px; border-radius: 3px; background: inherit; transform: rotate(45deg); }
+.stage-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; min-width: 0; }
+.role { padding: 4px 10px; border-radius: 999px; background: var(--c); color: var(--on-color); font-size: 13px; line-height: 18px; font-weight: 700; }
+.role-change { min-height: 44px; margin: -10px 0; padding: 0 10px; border: 0; background: none; color: color-mix(in srgb, var(--c) 45%, var(--label)); font: inherit; font-size: 14px; font-weight: 700; }
+.say-n { margin-left: auto; font-size: 12px; line-height: 16px; color: var(--soft); font-variant-numeric: tabular-nums; }
 
-.n-h { display: block; font: 700 17px/22px var(--round); overflow-wrap: anywhere; }
-.n-sub { display: block; font-size: 13px; line-height: 18px; color: var(--soft); }
-.n-go, .n-h.link { display: inline-flex; align-items: center; gap: 2px; border: 0; background: none; padding: 0; color: color-mix(in srgb, var(--accent) 45%, var(--label));
-  font-family: inherit; font-size: 13px; line-height: 18px; font-weight: 600; }
-button.n-go, .n-h.link { min-height: 44px; margin: -13px 0; }  /* a 44 px target that doesn't make the note taller */
-.n-h.link { color: var(--label); font: 700 17px/22px var(--round); margin: -11px 0; }
-span.n-go { margin-top: 8px; }
-
-/* the latest message: tinted with the colour of whoever wrote it */
-.n-msg { background: color-mix(in srgb, var(--c) 16%, var(--bg2)); }
-.n-who { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 18px; font-weight: 600; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+/* ---------- your partner's latest message, with their character ---------- */
+.n-msg { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px 12px 10px; --i: 1; }
+.msg-char { flex: none; margin-top: -4px; }
+.msg-ic { flex: none; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 20%, var(--bg2)); color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+.msg-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; }
+.n-who { display: flex; align-items: center; gap: 8px; font-size: 15px; line-height: 20px; font-weight: 700; }
 .n-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.n-msg .n-go { color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+.n-when { font-size: 13px; font-weight: 500; color: var(--soft); }
 .n-badge { flex: none; padding: 2px 8px; border-radius: 999px; background: var(--c); color: var(--on-color); font-size: 12px; line-height: 16px; font-weight: 700; }
-.n-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 4px; font-size: 16px; line-height: 21px; overflow-wrap: anywhere; }
-.n-meta { display: flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--soft); }
-.n-msg .n-h + .n-sub { margin-top: 4px; }
+.n-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 2px; font-size: 16px; line-height: 21px; overflow-wrap: anywhere; }
+.n-meta { display: flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--soft); }
+.n-h { display: block; font-size: 16px; line-height: 21px; font-weight: 700; overflow-wrap: anywhere; }
+.n-sub { display: block; font-size: 13px; line-height: 18px; color: var(--soft); }
+.n-go { display: inline-flex; align-items: center; gap: 2px; margin-top: 6px; border: 0; background: none; padding: 0; color: color-mix(in srgb, var(--accent) 45%, var(--label)); font: inherit; font-size: 13px; line-height: 18px; font-weight: 600; }
+.n-msg .n-go { color: color-mix(in srgb, var(--c) 45%, var(--label)); }
 
-/* today: tick in place; the ring says whose it is (two colours: for both of you) */
-.n-today { padding: 18px 10px 10px 12px; background: color-mix(in srgb, var(--c-yellow) 15%, var(--bg2)); }
-.bn-task { display: flex; align-items: flex-start; min-height: 44px; }
-.bn-chk { width: 44px; height: 44px; margin: 0 -5px 0 -11px; flex: none; border: 0; background: none; padding: 0; display: grid; place-items: center; }
+/* ---------- today: tick in place; the ring says whose it is (two colours: for both of you) ---------- */
+.n-today { padding: 8px 14px 6px 6px; --i: 2; }
+.n-th { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-left: 10px; }
+.n-h.link { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; border: 0; background: none; padding: 0; color: var(--label); font: 700 17px/22px var(--round); }
+.n-date { flex: none; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--soft); }
+.bn-task { display: flex; align-items: flex-start; min-height: 44px; padding-left: 6px; }
+.bn-task + .bn-task { border-top: 1px solid color-mix(in srgb, var(--label) 9%, transparent); }
+.bn-chk { width: 44px; height: 44px; margin: 0 -5px 0 -6px; flex: none; border: 0; background: none; padding: 0; display: grid; place-items: center; }
 .bn-chk i { width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; display: grid; place-items: center; color: var(--on-color);
   border: 2px solid; border-color: var(--ca, var(--ring)) var(--cb, var(--ring)) var(--cb, var(--ring)) var(--ca, var(--ring)); transition: transform var(--dur-quick) var(--ease-bounce); }
 .bn-chk:active i { transform: scale(.86); }
@@ -56,61 +61,28 @@ span.n-go { margin-top: 8px; }
 .bn-task.pop .bn-chk i { animation: bnPop var(--dur-standard) var(--ease-bounce); }
 @keyframes bnPop { from { transform: scale(.7); } to { transform: none; } }
 .bn-task.leaving { opacity: 0; transform: scale(.96); pointer-events: none; transition: opacity var(--dur-quick) var(--ease-out), transform var(--dur-standard) var(--ease-out); }
-.bn-title { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 11px 0; border: 0; background: none; color: var(--label); font: inherit; font-size: 15px; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
+.bn-title { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 11px 0; border: 0; background: none; color: var(--label); font: inherit; font-size: 16px; line-height: 21px; text-align: left; overflow-wrap: anywhere; }
 .bn-title span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .bn-task.checked .bn-title { color: var(--soft); text-decoration: line-through; }
-.n-today .n-sub { margin: 6px 0 8px; }
-.n-today button.n-go { margin: -6px 0 -10px; }
+.bn-time { flex: none; padding: 12px 0 0 8px; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--soft); font-variant-numeric: tabular-nums; }
+.n-today > .n-sub { padding: 2px 10px 10px; font-size: 15px; line-height: 20px; }
+.n-today > .n-go { min-height: 44px; margin: 0 0 0 10px; }
 
-/* together: a small photo of the two of you */
-.n-us { padding: 10px 10px 12px; border-radius: 6px; text-align: center; }
-.n-photo { display: flex; align-items: center; justify-content: center; height: 88px; margin-bottom: 8px; border-radius: 6px; background: color-mix(in srgb, var(--me-c) 15%, var(--bg3)); }
-.n-photo .av { width: 48px; height: 48px; line-height: 48px; font-size: 21px; box-shadow: 0 0 0 2.5px var(--bg2); }
-.n-photo .av + .av { margin-left: -13px; }
-.n-us .n-h { font-size: 15px; line-height: 20px; }
+/* ---------- three doors ---------- */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 96px; padding: 14px 12px 12px; border-radius: 20px; --i: 3; }
+.tile > .i { width: 22px; height: 22px; margin-bottom: 4px; color: color-mix(in srgb, var(--me-c) 55%, var(--label)); }
+.tile .n-h { font-size: 15px; line-height: 20px; }
+.tile .n-sub { font-size: 13px; line-height: 17px; }
 
-/* one list, one pinned to-do, the last thing ticked off */
-.n-list { display: flex; align-items: center; gap: 10px; padding: 14px 12px 12px; }
-.n-ic { width: 36px; height: 36px; flex: none; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, var(--bg2)); font-size: 18px; }
-.n-col { min-width: 0; }
-.n-list .n-h { font-family: inherit; font-size: 16px; line-height: 20px; font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.n-open { display: block; width: 100%; border: 0; background: none; padding: 0; color: inherit; font: inherit; text-align: left; }
-.n-tag { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in srgb, var(--c-orange) 50%, var(--label)); }
-.n-pin .n-h { font-family: inherit; font-size: 16px; line-height: 21px; font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-.n-pin button.n-go { margin: -4px 0 -10px; }
-.strip { display: flex; align-items: center; gap: 6px; max-width: 94%; padding: 9px 12px; border-radius: 4px; background: color-mix(in srgb, var(--label) 5%, var(--bg2)); font-size: 13px; line-height: 18px; }
-.strip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.strip .i { color: color-mix(in srgb, var(--pt-c) 50%, var(--label)); }
-
-/* the journal: today's newest post, on lined paper in the colour of whoever wrote it */
-.n-page { padding: 16px 12px 12px 14px; background-color: color-mix(in srgb, var(--c) 12%, var(--bg2));
-  background-image: repeating-linear-gradient(180deg, transparent 0 20px, color-mix(in srgb, var(--c) 26%, transparent) 20px 21px); background-position: 0 37px; }
-.n-page .n-h { display: flex; align-items: center; gap: 6px; font-family: inherit; font-size: 15px; line-height: 20px; font-weight: 700; }
-.n-page-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; margin-top: 4px; font: 400 15px/21px ui-serif, 'New York', 'Iowan Old Style', Georgia, serif; overflow-wrap: anywhere; }
-.n-page-t.none { color: var(--soft); }
-.n-page .n-go { color: color-mix(in srgb, var(--c) 45%, var(--label)); }
-
-/* where a pinned to-do goes, until there is one */
-.slot.s-pin { position: relative; min-height: 96px; transform: rotate(1.2deg); grid-column: 1; grid-row: 4; }
-
-/* offline: a strip of tape across the top */
-.tape { position: absolute; left: 50%; top: -11px; z-index: 1; display: flex; align-items: center; gap: 8px; padding: 7px 14px; white-space: nowrap; transform: translateX(-50%) rotate(-1.5deg);
-  background: color-mix(in srgb, var(--label) 10%, var(--bg2)); color: var(--label); font-size: 13px; line-height: 18px; font-weight: 600; box-shadow: 0 1px 2px rgba(40,20,60,.14); }
-
-/* nothing yet */
-.board.empty { display: block; min-height: 440px; }
-.slot { position: absolute; box-sizing: border-box; padding: 8px; border: 2px dashed color-mix(in srgb, var(--label) 28%, transparent); border-radius: 14px; display: grid; place-items: center; text-align: center; font-size: 13px; line-height: 18px; color: var(--soft); }
-.slot.s1 { left: 5%; top: 32px; width: 50%; height: 96px; transform: rotate(-2deg); }
-.slot.s2 { right: 5%; top: 58px; width: 36%; height: 150px; transform: rotate(2deg); }
-.n-empty { position: absolute; left: 9%; top: 250px; width: 82%; --r: -1deg; padding: 22px 18px 18px; }
-.n-empty .n-h { font-size: 20px; line-height: 25px; }
-.n-empty .n-sub { margin-top: 8px; font-size: 15px; line-height: 21px; }
+/* offline: said once, quietly */
+.tape { display: flex; align-items: center; gap: 8px; align-self: center; padding: 7px 14px; border-radius: 999px; background: var(--bg2); color: var(--label); font-size: 13px; line-height: 18px; font-weight: 600; box-shadow: var(--card-sh); }
 
 /* ---------- the two actions, always in thumb reach ---------- */
-.board-tray { position: sticky; bottom: 0; z-index: 2; flex: none; display: flex; gap: 12px; margin: 0 -12px; padding: 14px 12px calc(12px + var(--safe-bottom));
-  background: linear-gradient(to top, var(--bg) 72%, color-mix(in srgb, var(--bg) 0%, transparent)); }
+.board-tray { position: sticky; bottom: 0; z-index: 2; flex: none; display: flex; gap: 12px; margin: 0 -16px; padding: 12px 16px calc(12px + var(--safe-bottom));
+  background: linear-gradient(to top, color-mix(in srgb, var(--me-c) 7%, var(--bg)) 72%, transparent); }
 .tray-btn { flex: 1 1 0; min-width: 0; height: 56px; border: 0; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--on-color);
-  font: inherit; font-size: 16px; line-height: 20px; font-weight: 600; white-space: nowrap; transition: transform var(--dur-quick) var(--ease-out); -webkit-tap-highlight-color: transparent; }
+  font: inherit; font-size: 16px; line-height: 20px; font-weight: 600; white-space: nowrap; box-shadow: 0 10px 22px -14px rgba(27,23,48,.55); transition: transform var(--dur-quick) var(--ease-out); -webkit-tap-highlight-color: transparent; }
 .tray-btn:active { transform: scale(.96); }
 .tray-btn.chat { flex-grow: 1.3; background: var(--c); } /* its label carries a name: it gets the wider share */
 .tray-btn.add { background: var(--me-c); }
@@ -118,10 +90,16 @@ span.n-go { margin-top: 8px; }
 .tray-ic { position: relative; display: flex; flex: none; margin-right: 2px; }
 .tray-n { position: absolute; top: -9px; right: -12px; min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 5px; border-radius: 10px; background: var(--on-color); color: #fff; font-size: 12px; line-height: 20px; font-weight: 700; text-align: center; }
 .tray-ic:has(.tray-n) { margin-right: 10px; }
-/* the task box is up over the board: its own buttons step aside */
+/* the task box is up over Home: its own buttons step aside */
 .boardview.adding .board-tray { visibility: hidden; }
-@media (max-width: 359px) { .tray-btn { gap: 6px; font-size: 15px; } }
+@media (max-width: 359px) {
+  .boardview { padding-left: calc(10px + var(--safe-left)); padding-right: calc(10px + var(--safe-right)); }
+  .board-tray { gap: 8px; margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
+  .tray-btn { flex: 1 1 auto; gap: 6px; padding: 0 10px; font-size: 15px; } .tray-btn.chat { flex-grow: 1; } .tray-btn span:last-child { flex: none; }
+  .stage-char { width: 96px; } .stage-char .cr { width: 92px; height: 92px; } .say-n { display: none; }
+}
 @media (min-width: 700px) { .board-tray { justify-content: center; } .board-tray .tray-btn { flex: 0 1 260px; } }
 
 /* ---------- the chat screen while it is closed: mounted, laid out, never painted, never reachable ---------- */
 .view.parked { visibility: hidden; pointer-events: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { .board .note { animation: none; } }
