@@ -104,12 +104,13 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 - **Menus.** Open from the thing that was pressed, above the sheet layer. At most seven items; destructive last.
 - **The island.** One short line, an optional second line, at most one button. It never takes focus, never covers a
   focused field, and leaves by itself.
-- **Home.** Your character at the top in a soft glow of your colour, with what it says in a bubble (tail towards
-  it), its role in a filled chip and *Change*. Then cards on a page tinted with your colour: your partner's latest
-  message with the writer's character, Today (rings in the colour of whose it is, times on the right), and three
-  doors (This week, Journal, Together). Two filled buttons sit at the bottom and never move: *Message* in your
-  partner's colour, *Add a to-do* in yours, labels in `--on-color`. Nothing from a secret list, ever: not a title, not
-  a count, not a word the character says. `docs/characters.md`.
+- **Home.** Three things, nothing scattered: what your character says (a bubble, its role in a filled chip,
+  *Change*); the two of you as your characters side by side on a soft glow of both colours (yours speaks, your
+  partner's opens your chat and carries a count of what's new, never a message's text); and Today (rings in the colour
+  of whose it is, times on the right, the date under the title, *This week* one tap away). At the top: Settings on the
+  left, Journal (a dot when your partner posted today) and To-dos on the right. Two filled buttons sit at the bottom
+  and never move: *Message* in your partner's colour, *Add a to-do* in yours, labels in `--on-color`. Nothing from a
+  secret list, ever. `docs/characters.md`.
 - **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
   how full the day is in both of your colours, and a dot marks a busy day (six open to-dos or more). Goals are a short
   list of three at most, ticked in the colour of whoever ticked them. The look back (from Friday) shows what you did,
@@ -135,8 +136,8 @@ Calm friend, Cheeky, Poet) for how it talks to you. `docs/characters.md`.
 - **Original.** Drawn for Twodo. No resemblance to an existing character, mascot, game or brand.
 - **Readable small.** A clear silhouette at 44 px. Body in the person's colour, a light face or tummy, darker feet,
   dark eyes, at most one accent (a leaf, an antenna).
-- **Placement.** Home: yours at the top (96–120 px), the writer's on the latest message (50 px). The character
-  screen and Settings. Never over a name, a status line or a button.
+- **Placement.** Home: the two of you side by side (yours 108 px, your partner's 92 px, turned towards you). The
+  character screen and Settings. Never over a name, a status line or a button.
 - **Words.** Short, kind, specific: what is on today, the next thing with a time, what your partner did. Fixed
   sentences per role, written from your data; never a quote from a message; never anything from a secret list.
 - **Behaviour.** Still by default. A wave when Home appears and a hop when tapped, under 1.2 s, transform only.

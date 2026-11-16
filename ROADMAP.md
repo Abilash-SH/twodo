@@ -176,6 +176,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
 | 2026-11-15 | A journal page has one record per person: only its writer edits it | Two people never edit the same record at once, so last-write-wins never loses words |
 | 2026-11-15 | No app name on screen; the launch is two hearts in your colours with "Two souls, one space." | Asked for; the name under the Home Screen icon still comes from the page title and can be renamed when adding it |
+| 2026-11-15 | Home shows the two of you as characters and only Today below; no message card, no extra tiles | The cards and tiles felt scattered and repeated To-dos; a message's text belongs in the chat |
 | 2026-11-15 | Home is led by a character you pick, with a role that sets its voice (concept B) | Chosen over a decorated board and a scene; it keeps every door and the two buttons |
 | 2026-11-15 | What the character says is fixed sentences per role, written from data on the phone | No AI and nothing sent; it can never say anything from a secret list or quote a message |
 | 2026-11-15 | Character and role are two optional fields on each person in the people record | Synced like name and colour; older versions keep unknown fields; no new record or key |

@@ -1,5 +1,5 @@
 """Home when signed in: your character tells you about your day in its role's voice (tap it for the next thing), then
-your partner's latest message, today's to-dos and three doors; its two buttons (message your partner, add a to-do)
+your partner's character (the way into your chat), and today's to-dos with the week one tap away; its two buttons (message your partner, add a to-do)
 never move; to-dos are added and ticked off in place and your partner's Home follows; picking a character and a role
 (it reaches your partner too); nothing from a secret list ever appears or is said (unlocked or locked); "Waiting to
 send" while offline; what it says before a partner is connected and with nothing to do; a tip's "Open chat"; signing
@@ -12,8 +12,8 @@ from helpers import OPEN_CHAT, TITLES, open_chat, back_home
 # what is on the board, read from the screen
 BOARD = """(() => { const t = s => { const e = document.querySelector('.board ' + s); return e ? e.textContent : null; };
   const rows = [...document.querySelectorAll('.board .bn-task')].map(r => r.querySelector('.bn-title').textContent), more = t('.n-today button.n-go');
-  return { msg: t('.n-msg'), rows, more, today: rows.length + (more ? parseInt(more) : 0), us: t('.n-us .n-sub'), week: t('.n-week .n-sub'),
-    journal: t('.n-page .n-sub'), say: t('.say'), role: t('.role'), tape: t('.tape') }; })()"""
+  return { rows, more, today: rows.length + (more ? parseInt(more) : 0), say: t('.say'), role: t('.role'), tape: t('.tape'),
+    pt: t('.stage-char.pt .stage-name'), badge: t('.stage-char.pt .pt-badge') }; })()"""
 # what the To-dos screen counts (it must be open)
 HUB = """(() => { const v = document.querySelector('#stack > .view.pushed:not(.parked):not(.under)');
   return { cards: Object.fromEntries([...v.querySelectorAll('.hub-card')].map(c => [c.querySelector('.hub-t').textContent, +c.querySelector('.hub-n').textContent || 0])),
@@ -103,13 +103,14 @@ async def main():
         await todos(A)
         hub = await q(HUB)
         assert board['today'] == hub['cards']['Today'] and len(board['rows']) == min(3, hub['cards']['Today']), (board, hub)
-        assert board['us'] == (f"{hub['cards']['Together']} to do" if hub['cards']['Together'] else 'Nothing yet'), (board['us'], hub)
+        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.stage .cr').length") == 2, 'both of you are there, as your characters'
+        assert not await q("document.querySelector('.board .n-msg, .board .tiles')"), "no message card, no row of extra doors"
         await back_home(A)
         print(f"PASS: your character greets you as a {board['role']} and says what's on today; the cards match the To-dos screen ({board['today']} today)")
 
         # ---------- every note is a door: one tap, one screen, and Back returns to the board
-        doors = [('.board .note.n-msg', ['Chat']), ('.board .n-today .n-h.link', ['Today']), ('.board .note.n-us', ['Abilash & Deiva', 'Deiva & Abilash']),
-                 ('.board .note.n-week', ['Week']), ('.board .note.n-page', ['Journal']), ('.board .role-change', ['Your character'])]
+        doors = [('.board .stage-char.pt', ['Chat']), ('.board .n-today .n-h.link', ['Today']), ('.board .n-today .n-week', ['Week']),
+                 ('.boardview .fab-btn[aria-label^="Journal"]', ['Journal']), ('.board .role-change', ['Your character'])]
         if board['more']: doors.append(('.board .n-today button.n-go', ['Today']))
         for sel, titles in doors:
             await A.click(sel); await A.wait_for_timeout(1000)
@@ -215,7 +216,7 @@ async def main():
         await press(A, f'{top} .task:has-text("Anniversary surprise") .ti', 'pin')
         assert await A.locator(f'{top} .task:has-text("Anniversary surprise")').count() == 1, 'the secret to-do exists: due today, for both, pinned'
         def same_board(now):
-            return all(now[k] == before[k] for k in ('rows', 'more', 'today', 'us', 'week', 'journal'))
+            return all(now[k] == before[k] for k in ('rows', 'more', 'today'))
         hidden = "(() => { const t = document.querySelector('.boardview').textContent; return !t.includes('Anniversary') && !t.includes('Secret'); })()"
         async def says_nothing_secret():
             return not any('Anniversary' in l or 'Secret' in l for l in await said(A))
@@ -242,16 +243,15 @@ async def main():
         await ca.set_offline(True); await A.wait_for_timeout(300)
         await A.fill('.chatview .cb-in', f'no signal {stamp}'); await A.click('.chatview .cb-send'); await A.wait_for_timeout(1200)
         await q("document.activeElement.blur()"); await back_home(A)
-        off = await q("({ tape: (document.querySelector('.board .tape') || {}).textContent, stuck: !!document.querySelector('.board .n-msg.stuck'), text: document.querySelector('.board .n-msg .n-text').textContent, meta: (document.querySelector('.board .n-msg .n-meta') || {}).textContent })")
-        assert off == {'tape': 'Offline. Everything is saved here.', 'stuck': True, 'text': f'no signal {stamp}', 'meta': 'Waiting to send'}, off
+        off = await q("({ tape: (document.querySelector('.board .tape') || {}).textContent, text: document.querySelector('.boardview').textContent.includes('no signal') })")
+        assert off == {'tape': 'Offline. Everything is saved here.', 'text': False}, off
         offline_worst = await q(CONTRAST)   # the tape and "Waiting to send" are text too
         assert offline_worst['ratio'] >= 4.5, ('offline board text contrast', offline_worst)
         await ca.set_offline(False)
-        assert await until(A, "!document.querySelector('.board .tape') && !document.querySelector('.board .n-msg.stuck')", True, 15000), 'back online: the tape goes and the message is sent'
-        assert await until(B, "(document.querySelector('.board .n-msg .n-text') || {}).textContent", f'no signal {stamp}', 15000) == f'no signal {stamp}', "it reaches the partner's board"
+        assert await until(A, "!document.querySelector('.board .tape')", True, 15000), 'back online: the tape goes'
         n1 = n0 + 1; shown = '9+' if n1 > 9 else str(n1)
-        assert await B.evaluate("[(document.querySelector('.board .n-msg .n-badge') || {}).textContent, (document.querySelector('.board-tray .tray-n') || {}).textContent]") == [f'{shown} new', shown]
-        print('PASS: offline Home says so and shows the unsent message as waiting; it is sent when the connection returns')
+        assert await until(B, "[(document.querySelector('.board .stage-char.pt .pt-badge') || {}).textContent, (document.querySelector('.board-tray .tray-n') || {}).textContent]", [shown, shown], 15000) == [shown, shown], "it reaches your partner: their Home says one more is new"
+        print('PASS: offline Home says so; the message goes when the connection returns, and your partner sees one more new')
 
         # ---------- your character and its role: picked on its own screen, shown on Home, seen by your partner
         await A.click('.board .role-change'); await A.wait_for_timeout(1000)
@@ -265,14 +265,14 @@ async def main():
         assert await q("!!document.querySelector('.stage .cr-sprout')") and home['role'] == 'Calm friend' and home['say'].startswith(GREET['Calm friend']), home
         mine = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
         assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people; return p && p.{mine} && p.{mine}.char + '/' + p.{mine}.role; }})()", 'sprout/calm', 12000) == 'sprout/calm', 'it reaches your partner'
-        assert await until(B, "!!document.querySelector('.board .n-msg .msg-char .cr-sprout')", True), "your character sits on your message on your partner's Home"
+        assert await until(B, "!!document.querySelector('.board .stage-char.pt .cr-sprout')", True), "your partner's Home shows your new character next to theirs"
         await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
         assert await q("document.querySelector('.sheet.open .me-char .sub').textContent") == 'Sprout · Calm friend'
         await A.click('.sheet.open .me-char'); await A.wait_for_timeout(1300)
         assert await q(TITLES) == ['Board', 'Your character'], 'Settings leads to it too'
         await A.click('.chv-pick:has-text("Bun")'); await A.wait_for_timeout(200); await A.click('.chv-role:has-text("Cheerleader")'); await A.wait_for_timeout(300)   # tidy up
         await back_home(A)
-        print("PASS: picking a character and a role changes Home at once and reaches your partner (their Home shows it on your message); Settings leads there too")
+        print("PASS: picking a character and a role changes Home at once and reaches your partner (it stands next to theirs); Settings leads there too")
 
         # ---------- contrast: every piece of text on the board, for every colour two people can pick, light and dark
         # Deiva's board gets one of each kind of note first: something new, today, together, a list, a pin, something ticked off
@@ -284,7 +284,7 @@ async def main():
         await press(B, f'{top} .task:has-text("Pinned for contrast {stamp}") .ti', 'pin')
         await press(B, f'{top} .task:has-text("Done for contrast {stamp}") .ti', 'done'); await B.wait_for_timeout(1400)
         await back_home(B)
-        missing = await B.evaluate("['.say', '.role', '.role-change', '.n-msg .n-badge', '.n-today .bn-title', '.n-today button.n-go', '.n-us .n-sub', '.n-week .n-sub', '.n-page .n-sub', '.tray-n'].filter(s => !document.querySelector('.boardview ' + s))")
+        missing = await B.evaluate("['.say', '.role', '.role-change', '.stage-name', '.pt-badge', '.n-today .bn-title', '.n-today .n-date', '.n-today .n-week', '.n-today button.n-go', '.tray-n'].filter(s => !document.querySelector('.boardview ' + s))")
         assert not missing, ('the board under test should show every kind of note', missing)
         worst = await B.evaluate(CONTRAST)
         assert worst['ratio'] >= 4.5, ('board text contrast', worst)
@@ -302,9 +302,9 @@ async def main():
         await C.fill('#gUser', f'kavin{stamp}'); await C.click('[data-p="username"] [data-submit]'); await C.wait_for_timeout(2000)
         await C.click('text=Get started'); await C.wait_for_timeout(1500)
         first = await C.evaluate(BOARD)
-        assert await C.evaluate("document.querySelector('.board .n-msg .n-h').textContent") == 'Add your partner' and first['rows'], first
+        assert first['pt'] == 'Add partner' and first['rows'], first
         assert await C.evaluate("document.querySelector('.board-tray .tray-btn.chat').textContent") == 'Add partner'
-        for sel in ('.board .note.n-msg', OPEN_CHAT):
+        for sel in ('.board .stage-char.pt', OPEN_CHAT):
             await C.click(sel); await C.wait_for_timeout(900)
             assert await C.evaluate("document.querySelector('.sheet.open h3').textContent") == 'Add partner', sel
             await C.evaluate("history.back()"); await C.wait_for_timeout(900)

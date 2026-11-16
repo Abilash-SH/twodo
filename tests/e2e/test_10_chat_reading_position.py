@@ -10,8 +10,8 @@ GAP = "(() => { const b = document.querySelector('.chatbody'); return Math.round
 UNREAD = """(() => { const c = JSON.parse(localStorage.getItem('twodo:chat') || '{}'), me = JSON.parse(localStorage.getItem('twodo:local')).auth.uid;
   return Object.values(c.msgs || {}).filter(m => m.f !== me && !m.del && m.ts > c.read).length; })()"""
 STATUS = "(document.querySelector('.c-status') || {}).className || ''"
-# what the board says about the conversation: [the first note's badge, the number on its "Message" button]
-BOARD_NEW = "[(document.querySelector('.board .n-msg .n-badge') || {}).textContent || null, (document.querySelector('.board-tray .tray-n') || {}).textContent || null]"
+# what Home says about the conversation: [the number on your partner's character, the number on the "Message" button]
+BOARD_NEW = "[(document.querySelector('.board .stage-char.pt .pt-badge') || {}).textContent || null, (document.querySelector('.board-tray .tray-n') || {}).textContent || null]"
 PILL = "(() => { const p = document.querySelector('.c-jump'); return p && !p.hidden ? p.textContent.trim() : null; })()"
 # the "New messages" line: [text of the message under it, its distance below the header, its distance above the message box]
 LINE = """(() => { const l = document.querySelector('.chatlist > .c-new'); if (!l) return null;
@@ -101,16 +101,16 @@ async def main():
         for i in range(3): await say(B, f'board note {i}', 110)
         await B.wait_for_timeout(1800)
         assert delivered(await B.evaluate(STATUS)), 'the chat is closed: nothing is read'
-        assert await A.evaluate(UNREAD) == 3 and await until(A, BOARD_NEW, ['3 new', '3']) == ['3 new', '3'], (await A.evaluate(UNREAD), await A.evaluate(BOARD_NEW))
-        assert await A.evaluate("document.querySelector('.board .n-msg .n-text').textContent") == 'board note 2', 'the note shows the latest message'
-        await A.click('.board .note.n-msg')  # the note is a door to the conversation
+        assert await A.evaluate(UNREAD) == 3 and await until(A, BOARD_NEW, ['3', '3']) == ['3', '3'], (await A.evaluate(UNREAD), await A.evaluate(BOARD_NEW))
+        assert 'board note' not in await A.evaluate("document.querySelector('.boardview').textContent"), 'Home never shows what a message says'
+        await A.click('.board .stage-char.pt')  # your partner's character is the way into the conversation
         assert seen(await until(B, STATUS, seen)), 'opened from the board with all of it on screen: read'
         line = await A.evaluate(LINE); assert line and line[0] == 'board note 0' and await A.evaluate(GAP) < 80, (line, await A.evaluate(GAP))
         await A.wait_for_timeout(700); await back_home(A)
         assert await A.evaluate(BOARD_NEW) == [None, None], ('read: the board has nothing new to announce', await A.evaluate(BOARD_NEW))
         for i in range(12): await say(B, f'pile {i}\nsecond line\nthird line', 110)   # more than fits on one screen
         await B.wait_for_timeout(1800)
-        assert delivered(await B.evaluate(STATUS)) and await until(A, BOARD_NEW, ['9+ new', '9+']) == ['9+ new', '9+'], await A.evaluate(BOARD_NEW)
+        assert delivered(await B.evaluate(STATUS)) and await until(A, BOARD_NEW, ['9+', '9+']) == ['9+', '9+'], await A.evaluate(BOARD_NEW)
         await open_chat(A, wait=1500)
         line = await A.evaluate(LINE); n = await A.evaluate(UNREAD)
         assert line and line[0].startswith('pile 0') and 0 <= line[1] <= 40, ('from the board the chat opens at the first unread message', line)
@@ -150,7 +150,7 @@ async def main():
         await say(B, 'sent while closed 1'); await say(B, 'sent while closed 2'); await B.wait_for_timeout(1200)
         assert delivered(await B.evaluate(STATUS))
         A = await page(ca)
-        assert await until(A, BOARD_NEW, ['2 new', '2']) == ['2 new', '2'], ('reopened on the board: it says what arrived', await A.evaluate(BOARD_NEW))
+        assert await until(A, BOARD_NEW, ['2', '2']) == ['2', '2'], ('reopened on the board: it says what arrived', await A.evaluate(BOARD_NEW))
         await A.wait_for_timeout(1200)
         assert delivered(await B.evaluate(STATUS)), 'reopening the app shows the board: nothing is read yet'
         await open_chat(A)

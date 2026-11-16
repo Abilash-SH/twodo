@@ -28,9 +28,9 @@ Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has
 Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
 Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
 Test 13 covers Home: the character's greeting in its role's voice and what it says is on today, the cards against
-the To-dos screen, every door (message, Today, Together, This week, Journal, Change), adding and ticking in place
+the To-dos screen, both characters and no message card, every door (your partner's character to the chat, Today, This week, Journal, Change), adding and ticking in place
 (and the partner's character telling them who ticked it off), picking a character and role (it reaches the partner
-and shows on your messages; Settings leads there too), that nothing from a secret list is shown or said (unlocked,
+and stands next to theirs; Settings leads there too), that nothing from a secret list is shown or said (unlocked,
 ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, and text contrast for
 every colour in light and dark.
 

@@ -126,8 +126,8 @@ async def main():
         print('PASS: repeated touch send preserves focus, static scene, no chat blur, viewport never hidden')
         partner=await b.new_context(storage_state='/tmp/twodo-B.json',viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
         other=await partner.new_page(); await other.goto('http://localhost:8003/'); await other.wait_for_timeout(2400)
-        # opening the app shows the board, with what is new on its first note: nothing is "seen" until the chat is opened
-        assert 'new' in await other.locator('.note.n-msg .n-badge').text_content()
+        # opening the app shows Home, with how many are new on your partner's character: nothing is "seen" until the chat is opened
+        assert (await other.locator('.stage-char.pt .pt-badge').text_content()).rstrip('+').isdigit()
         assert not await pg.locator('.c-status.seen').count(), 'messages were marked seen from the board'
         await other.locator('.board-tray .tray-btn.chat').tap()
         await expect(pg.locator('.c-status.seen .hs')).to_have_count(2)
