@@ -78,17 +78,22 @@ export function cleanRecord(r: unknown): Rec | null {
   if (q.kind === 'journal') { // a post in the shared thread, or an older day page (docs/journal-and-planner.md)
     const date = typeof q.date === 'string' && DAY_RE.test(q.date) ? q.date : null, who = q.who === 'a' || q.who === 'b' ? q.who : null;
     if (!date || !who) return null;
-    const priv = q.private === true, post = !priv && typeof q.id === 'string' && POST_RE.test(q.id);
-    const id = post ? q.id as string : journalId(priv, date, who);
-    if (q.id !== id) return null; // a page can't pretend to be another day, person or journal; a post is never private
+    const priv = q.private === true, sid = typeof q.id === 'string' ? q.id : '';
+    const heart = !priv ? HEART_RE.exec(sid) : null;
+    if (heart && heart[2] !== who) return null; // a heart is always from the person who gave it
+    const post = !priv && (POST_RE.test(sid) || !!heart);
+    const id = post ? sid : journalId(priv, date, who);
+    if (q.id !== id) return null; // a page can't pretend to be another day, person or journal; a post or a heart is never private
     const mood = Math.floor(cNum(q.mood));
-    return { ...q, kind: 'journal', id, date, who, private: priv, text: cStr(q.text, 20000), prompt: cStr(q.prompt, 200),
+    return { ...q, kind: 'journal', id, date, who, private: priv, text: heart ? '' : cStr(q.text, 20000), prompt: heart ? '' : cStr(q.prompt, 200),
       mood: (mood >= 0 && mood <= 5 ? mood : 0) as Mood, createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as JournalEntry;
   }
   return null;
 }
 export const journalId = (priv: boolean, date: string, who: PersonKey): string => `${priv ? 'me' : 'us'}-${date}-${who}`;
 const POST_RE = /^us-p[0-9a-z]{10,24}$/;
+/** a heart on a post: `us-h-<the post's id>-<who gave it>` (docs/journal-and-planner.md, "Hearts") */
+const HEART_RE = /^us-h-(us-p[0-9a-z]{10,24}|us-\d{4}-\d{2}-\d{2}-[ab])-([ab])$/;
 export function cleanMap<T extends Rec>(m: unknown): Record<string, T> {
   const out: Record<string, T> = {};
   for (const [k, v] of Object.entries(m && typeof m === 'object' ? m : {})) { const c = cleanRecord(v); if (c && c.id === k) out[k] = c as T; }
