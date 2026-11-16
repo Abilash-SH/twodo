@@ -64,6 +64,19 @@ async def main():
         assert await q("document.querySelectorAll('.jt-feed .jt-post')[1].querySelector('.jt-text').textContent") == mine
         print('PASS: your partner sees it live (and Home says so) without a way to edit it; their reply goes on top')
 
+        # ---------- compact, and every post hangs on a love thread to the next one, her colour into yours
+        THREAD = """(() => [...document.querySelectorAll('.jt-feed .jt-post')].map(p => { const t = p.querySelector(':scope > .jt-thread'), r = p.getBoundingClientRect();
+          return { thread: !!t, heart: !!(t && t.querySelector('.jt-hs')), c: p.style.getPropertyValue('--c'), cn: p.style.getPropertyValue('--cn'), h: Math.round(r.height),
+                   av: Math.round(p.querySelector('.jt-av').getBoundingClientRect().width) }; }))()"""
+        rows = await q(THREAD)
+        colours = await q("(() => { const d = JSON.parse(localStorage.getItem('twodo:data')).people; return [d.a.color, d.b.color]; })()")
+        assert all(r['thread'] and r['heart'] for r in rows[:-1]) and not rows[-1]['thread'], ('a thread with a heart from each post to the next, none after the last', rows)
+        assert rows[0]['c'] == f'var(--c-{colours[1]})' and rows[0]['cn'] == f'var(--c-{colours[0]})', ("Deiva's colour runs into yours", rows[0], colours)
+        assert all(r['av'] <= 40 for r in rows) and rows[0]['h'] <= 120 and rows[1]['h'] <= 120, ('compact rows: a small character, a short post stays under 120 px', rows)
+        top = await q("(() => { const t = document.querySelector('.jt-feed .jt-post .jt-thread').getBoundingClientRect(), a = document.querySelector('.jt-feed .jt-post .jt-av').getBoundingClientRect(), b = document.querySelectorAll('.jt-feed .jt-post .jt-av')[1].getBoundingClientRect(); return [Math.round(t.left + t.width / 2 - (a.left + a.width / 2)), Math.round(t.top - a.bottom), Math.round(b.top - t.bottom)]; })()")
+        assert abs(top[0]) <= 1 and 0 <= top[1] <= 20 and 0 <= top[2] <= 20, ('the thread runs from one character down to the next', top)
+        print('PASS: compact posts, each on a love thread with a heart that runs from its character to the next, in both colours')
+
         # ---------- hearts: your partner gives your post a heart (double tap, or the heart); you see who loved it
         post_b = f'.jt-post[data-id="{rec["id"]}"]'
         assert await B.locator(f'{post_b} .jt-heart').count() == 1 and not await B.locator(f'{post_b} .jt-dots').count(), "a heart on your partner's post, no menu"

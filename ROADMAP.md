@@ -176,6 +176,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
 | 2026-11-15 | A journal page has one record per person: only its writer edits it | Two people never edit the same record at once, so last-write-wins never loses words |
 | 2026-11-15 | No app name on screen; the launch is two hearts in your colours with "Two souls, one space." | Asked for; the name under the Home Screen icon still comes from the page title and can be renamed when adding it |
+| 2026-11-16 | The journal is compact: rows instead of cards, each post on a love thread to the next | "Journal looks huge"; asked for posts that connect with love threads |
 | 2026-11-15 | The journal looks like a modern feed: cards with the writer's character, big short posts, a heart | Asked for "more modern than Twitter, X, Threads"; a heart is its own record so it never collides with an edit |
 | 2026-11-15 | Home shows the two of you as characters and only Today below; no message card, no extra tiles | The cards and tiles felt scattered and repeated To-dos; a message's text belongs in the chat |
 | 2026-11-15 | Home is led by a character you pick, with a role that sets its voice (concept B) | Chosen over a decorated board and a scene; it keeps every door and the two buttons |
