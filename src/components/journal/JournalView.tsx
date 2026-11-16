@@ -1,7 +1,8 @@
 'use client';
-/* Twodo · the journal: one thread for the two of you. Write and Post; posts come in at the top for both of you, each
-   with its writer's character. Double-tap (or tap the heart on) your partner's post to give it your heart. Your own
-   posts: ⋯ to edit or delete. No prompts, no weather, no counts. Data: docs/journal-and-planner.md */
+/* Twodo · the journal: one thread for the two of you, compact. Each post hangs on a love thread that runs from its
+   writer's character to the next post's, in both colours, with a small heart where they meet. Write and Post; posts
+   come in at the top for both of you. Double-tap (or tap the heart on) your partner's post to give it your heart.
+   Your own posts: ⋯ to edit or delete. No prompts, no weather, no counts. Data: docs/journal-and-planner.md */
 import { useEffect, useRef, useState } from 'react';
 import { charOf } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
@@ -11,7 +12,7 @@ import type { JournalEntry, PersonKey } from '@/lib/types';
 import { dayDiff, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
 import { confirmDialog } from '@/ui/alert';
 import { Character } from '../home/Character';
-import { colorVar } from '../ui/Avatar';
+import { colorVar, cssVars } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 
 const FMT: Record<string, Intl.DateTimeFormat> = {};
@@ -33,7 +34,7 @@ function dayLabel(day: string): string {
 }
 const nameOf = (k: PersonKey) => (k === L.me ? 'You' : firstWord(person(k).name));
 const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s){1,12}$/u;
-/** short posts read bigger; a few emoji alone, bigger still */
+/** short posts read a little bigger; a few emoji alone, bigger still */
 const size = (t: string) => (EMOJI_ONLY.test(t) && !/[0-9#*]/.test(t) ? ' emoji' : t.length <= 48 && !t.includes('\n') ? ' big' : '');
 
 const HeartSvg = ({ on }: { on: boolean }) => (
@@ -45,30 +46,26 @@ let draft = '';
 
 function Compose() {
   const [text, setText] = useState(draft);
-  const me = L.me, pt = firstWord(person(partnerKey()).name);
+  const me = L.me;
   const post = () => {
     if (!addPost(text)) return;
     draft = ''; setText(''); haptic('success');
   };
   return (
     <div className="jt-compose" style={colorVar(person(me).color)}>
-      <span className="jt-av" aria-hidden="true"><Character kind={charOf(me)} size={40} /></span>
-      <div className="jt-cbody">
-        <div className="jt-grow" data-v={text}>
-          <textarea className="jt-ta" rows={1} value={text} maxLength={POST_MAX} aria-label="Write a post"
-            placeholder={`What’s on your mind, ${firstWord(person(me).name)}?`}
-            onChange={ev => { draft = ev.currentTarget.value; setText(draft); }} />
-        </div>
-        <div className="jt-cacts">
-          <span className="jt-hint"><Icon name="lock" cls="xs" />Only you and {pt}</span>
-          <button className="jt-post-btn" type="button" disabled={!text.trim()} onClick={post}>Post</button>
-        </div>
+      <span className="jt-av" aria-hidden="true"><Character kind={charOf(me)} size={28} /></span>
+      <div className="jt-grow" data-v={text}>
+        <textarea className="jt-ta" rows={1} value={text} maxLength={POST_MAX} aria-label="Write a post"
+          placeholder="What’s on your mind?"
+          onChange={ev => { draft = ev.currentTarget.value; setText(draft); }} />
       </div>
+      <button className="jt-post-btn" type="button" disabled={!text.trim()} onClick={post}>Post</button>
     </div>
   );
 }
 
-function Post({ e, love }: { e: JournalEntry; love: Set<PersonKey> | undefined }) {
+/** One post. `next`: whose post comes after it, so the love thread can run from this colour into that one. */
+function Post({ e, love, next }: { e: JournalEntry; love: Set<PersonKey> | undefined; next: PersonKey | null }) {
   const mine = e.who === L.me, pk = partnerKey();
   const [menu, setMenu] = useState(false), [edit, setEdit] = useState<string | null>(null), [open, setOpen] = useState(false);
   const burst = useRef<HTMLSpanElement>(null), lastTap = useRef(0);
@@ -94,14 +91,21 @@ function Post({ e, love }: { e: JournalEntry; love: Set<PersonKey> | undefined }
     if (await confirmDialog({ title: 'Delete this post?', message: `It goes for ${firstWord(person(pk).name)} too.`, ok: 'Delete', destructive: true })) { deletePost(e.id); haptic('light'); }
   };
   return (
-    <article className={`jt-post${mine ? ' mine' : ''}${fresh ? ' fresh' : ''}`} data-id={e.id} style={colorVar(person(e.who).color)} onClick={tap}
-      aria-label={`${nameOf(e.who)}, ${when(e.createdAt)}`}>
+    <article className={`jt-post${mine ? ' mine' : ''}${fresh ? ' fresh' : ''}`} data-id={e.id} onClick={tap} aria-label={`${nameOf(e.who)}, ${when(e.createdAt)}`}
+      style={cssVars({ '--c': `var(--c-${person(e.who).color})`, '--cn': `var(--c-${person(next || e.who).color})` })}>
       <span className="jt-burst" ref={burst} aria-hidden="true"><HeartSvg on /></span>
-      <span className="jt-av" aria-hidden="true"><Character kind={charOf(e.who)} size={44} /></span>
+      <span className="jt-av" aria-hidden="true"><Character kind={charOf(e.who)} size={28} /></span>
+      {next ? <i className="jt-thread" aria-hidden="true"><HeartSvg on /></i> : null}
       <div className="jt-pbody">
         <header className="jt-meta">
           <b>{nameOf(e.who)}</b><time dateTime={new Date(e.createdAt).toISOString()}>{when(e.createdAt)}</time>
           {e.updatedAt - e.createdAt > 60e3 ? <span className="jt-edited">edited</span> : null}
+          {edit === null ? (
+            <span className="jt-side">
+              {mine ? <button className="jt-dots" type="button" aria-label="Edit or delete this post" aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon name="more" cls="sm" /></button>
+                : <button className={`jt-heart${loved ? ' on' : ''}`} type="button" aria-pressed={loved} aria-label={loved ? 'Take back your heart' : 'Give it your heart'}
+                    style={colorVar(person(L.me).color)} onClick={toggle}><HeartSvg on={loved} /></button>}
+            </span>) : null}
         </header>
         {edit !== null ? (
           <div className="jt-edit">
@@ -117,13 +121,7 @@ function Post({ e, love }: { e: JournalEntry; love: Set<PersonKey> | undefined }
           <p className={`jt-text${size(e.text)}${long && !open ? ' clamp' : ''}`}>{e.text}</p>
           {long ? <button className="jt-link more" type="button" onClick={() => setOpen(o => !o)}>{open ? 'Show less' : 'Show more'}</button> : null}
         </>}
-        {edit === null ? (
-          <footer className="jt-acts">
-            {mine ? (ptLoved ? <span className="jt-loved" style={colorVar(person(pk).color)}><HeartSvg on />{firstWord(person(pk).name)} loved this</span> : <span />)
-              : <button className={`jt-heart${loved ? ' on' : ''}`} type="button" aria-pressed={loved} aria-label={loved ? 'Take back your heart' : 'Give it your heart'}
-                  style={colorVar(person(L.me).color)} onClick={toggle}><HeartSvg on={loved} /></button>}
-            {mine ? <button className="jt-dots" type="button" aria-label="Edit or delete this post" aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon name="more" cls="sm" /></button> : null}
-          </footer>) : null}
+        {mine && ptLoved && edit === null ? <span className="jt-loved" style={colorVar(person(pk).color)}><HeartSvg on />{firstWord(person(pk).name)} loved this</span> : null}
         {menu && edit === null ? (
           <div className="jt-menu">
             <button type="button" onClick={() => setEdit(e.text)}><Icon name="edit" cls="xs" />Edit</button>
@@ -145,18 +143,20 @@ export function JournalView() {
       <h1 className="large-title">Journal</h1>
       <div className="jt-pair">
         <span className="jt-duo" aria-hidden="true">
-          <span style={colorVar(person(L.me).color)}><Character kind={charOf(L.me)} size={30} /></span>
-          <span style={colorVar(person(pk).color)}><Character kind={charOf(pk)} size={30} /></span>
+          <span style={colorVar(person(L.me).color)}><Character kind={charOf(L.me)} size={22} /></span>
+          <span style={colorVar(person(pk).color)}><Character kind={charOf(pk)} size={22} /></span>
         </span>
-        <span>You and {pt}</span>
+        <span>You and {pt}</span><Icon name="lock" cls="xs" /><span className="jt-only">only you two</span>
       </div>
       <Compose />
       {all.length ? null : <p className="jt-empty">Your first post starts your story. Only you and {pt} will ever see it.</p>}
       <div className="jt-feed">
-        {list.map(e => {
+        {list.map((e, i) => {
           const d = ymd(new Date(e.createdAt)), head = d !== day;
           day = d;
-          return [head ? <h2 key={'d' + d} className="jt-day"><span>{dayLabel(d)}</span></h2> : null, <Post key={e.id} e={e} love={love.get(e.id)} />];
+          const next = list[i + 1] ? list[i + 1].who : null;
+          return [head ? <h2 key={'d' + d} className={`jt-day${i ? ' on-thread' : ''}`}><span>{dayLabel(d)}</span></h2> : null,
+            <Post key={e.id} e={e} love={love.get(e.id)} next={next} />];
         })}
       </div>
       {all.length > shown ? <button className="jt-older" type="button" onClick={() => setShown(n => n + PAGE)}>Show earlier posts</button> : null}

@@ -1,74 +1,83 @@
-/* Twodo · the journal: one thread for the two of you (design.md, "The journal"). Cards with the writer's character,
-   a soft wash of their colour, big type for short posts, a heart you give with a double tap. Only opacity and
-   transform animate. */
-.jt { --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); --card-sh: 0 1px 2px rgba(27,23,48,.07), 0 14px 30px -22px rgba(27,23,48,.5); padding-bottom: 40px; }
-.vbody:has(> .jt) { max-width: 640px; }
-.jt-pair { display: flex; align-items: center; gap: 10px; margin: -2px 20px 14px; font-size: 15px; line-height: 20px; font-weight: 600; color: var(--soft); }
+/* Twodo · the journal: one thread for the two of you, compact (design.md, "The journal"). Posts sit on the page, each
+   hanging on a love thread that runs from its writer's character to the next post's, shading from one colour into
+   the other, with a small heart where the two meet. Only opacity and transform animate. */
+.jt { --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); padding-bottom: 36px; }
+.vbody:has(> .jt) { max-width: 620px; }
+.jt-pair { display: flex; align-items: center; gap: 8px; margin: -4px 20px 12px; font-size: 14px; line-height: 19px; font-weight: 600; color: var(--soft); }
+.jt-pair .i { margin-left: 4px; }
+.jt-only { font-weight: 500; margin-left: -4px; }
 .jt-duo { display: flex; }
-.jt-duo > span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--c) 18%, var(--bg2)); box-shadow: 0 0 0 2.5px var(--bg); }
-.jt-duo > span + span { margin-left: -8px; }
+.jt-duo > span { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: color-mix(in srgb, var(--c) 18%, var(--bg2)); box-shadow: 0 0 0 2px var(--bg); }
+.jt-duo > span + span { margin-left: -7px; }
 .jt-duo .cr { margin-top: 2px; }
+.jt-av { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: color-mix(in srgb, var(--c) 20%, var(--bg2)); }
+.jt-av .cr { margin-top: 2px; }
 
-/* ---------- writing ---------- */
-.jt-compose { display: flex; gap: 12px; margin: 0 16px 18px; padding: 14px 14px 10px; border-radius: 26px; background: var(--bg2); box-shadow: var(--card-sh);
-  transition: box-shadow var(--dur-standard) var(--ease-out); }
-.jt-compose:focus-within { box-shadow: var(--card-sh), 0 0 0 2px color-mix(in srgb, var(--c) 70%, transparent); }
-.jt-av { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 16px; background: color-mix(in srgb, var(--c) 18%, var(--bg2)); }
-.jt-compose .jt-av { width: 42px; height: 42px; border-radius: 14px; }
-.jt-cbody, .jt-pbody { flex: 1 1 0; min-width: 0; }
+/* ---------- writing: one row ---------- */
+.jt-compose { display: flex; align-items: flex-end; gap: 10px; margin: 0 16px 6px; padding: 6px 6px 6px 8px; border-radius: 22px; background: var(--bg2);
+  box-shadow: 0 1px 2px rgba(27,23,48,.06), 0 10px 22px -18px rgba(27,23,48,.45); transition: box-shadow var(--dur-standard) var(--ease-out); }
+.jt-compose:focus-within { box-shadow: 0 1px 2px rgba(27,23,48,.06), 0 0 0 2px color-mix(in srgb, var(--c) 70%, transparent); }
+.jt-compose .jt-av { width: 34px; height: 34px; margin-bottom: 1px; }
 /* the box grows with what is written: a hidden copy of the text shares the grid cell and sets the height */
-.jt-grow { display: grid; font-size: 18px; line-height: 25px; }
+.jt-grow { flex: 1 1 0; min-width: 0; display: grid; font-size: 16px; line-height: 22px; }
 .jt-grow::after { content: attr(data-v) " "; visibility: hidden; }
-.jt-grow::after, .jt-grow > .jt-ta { grid-area: 1 / 1; min-width: 0; min-height: 42px; box-sizing: border-box; padding: 8px 0; margin: 0;
+.jt-grow::after, .jt-grow > .jt-ta { grid-area: 1 / 1; min-width: 0; min-height: 36px; max-height: 220px; box-sizing: border-box; padding: 7px 0; margin: 0;
   font: inherit; white-space: pre-wrap; overflow-wrap: break-word; word-break: normal; }
 .jt-ta { display: block; width: 100%; border: 0; outline: none; resize: none; overflow: hidden; background: none; color: var(--label); caret-color: color-mix(in srgb, var(--c) 70%, var(--label)); }
+.jt-compose .jt-ta { overflow-y: auto; }
 .jt-ta::placeholder { color: var(--soft); }
-.jt-cacts { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding-top: 6px; border-top: 1px solid color-mix(in srgb, var(--label) 7%, transparent); }
-.jt-hint { display: inline-flex; align-items: center; gap: 5px; margin-right: auto; font-size: 13px; line-height: 18px; color: var(--soft); }
-.jt-post-btn { min-width: 76px; height: 38px; margin: 3px 0; padding: 0 20px; border: 0; border-radius: 19px; color: var(--on-color); font: inherit; font-size: 15px; line-height: 20px; font-weight: 800;
-  background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 70%, #FFFFFF)) var(--c); box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--c) 90%, #000);
+.jt-post-btn { flex: none; min-width: 60px; height: 36px; padding: 0 16px; border: 0; border-radius: 18px; color: var(--on-color); font: inherit; font-size: 15px; line-height: 20px; font-weight: 800;
+  background: linear-gradient(135deg, var(--c), color-mix(in srgb, var(--c) 72%, #FFFFFF)) var(--c);
   transition: transform var(--dur-quick) var(--ease-out), opacity var(--dur-quick) var(--ease-out); }
 .jt-post-btn:active { transform: scale(.95); }
-.jt-post-btn:disabled { opacity: .35; box-shadow: none; }
+.jt-post-btn:disabled { opacity: .35; }
 .jt-link { min-height: 44px; padding: 0 12px; border: 0; background: none; color: color-mix(in srgb, var(--accent) 50%, var(--label)); font: inherit; font-size: 15px; font-weight: 700; }
-.jt-link.more { min-height: 36px; margin: 2px 0 0 -12px; font-size: 14px; }
+.jt-link.more { min-height: 32px; margin: 0 0 0 -12px; font-size: 14px; }
 
 /* ---------- the thread ---------- */
-.jt-empty { margin: 26px 36px; text-align: center; color: var(--soft); font-size: 15px; line-height: 21px; }
-.jt-feed { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
-.jt-day { display: flex; justify-content: center; margin: 10px 0 0; }
-.jt-day span { padding: 5px 12px; border-radius: 999px; background: color-mix(in srgb, var(--label) 7%, var(--bg)); color: var(--soft); font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-.jt-post { position: relative; display: flex; gap: 12px; padding: 14px 14px 6px; border-radius: 26px; overflow: hidden; touch-action: manipulation;
-  background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 14%, transparent), transparent 60%), var(--bg2); box-shadow: var(--card-sh); }
+.jt-empty { margin: 22px 36px; text-align: center; color: var(--soft); font-size: 15px; line-height: 21px; }
+.jt-feed { padding: 4px 16px 0; }
+.jt-day { position: relative; margin: 0; padding: 10px 0 2px 48px; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--soft); }
+/* the thread keeps going through a day's label */
+.jt-day.on-thread::before { content: ''; position: absolute; left: 17px; top: -2px; bottom: -10px; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--label) 14%, transparent); }
+.jt-post { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 12px; padding: 10px 0 12px; touch-action: manipulation; }
 .jt-post.fresh { animation: jtIn var(--dur-page) var(--ease-out) both; }
-@keyframes jtIn { from { opacity: 0; transform: translateY(-10px) scale(.98); } }
-.jt-meta { display: flex; align-items: baseline; gap: 8px; min-height: 22px; padding-top: 2px; }
-.jt-meta b { font-size: 16px; line-height: 21px; font-weight: 800; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+@keyframes jtIn { from { opacity: 0; transform: translateY(-8px); } }
+/* the love thread: from this character down to the next one, this colour into that one, a heart where they meet */
+.jt-thread { position: absolute; left: 17px; top: 52px; bottom: -10px; width: 2px; display: grid; place-items: center; }
+.jt-thread::before { content: ''; position: absolute; inset: 0; border-radius: 1px; background: linear-gradient(var(--c), var(--cn)); opacity: .75; }
+.jt-thread .jt-hs { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; }
+.jt-thread .jt-hs path, .jt-thread .jt-hs path.on { fill: color-mix(in srgb, var(--c) 50%, var(--cn)); stroke: var(--bg); stroke-width: 3; paint-order: stroke; }
+.jt-pbody { min-width: 0; }
+.jt-meta { display: flex; align-items: center; gap: 7px; min-height: 22px; }
+.jt-meta b { font-size: 15px; line-height: 20px; font-weight: 800; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
 .jt-meta time, .jt-edited { font-size: 13px; line-height: 18px; color: var(--soft); font-variant-numeric: tabular-nums; }
 .jt-edited { font-style: italic; }
-.jt-text { margin: 4px 0 0; font-size: 17px; line-height: 25px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--label); }
-.jt-text.big { font: 700 23px/30px var(--round); letter-spacing: -.01em; }
-.jt-text.emoji { font-size: 44px; line-height: 54px; }
-.jt-text.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 8; overflow: hidden; }
-.jt-acts { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 2px -8px 0 -10px; }
-.jt-heart, .jt-dots { width: 44px; height: 44px; padding: 0; border: 0; background: none; display: grid; place-items: center; color: var(--soft); }
-.jt-hs { width: 24px; height: 24px; overflow: visible; }
+.jt-side { margin-left: auto; display: flex; }
+.jt-heart, .jt-dots { width: 44px; height: 44px; margin: -11px -10px -11px 0; padding: 0; border: 0; background: none; display: grid; place-items: center; color: var(--soft); }
+.jt-text { margin: 2px 0 0; font-size: 16px; line-height: 23px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--label); }
+.jt-text.big { font: 650 18px/24px var(--round); }
+.jt-text.emoji { font-size: 30px; line-height: 38px; }
+.jt-text.clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden; }
+.jt-hs { width: 20px; height: 20px; overflow: visible; }
 .jt-hs path { fill: none; stroke: var(--soft); stroke-width: 1.9; stroke-linejoin: round; transition: transform var(--dur-quick) var(--ease-bounce); transform-box: fill-box; transform-origin: center; }
 .jt-hs path.on { fill: var(--c); stroke: var(--c); }
 .jt-heart:active .jt-hs path { transform: scale(.85); }
 .jt-heart.on .jt-hs path { animation: jtLove var(--dur-standard) var(--ease-bounce); }
 @keyframes jtLove { from { transform: scale(.6); } }
-.jt-loved { display: inline-flex; align-items: center; gap: 6px; padding-left: 10px; font-size: 13px; line-height: 18px; font-weight: 700; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
-.jt-loved .jt-hs { width: 18px; height: 18px; }
+.jt-loved { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 13px; line-height: 18px; font-weight: 700; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+.jt-loved .jt-hs { width: 14px; height: 14px; }
 /* the heart that blooms over a post you double-tap */
-.jt-burst { position: absolute; left: 50%; top: 50%; z-index: 1; width: 96px; height: 96px; margin: -48px 0 0 -48px; opacity: 0; pointer-events: none; }
-.jt-burst .jt-hs { width: 96px; height: 96px; filter: drop-shadow(0 6px 14px rgba(27,23,48,.25)); }
+.jt-burst { position: absolute; left: 50%; top: 50%; z-index: 1; width: 64px; height: 64px; margin: -32px 0 0 -32px; opacity: 0; pointer-events: none; }
+.jt-burst .jt-hs { width: 64px; height: 64px; filter: drop-shadow(0 4px 10px rgba(27,23,48,.25)); }
 .jt-burst .jt-hs path, .jt-burst .jt-hs path.on { stroke: #FFFFFF; stroke-width: 1.2; fill: var(--me-c); }
-.jt-menu { display: flex; gap: 6px; margin: 0 0 8px -10px; }
-.jt-menu button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 20px; background: color-mix(in srgb, var(--label) 6%, var(--bg2));
-  font: inherit; font-size: 15px; font-weight: 700; color: color-mix(in srgb, var(--accent) 50%, var(--label)); }
+.jt-menu { display: flex; gap: 6px; margin: 6px 0 0 -2px; }
+.jt-menu button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 0; border-radius: 18px; background: color-mix(in srgb, var(--label) 6%, var(--bg2));
+  font: inherit; font-size: 14px; font-weight: 700; color: color-mix(in srgb, var(--accent) 50%, var(--label)); }
 .jt-menu button.red { color: color-mix(in srgb, var(--c-red) 70%, var(--label)); }
-.jt-edit { margin: 6px 0 8px; padding: 2px 12px 0; border-radius: 16px; background: var(--bg); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 55%, transparent); }
-.jt-older { display: block; min-height: 44px; margin: 14px auto 0; padding: 0 18px; border: 0; border-radius: 22px; background: color-mix(in srgb, var(--label) 6%, var(--bg2));
+.jt-edit { margin: 6px 0 2px; padding: 2px 10px 0; border-radius: 14px; background: var(--bg2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 55%, transparent); }
+.jt-edit .jt-grow { flex: none; }
+.jt-cacts { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 2px 0 6px; }
+.jt-older { display: block; min-height: 44px; margin: 10px auto 0; padding: 0 18px; border: 0; border-radius: 22px; background: color-mix(in srgb, var(--label) 6%, var(--bg2));
   color: color-mix(in srgb, var(--accent) 50%, var(--label)); font: inherit; font-size: 15px; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .jt-post.fresh, .jt-heart.on .jt-hs path { animation: none; } }
