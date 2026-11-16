@@ -21,7 +21,7 @@ async def main():
             await P.fill('#gName', name); await P.fill('#gPartner', partner); await P.fill('#gEmail', email); await P.fill('#gPass', 'password 123')
             await P.click('[data-p="create"] [data-submit]'); await P.wait_for_timeout(3500)
             await P.fill('#gUser', user); await P.click('[data-p="username"] [data-submit]'); await P.wait_for_timeout(2000)
-            await P.click('text=Start using Twodo'); await P.wait_for_timeout(1200)
+            await P.click('text=Get started'); await P.wait_for_timeout(1200)
         await signup(A, 'Abilash', 'Deiva', 'a@x.com', 'abilash')
         await signup(B, 'Deiva', 'Abilash', 'd@x.com', 'deiva')
         # Home is the board. Not connected yet: its first note and its message button both lead to "add your partner"

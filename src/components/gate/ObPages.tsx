@@ -24,7 +24,11 @@ export function ObPages({ pages, setPages, render, wrap }: {
   }, [pages, setPages, wrap]);
   return <>{pages.map(p => <div key={p.id} className={`ob-page ${p.cls}`.trim()} data-p={p.name}>{render(p.name)}</div>)}</>;
 }
+/** Two hearts that come together: the same mark as the launch screen */
+const HEART = 'M0 30 C -26 13 -36 -3 -36 -15 C -36 -27 -27 -35 -17 -35 C -9 -35 -3 -31 0 -24 C 3 -31 9 -35 17 -35 C 27 -35 36 -27 36 -15 C 36 -3 26 13 0 30 Z';
 export const Logo = () => (
-  <svg className="ob-logo" viewBox="0 0 150 110" aria-hidden="true"><circle className="c1" cx="56" cy="55" r="40" fill="var(--c-blue)" opacity=".92" /><circle className="c2" cx="94" cy="55" r="40" fill="var(--c-pink)" opacity=".85" />
-    <path className="ck" d="M58 56l12 12 24-26" stroke="#fff" strokeWidth="9" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
+  <svg className="ob-logo" viewBox="0 0 160 100" aria-hidden="true">
+    <g transform="translate(60 52)"><path className="h1" d={HEART} /></g>
+    <g transform="translate(100 52)"><path className="h2" d={HEART} /></g>
+  </svg>
 );

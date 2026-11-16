@@ -29,7 +29,7 @@ async def main():
         await pg.get_by_text('Get started', exact=True).click()
         await pg.fill('#obA','Abilash'); await pg.fill('#obB','Deiva')
         await pg.click('[data-p=names] .btn:has-text("Continue")')
-        await pg.get_by_text('Start using Twodo', exact=True).click(); await pg.wait_for_timeout(1200)
+        await pg.get_by_text('Get started', exact=True).click(); await pg.wait_for_timeout(1200)
         await pg.click('.hub-card:has-text("Today")'); await pg.wait_for_timeout(650)
         top = '#stack > .view:last-child'
         d = await finger(ctx, pg, 160, 360, [(8,2),(20,5),(40,10)], hold=160, selector=top)

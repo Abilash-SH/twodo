@@ -120,6 +120,10 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   no weather, no tabs, no counts.
 - **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
   labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
+- **Launch and the first screen.** No app name is shown. Two hearts, one in each of your colours (yours on the
+  left; blue and pink before there are two of you), drift in from either side, meet with a small spark and one
+  heartbeat, then the caption: *Two souls, one space.* The sign-in and welcome pages use the same two hearts with the
+  caption as their title. Transform and opacity only; with Reduce Motion the hearts are simply there.
 - **Empty states.** One emoji or character, one sentence, one button. Friendly, never guilt.
 - **Offline.** Say it once, quietly, where it matters ("Will send when you're back"). The app keeps working.
 

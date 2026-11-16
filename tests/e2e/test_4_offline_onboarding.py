@@ -16,7 +16,7 @@ async def main():
         print('continue enabled', await q("!document.querySelector('[data-p=names] .btn').disabled"))
         await pg.click('[data-p=names] .btn:has-text("Continue")'); await pg.wait_for_timeout(700)
         print('ready', await q("document.querySelector('[data-p=ready] h1').textContent"))
-        await pg.click('text=Start using Twodo'); await pg.wait_for_timeout(1500)
+        await pg.click('text=Get started'); await pg.wait_for_timeout(1500)
         print('home', await q("({ ob: !!document.getElementById('ob'), title: document.querySelector('.large-title').textContent, left: document.querySelector('.nav-side.l button').getAttribute('aria-label'), composer: !document.getElementById('composer').classList.contains('hide'), lists: [...document.querySelectorAll('.group .cell .grow')].map(x => x.textContent).join(',') })"))
         await pg.screenshot(path='/tmp/twodo-home.png')
         await pg.click('.nav-side.l button'); await pg.wait_for_timeout(800)

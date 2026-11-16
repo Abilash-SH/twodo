@@ -56,7 +56,7 @@ function Profile() {
           D.people![L.me] = { ...person(L.me), color: c }; commit(D.people!);
           L.settings.accent = 'me'; save(); applyTheme(); renderNow(); haptic('light');
         }} />))}</div>
-      <p className="me-hint">Your colour, on your messages and across Twodo.</p>
+      <p className="me-hint">Your colour, on your messages and across the app.</p>
       <button className="cell me-char" type="button" onClick={() => { closeSheet(); setTimeout(() => openCharacter(), 350); }}>
         <span className="me-char-ic" style={colorVar(p.color)}><Character kind={charOf(L.me)} size={34} /></span>
         <span className="grow">Your character<span className="sub">{charName(charOf(L.me))} · {roleName(roleOf(L.me))}</span></span><Icon name="chevR" cls="chev" /></button>
@@ -137,10 +137,10 @@ function Switch({ k, label, c, i }: { k: 'haptics' | 'sounds' | 'confetti' | 'no
       <input type="checkbox" className="switch" defaultChecked={L.settings[k]} aria-label={label} onChange={async e => {
         const inp = e.currentTarget;
         if (k === 'notify' && inp.checked) {
-          if (!('Notification' in window)) { inp.checked = false; island({ e: '🔕', text: 'Notifications aren’t available here', sub: isIOS() ? 'Add Twodo to your Home Screen first' : '' }); return; }
+          if (!('Notification' in window)) { inp.checked = false; island({ e: '🔕', text: 'Notifications aren’t available here', sub: isIOS() ? 'Add the app to your Home Screen first' : '' }); return; }
           const p = await Notification.requestPermission();
           if (p !== 'granted') { inp.checked = false; island({ e: '🔕', text: 'Notifications are blocked', sub: 'Allow them in your browser settings' }); return; }
-          void sysNotify('Reminders are on ✨', 'Twodo will nudge you when tasks are due.');
+          void sysNotify('Reminders are on ✨', 'You’ll get a nudge when tasks are due.');
         }
         L.settings[k] = inp.checked; save();
         if (inp.checked) haptic('light');
@@ -152,12 +152,12 @@ function SettingsBody() {
   useApp();
   const update = useStore(updateStore);
   const s = L.settings;
-  const notifyNote = isIOS() && !standalone() ? 'On iPhone, reminders need Twodo on your Home Screen.' : 'In-app reminders show while Twodo is open.';
+  const notifyNote = isIOS() && !standalone() ? 'On iPhone, reminders need the app on your Home Screen.' : 'In-app reminders show while the app is open.';
   return (<>
     {update.ready ? <>
       <div className="group"><button className="cell" type="button" id="applyUpdate" disabled={update.applying} onClick={() => { void applyUpdate(); }}>
-        <Sq c="blue" i="download" /><span className="grow">{update.applying ? 'Updating…' : 'Update Twodo'}</span><span className="val">New version ready</span></button></div>
-      <p className="note-s">Takes a second. Everything is saved first and what you’re typing comes back. Secret lists lock, as they do whenever Twodo restarts.</p>
+        <Sq c="blue" i="download" /><span className="grow">{update.applying ? 'Updating…' : 'Update now'}</span><span className="val">New version ready</span></button></div>
+      <p className="note-s">Takes a second. Everything is saved first and what you’re typing comes back. Secret lists lock, as they do whenever the app restarts.</p>
     </> : null}
     <Profile />
     {Auth.user() ? null : <div className="group"><div className="cell"><Sq c="gray" i="phone" /><span className="grow">I am</span>
@@ -191,7 +191,7 @@ function SettingsBody() {
       <button className="cell" type="button" onClick={() => { closeSheet(); setTimeout(() => openTips(), 350); }}><Sq c="yellow" i="bulb" /><span className="grow">Tips &amp; tricks</span><Icon name="chevR" cls="chev" /></button>
     </div>
     <DangerZone />
-    <div className="foot">Twodo 5.0 · made for two 💞</div>
+    <div className="foot">Version 5.0 · two souls, one space 💞</div>
   </>);
 }
 export function openSettings(): void { openSheet({ title: 'Settings', tall: true, body: <SettingsBody /> }); }
@@ -214,5 +214,5 @@ export async function importBackup(f: File): Promise<void> {
     const pp = d.people ? cleanRecord(d.people) as PeopleRec | null : null;
     if (pp && pp.kind === 'people' && (!D.people || (pp.updatedAt || 0) > (D.people.updatedAt || 0))) { setPeopleRec(pp); commit(D.people!, { silent: true }); }
     ensureBasics(); applyTheme(); scheduleRender(); island({ e: '📦', text: `Imported ${n} item${n === 1 ? '' : 's'}`, sub: skip.size ? 'Unlock secret lists and import again for the secret ones' : undefined, ms: skip.size ? 4500 : undefined });
-  } catch { island({ e: '⚠️', text: 'That file isn’t a Twodo backup' }); }
+  } catch { island({ e: '⚠️', text: 'That file isn’t a backup from this app' }); }
 }

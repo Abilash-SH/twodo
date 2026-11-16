@@ -31,9 +31,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script src={`${base}/boot.js`} />
       </head>
       <body className="launching" suppressHydrationWarning>
+        {/* two hearts, one in each of your colours (boot.js), come together; then the caption */}
         <div id="splash" aria-hidden="true">
-          <div className="sp-mark"><svg viewBox="10 22 80 56"><circle className="s1" cx="38" cy="50" r="24" /><circle className="s2" cx="62" cy="50" r="24" /><path className="sck" d="M35.5 51l10.5 10.5 20.5-23" /></svg></div>
-          <div className="sp-word">Twodo</div><div className="sp-tag">made for two</div>
+          <div className="sp-mark"><svg viewBox="0 0 160 100">
+            <g transform="translate(60 52)"><path className="sp-h sp-a" d="M0 30 C -26 13 -36 -3 -36 -15 C -36 -27 -27 -35 -17 -35 C -9 -35 -3 -31 0 -24 C 3 -31 9 -35 17 -35 C 27 -35 36 -27 36 -15 C 36 -3 26 13 0 30 Z" /></g>
+            <g transform="translate(100 52)"><path className="sp-h sp-b" d="M0 30 C -26 13 -36 -3 -36 -15 C -36 -27 -27 -35 -17 -35 C -9 -35 -3 -31 0 -24 C 3 -31 9 -35 17 -35 C 27 -35 36 -27 36 -15 C 36 -3 26 13 0 30 Z" /></g>
+            <g transform="translate(80 22)"><path className="sp-spark" d="M0 -9 L2 -2 L9 0 L2 2 L0 9 L-2 2 L-9 0 L-2 -2 Z" /></g>
+          </svg></div>
+          <div className="sp-cap">Two souls, one space.</div>
         </div>
         {children}
       </body>
