@@ -5,6 +5,7 @@ Twodo is a private to-do list + chat PWA for two people. In tests the partner is
 ## Read first
 - `design.md`: the visual specification (colours for the two people, type, spacing, components, characters, motion, accessibility, a "never" list and a checklist). Read it before any visual change; if you must differ, change it in the same PR and say why.
 - `ROADMAP.md`: the plan, the state of every item, acceptance criteria and the decisions with their reasons. Take the first item marked next, and update the file in the PR that changes an item's state.
+- `docs/architecture.md`: the plan for the React Native app (Expo + Supabase, still end-to-end encrypted). Read it before any work in `mobile/`, `shared/` or `supabase/`. Until the app replaces the web app, every rule in this file still applies to the web app.
 
 ## Where things are
 - `src/components`: `App.tsx` (boot, global events), `nav/NavStack.tsx` (screen stack), `home/BoardView.tsx` (Home when signed in: your character and the day; `home/Character.tsx`, `home/CharacterView.tsx`, `lib/characters.ts`, `docs/characters.md`), `chat/` (`ChatView.tsx`, `chatCtl.ts`), `composer/Composer.tsx`, `sheets/`, `settings/`, `vault/VaultUI.tsx`, `overlays/` (sheets, photo viewer, focus timer, alerts, island, menus)
