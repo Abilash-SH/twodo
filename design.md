@@ -227,7 +227,27 @@ Before shipping a visual change:
 9. Is anything from a secret list visible that should not be?
 10. Would a person understand it the first time, with no explanation?
 
-## 12. Known gaps
+## 12. The app (React Native, `mobile/`)
+
+The same Twodo, drawn natively. Everything above applies; this is what is specific to the app
+(`docs/architecture.md`, section 5).
+
+- **Tokens.** `mobile/src/ui/tokens.ts` holds the twelve colours (light and dark), the neutrals, the type styles, space,
+  corners, three shadow levels and the motion (durations, curves, springs). Screens never write a colour; a test
+  rejects one outside `src/ui`.
+- **Type.** The system font for reading; the iPhone's rounded face (`ui-rounded`) for titles. Dynamic Type is on, with
+  a cap per style so layouts hold.
+- **People's colours.** Each colour gives a base, a soft tint, an ink (the colour as readable text), the dark ink for
+  text on it, and a character's lighter face and darker feet. All of them are checked for 4.5:1 in light and dark.
+- **Characters lead.** Every screen has a host character. A state lasts while it is true (thinking while your partner
+  types, sleepy while they're away); a moment is a short reaction to something that happened (happy, wave, hop,
+  cheer, love), at most one per character every few seconds, none with Reduce Motion. Only Views move, on the UI
+  thread; the drawing never re-renders during a motion. Lists use still characters.
+- **Launch.** The still splash is the launch colour; the two hearts fly in once the app runs, exactly as on the web.
+- **Playground.** A screen with every component, character and mood, in light and dark: the place to judge the look
+  on a real iPhone before a screen is built.
+
+## 13. Known gaps
 
 Places where the app does not yet meet this file. Fix them when touching the area; do not add new ones.
 

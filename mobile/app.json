@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "Twodo",
+    "slug": "twodo",
+    "scheme": "twodo",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "bundleIdentifier": "io.github.abilashsh.twodo",
+      "supportsTablet": false,
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "io.github.abilashsh.twodo",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#FBF8FC"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-blank.png",
+          "imageWidth": 8,
+          "backgroundColor": "#FBF8FC",
+          "dark": {
+            "image": "./assets/splash-blank.png",
+            "backgroundColor": "#141019"
+          }
+        }
+      ]
+    ]
+  }
+}
