@@ -2,6 +2,9 @@
 
 A fast, iPhone-style to-do app for you and your partner. It's built with **Next.js, React and TypeScript** and exported as a static site, hosted free on **GitHub Pages** (a GitHub Action builds and publishes it on every push to `main`). It installs like a real app, works offline, and, once you add accounts, syncs between your two phones with **end-to-end encryption**, partner requests by **@username**, and **push reminders**. Everything runs on free tiers.
 
+> **The iPhone app is being rebuilt** in React Native in [`mobile/`](mobile/README.md), following
+> [`docs/architecture.md`](docs/architecture.md). The web app below keeps working until the move.
+
 Live at **https://abilash-sh.github.io/twodo/**
 
 ---

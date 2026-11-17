@@ -1,6 +1,6 @@
 # Twodo architecture: the React Native app
 
-**Status: proposed, 2026-11-17.** Nothing here is built yet. Merging this doc approves the plan, and each phase in
+**Status: proposed, 2026-11-17; phase 1 in progress.** Merging this doc approves the plan, and each phase in
 section 10 then becomes its own PR. It turns the answers given on 2026-11-17 (framework, database, sign-in,
 integrations, UI design) into one plan that Claude and Codex build from. It is also the separate write-up that roadmap
 rule 13 asks for before any schema, storage or security change.
@@ -66,6 +66,9 @@ needs, which keeps third-party code to a minimum.
 - **New Architecture only.** Reanimated 4 requires it.
 - **Development builds, not Expo Go.** Widgets, encrypted SQLite and the crypto module are native code.
 - **iPhone first.** The same code runs on Android, but Android isn't built, tested or shipped until one of you needs it.
+- **App ID:** `io.github.abilashsh.twodo` (it can't change once the app exists in App Store Connect).
+- **Export compliance:** phase 1 has no encryption of its own, so `app.json` declares none. Phase 2 adds end-to-end
+  encryption and must answer Apple's export compliance question again before its first build.
 
 ### Libraries (the whole list)
 
@@ -84,6 +87,10 @@ needs, which keeps third-party code to a minimum.
 | Widget | expo-widgets | Home Screen widget written in React, no Swift |
 | Face ID | expo-local-authentication | The optional app lock and the secret lists |
 | Haptics | expo-haptics | A tap you can feel for each moment |
+| Launch | expo-splash-screen | The still splash in the launch colour, until the animated launch takes over |
+
+Expo Router brings its own few (react-native-screens, react-native-safe-area-context, expo-linking, expo-constants).
+For tests and previews only, never shipped: jest-expo, Testing Library, react-native-web.
 
 Adding anything else needs a reason in its PR: what it does, who maintains it, and why nothing on this list can do it.
 
@@ -109,13 +116,14 @@ Adding anything else needs a reason in its PR: what it does, who maintains it, a
 twodo/
   src/                  the web app, unchanged until it is retired
   shared/               pure TypeScript used by both apps
-  mobile/               the Expo app
-    app/                screens (Expo Router)
-    src/ui/             the design system: tokens, components, characters, motion
-    src/data/           store, SQLite, sync, Supabase client, encryption
-    src/features/       to-dos, week, journal, chat, photos, widget, notifications, vault
+  mobile/               the Expo app (its own README and AGENTS.md)
+    src/app/            screens (Expo Router); only screens live here
+    src/ui/             the design system: tokens, theme, text, components, characters, launch
+    src/data/           store, SQLite, sync, Supabase client, encryption (phase 2)
+    src/features/       to-dos, week, journal, chat, photos, widget, notifications, vault, playground
+    .eas/workflows/     build and send to TestFlight
     .maestro/           end-to-end flows
-    app.config.ts, eas.json
+    app.json, eas.json
   supabase/
     migrations/         tables, Row Level Security, database functions (SQL)
     functions/          Edge Functions: notify, delete-account
@@ -348,8 +356,8 @@ greet, cheer, react and keep each other company. One design system keeps it cons
 
 - **Colour:** the same 12 named colours as today, each with light and dark values, plus the neutrals. Text on any colour
   keeps 4.5:1 contrast, tested for all 12 colours in light and dark.
-- **Type:** the system font for reading text, so Dynamic Type works, and a bundled, openly licensed rounded font for
-  titles and big moments.
+- **Type:** the system font for reading text, so Dynamic Type works, and the iPhone's own rounded face (`ui-rounded`,
+  the same as the web app) for titles and big moments: nothing to bundle or load.
 - **Space** on a 4-point grid, **corners** in four radii, **shadows** in three levels.
 - **Motion:** three springs (gentle, bouncy, snappy) and three durations. Reduce Motion swaps them for short fades.
 - **Haptics:** light for a tick, soft for a heart, success when the day is done, warning before a delete.
@@ -444,8 +452,8 @@ Each phase is one or more PRs to `main`, merged in order. The web app keeps work
 
 | Phase | Builds | You'll see |
 | --- | --- | --- |
-| 1. Foundations | `shared/` extracted (web app unchanged); the Expo app with the tokens, the Playground and the characters; the Supabase schema with Row Level Security and its tests; CI | A TestFlight build with the launch, the characters and the Playground |
-| 2. Data | Encryption ported with test vectors; the SQLite store, sync and Realtime; sign-up, sign-in, pairing, the join token | Sign in and pair in the app (test accounts) |
+| 1. Foundations | The Expo app with the tokens, the components, the characters and their moods, the launch and the Playground; checks on every PR; builds to TestFlight. Then the Supabase schema with Row Level Security and its tests | A TestFlight build with the launch, the characters and the Playground |
+| 2. Data | `shared/` extracted (web app unchanged); encryption ported with test vectors; the SQLite store, sync and Realtime; sign-up, sign-in, pairing, the join token | Sign in and pair in the app (test accounts) |
 | 3. Screens | Home, Today and To-dos, the week, the journal with love threads and hearts, chat, Settings, the vault | The whole app working on test accounts |
 | 4. Integrations | Reminders and notifications from your partner, photos in the journal and chat, the widget | Photos, notifications and the widget |
 | 5. The move | The move from Firebase, the "moved" banner in the web app, account deletion | Both of you on the app, with your real data |
@@ -457,8 +465,8 @@ Before the first build can reach your phones, three accounts are needed:
 - an Expo account (free, with 2FA);
 - a Supabase project (free, with 2FA).
 
-Your partner also needs adding as a TestFlight tester. Phase 1 starts with the work that needs no accounts: the design
-system, `shared/`, and the database schema with its tests.
+Your partner also needs adding as a TestFlight tester. The first build is set up once from a computer
+(`mobile/README.md`, "First build"); after that, every merge that changes the app arrives in TestFlight by itself.
 
 ## 11. Open decisions
 

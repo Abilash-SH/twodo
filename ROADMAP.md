@@ -77,7 +77,7 @@ and data checks, and a short iPhone checklist.
   renders; Reduce Motion is complete; and frame measurements say which device they came from.
 - **Already done:** transform/opacity only, blur allowlist, 1:1 swipes, entrance budget of six (#1–#3).
 - **Also in this phase (needs a yes, it changes the look slightly):** the contrast gaps measured in `design.md`
-  section 12: secondary text in the light theme (3.4:1) and white labels on filled buttons (2.1–3.4:1).
+  section 13: secondary text in the light theme (3.4:1) and white labels on filled buttons (2.1–3.4:1).
 
 ### 7. Chat — A ✅ #5 · B–F ⏭ Phase 4
 - **A. Unread position** ✅: read means "was on screen"; a "New messages" line; opening the chat starts at the first
@@ -155,13 +155,16 @@ and data checks, and a short iPhone checklist.
 - **Files/evidence/iPhone checks:** `docs/performance-audit.md`, `src/lib/recordStream.ts`, `live.ts`, `sync.ts`,
   `chat.ts`, `Avatar.tsx`, `40-lazy-photos.css`, `tests/performance.cjs`, `tests/e2e/test_16_data_performance.py`.
 
-### 17. The React Native app (Expo + Supabase) — 🔎 architecture doc (this PR)
+### 17. The React Native app (Expo + Supabase) — 🔎 architecture doc (#21) · 🔎 phase 1: app foundation (this PR)
 - **Request (2026-11-17):** framework React Native, database Supabase, sign-in with no preference, photos in the
   journal and chat, a Home Screen widget, and a playful, character-first design that stays stable.
 - **Deliver:** `docs/architecture.md`: the decisions, the schema with Row Level Security, the join token, sign-in, the
   integrations, the design system, the security rules, the move from Firebase, tests, costs, phases and open decisions.
 - **Done when:** the doc is merged (that approves it) and the open decisions in its section 11 are answered or accepted
   as recommended. Then phase 1 (foundations) becomes ⏭.
+- **Phase 1 (this PR):** `mobile/`, the design system (tokens, theme, text, components), the six characters with eight
+  moods, the launch, the Playground, checks on every PR (`.github/workflows/app.yml`) and builds to TestFlight
+  (`mobile/.eas/workflows/testflight.yml`). Next in phase 1: the Supabase schema with Row Level Security and its tests.
 - **Needed before builds reach the phones:** the Apple Developer Program, an Expo account and a Supabase project (both
   free), each with 2FA, and the partner added as a TestFlight tester.
 
@@ -199,6 +202,8 @@ and data checks, and a short iPhone checklist.
 | 2026-11-15 | The writing field grows in CSS (a hidden copy of the text sizes it), never by measuring | Measuring its height inside the tap cost 44 ms at 4× CPU |
 | 2026-11-15 | A screen that opens draws its top inside the tap and the rest just after | Opening the week cost a 200 ms frame at 4× CPU; the slide runs on the compositor while the rest is drawn |
 | 2026-11-17 | Rebuild as a React Native app (Expo) on Supabase, still end-to-end encrypted, with a playful, character-first design | Chosen for a real iPhone app with photos and a Home Screen widget; `docs/architecture.md` keeps today's encryption and secret-list rules |
+| 2026-11-17 | Open decisions accepted as recommended to start phase 1: "Twodo" under the icon, no over-the-air updates, iPhone only | "Go ahead"; each can still change, and none is hard to undo before the move |
+| 2026-11-17 | The app's colours and type come only from `mobile/src/ui/tokens.ts`; the rounded face is the iPhone's own (`ui-rounded`) | One source keeps every screen consistent (a test enforces it); the system face needs nothing bundled |
 
 ## How to pick up work
 

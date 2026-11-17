@@ -1,0 +1,50 @@
+# Checks the iPhone app (mobile/) on every change to it: types, unit tests, known vulnerabilities in what ships,
+# and that the app bundles for iOS. Building and sending to TestFlight happens on Expo (mobile/.eas/workflows).
+name: App checks
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/app.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/app.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - name: Install (exact versions from the lockfile)
+        run: npm ci
+      - name: Types
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test -- --ci
+      - name: No high or critical vulnerabilities in what ships
+        run: npm audit --omit=dev --audit-level=high
+      - name: The app bundles for iOS
+        run: npx expo export --platform ios --output-dir .bundle-check
+        env:
+          EXPO_NO_TELEMETRY: '1'
