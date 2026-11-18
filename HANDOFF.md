@@ -43,8 +43,15 @@ All three are open and waiting for the owner to merge. If one was closed instead
   today, read-only past, hearts on your partner's page) are tested in `src/features/__tests__/journal.test.ts`; keep
   them when the store moves to SQLite and sync.
 
-**Waiting on the owner:** the one-time setup for the first TestFlight build (`mobile/README.md`, "First build").
-When he sends the Expo project ID (not a secret), add it to `mobile/app.json` as `extra.eas.projectId` (and `owner`).
+**Waiting on the owner:**
+- The one-time setup for the first TestFlight build (`mobile/README.md`, "First build"). When he sends the Expo
+  project ID (not a secret), add it to `mobile/app.json` as `extra.eas.projectId` (and `owner`).
+- **The app's CI audit step is red** on #24 and #25 since 2026-11-18. `npm audit --omit=dev --audit-level=high` now
+  fails on a new picomatch advisory (GHSA-fc5q-39xc-vjpf, every version up to 4.0.7, and no fixed version is
+  published yet). picomatch comes with Expo's, Metro's and Jest's build tools. The bundle's source maps show it is
+  not in the code that ships to phones. Types, unit tests and the iOS bundle pass. Changing the security check is
+  the owner's call: either wait for a fixed picomatch (then pin it with `overrides`), or audit only the packages
+  inside the bundle. Don't change `.github/workflows/app.yml` without his yes.
 
 ## What to do next, in order
 
