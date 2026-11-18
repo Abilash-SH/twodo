@@ -146,7 +146,7 @@ export function NavStack() {
         openTaskSheet(row.dataset.id!);
       }}>
       {entries.flatMap((e, i) => {
-        if (e === chatEntry) return []; // drawn once, right above Home (below)
+        if (e.spec.type === 'chat') return []; // drawn once, right above Home (below); never as a list page
         const liveIdx = live.indexOf(e);
         const prev = liveIdx > 0 ? live[liveIdx - 1] : e.phase === 'out' && live.length ? live[live.length - 1] : null;
         const view = e.spec.type === 'home' && board ? <BoardView entry={e} cls={clsOf(e, i)} /> : <PageView entry={e} prev={prev} cls={clsOf(e, i)} v={v} />;
