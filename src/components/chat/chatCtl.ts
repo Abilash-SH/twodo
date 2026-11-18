@@ -1,5 +1,6 @@
 /* Twodo · chat controller: what happens when you send, when messages arrive, replies, effects and scrolling.
    The ChatView component renders; this keeps the bits of state that outlive a render. */
+import { playEmojiBurst, reactionOf } from '@/lib/reactions';
 import { Chat, chatEvents, isLove, type Msg, type ReplyRef, type TaskRef } from '@/lib/chat';
 import { cloudReady } from '@/lib/config';
 import { chatSound, haptic } from '@/lib/feedback';
@@ -294,18 +295,6 @@ export const ChatCtl = {
     if (sb && !reducedMotion.matches) sb.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 -22px', opacity: 0, offset: .5 }, { translate: '0 14px', opacity: 0, offset: .51 }, { translate: '0 0', opacity: 1 }], { duration: 460, easing: 'cubic-bezier(.3,.8,.3,1)' });
   },
 
-  /** A reaction from Home (one emoji): sent like a message, without touching what is typed in the chat's box */
-  sendReaction(emoji: string): boolean {
-    if (!Chat.ready()) { island({ e: '⚠️', text: 'Not connected yet', sub: 'Check you’re online and paired' }); return false; }
-    const m = Chat.send({ t: emoji, fx: null, task: null, rp: null });
-    Chat.played[m.id] = 1;
-    this.divider = null;
-    this.draw({});
-    setTimeout(() => { if (m.status === 'sending') renderNow(); }, 950);
-    chatSound('send');
-    return true;
-  },
-
   /* ---------- reply ---------- */
   previewOf(m: Msg): string { return String(m.del ? 'Unsent message' : m.task ? '📋 ' + m.task.title : m.t || '').replace(/\s+/g, ' ').trim().slice(0, 120); },
   setReply(m: Msg | undefined, withHaptic = true) {
@@ -337,4 +326,6 @@ chatEvents.onMessages = (f, i) => ChatCtl.onMessages(f, i);
 chatEvents.onState = () => ChatCtl.onState();
 chatEvents.onPartnerReaction = (m, r) => ChatCtl.onPartnerReaction(m, r);
 chatEvents.onReadElsewhere = () => ChatCtl.onReadElsewhere();
+// a reaction from your partner's Home: a burst of it over whatever you are looking at, and a quiet line
+chatEvents.onPoke = e => { playEmojiBurst(e); island({ e, text: `${firstWord(ptName())} ${reactionOf(e).verb}`, ms: 3200 }); };
 sheetEvents.onClosed = () => ChatCtl.onState();
