@@ -246,6 +246,20 @@ The same Twodo, drawn natively. Everything above applies; this is what is specif
   types, sleepy while they're away); a moment is a short reaction to something that happened (happy, wave, hop,
   cheer, love), at most one per character every few seconds, none with Reduce Motion. Only Views move, on the UI
   thread; the drawing never re-renders during a motion. Lists use still characters.
+- **Home.** After the owner's reference: your picture and name with your partner's chip (online dot, a count of new
+  messages) at the top, a big "Hello", then a fanned stack of cards: Today, your partner, the journal, the week. Each
+  card is a wash of two colours with a dark badge in small capitals, the characters in the middle and big rounded
+  capitals in ink. Swipe the top card away or tap a dot to bring another up; cards waiting in the fan show only their
+  edges. A card shows a count or a nudge, never what a message or a page says.
+- **Tab bar.** A floating dark pill with four round buttons (Home, To-dos, Journal, Chat); the chosen one is a light
+  circle with a dark icon. Screens leave room for it at the bottom.
+- **Journal.** One page each per day. A week strip (the chosen day inverted, today ringed in your colour, a dot in each
+  person's colour for who wrote, days to come empty and not choosable) and a calendar sheet for older days. Below, a
+  stage washed from your colour into your partner's with both characters, and a sheet over it with the day in big
+  capitals and the two pages. Only today's page has a writing box and a Save button; earlier days carry a "Read only"
+  badge. A given heart is always the love pink (`LOVE`, 3:1 or more as an icon).
+- **Washes.** Cards and big buttons go from a light mix of one colour into another (`cardGradient`); dark ink is checked
+  at 4.5:1 on both ends for every pair of colours.
 - **Launch.** The still splash is the launch colour; the two hearts fly in once the app runs, exactly as on the web.
 - **Playground.** A screen with every component, character and mood, in light and dark: the place to judge the look
   on a real iPhone before a screen is built.

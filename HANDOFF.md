@@ -26,22 +26,38 @@ workflow (#22).
 
 **This session, as PRs to `main`, merged in this order** (each later branch includes the earlier ones):
 
-1. `docs/handoff`: this file and `docs/prompts.md` (the old `PROMPT.md` moved there).
-2. `feat/app-avatars`: two original human characters, male and female, in a soft 3D style, replacing the six blob
-   characters in the iPhone app.
-3. `feat/app-home-journal`: a new Home like the owner's reference (greeting, a fanned stack of cards, a floating
+1. #23 `docs/handoff`: this file and `docs/prompts.md` (the old `PROMPT.md` moved there).
+2. #24 `feat/app-avatars`: two original human characters, male and female, in a soft 3D style, replacing the six
+   blob characters in the iPhone app.
+3. #25 `feat/app-home-journal`: a new Home like the owner's reference (greeting, a fanned stack of cards, a floating
    tab bar) and the journal as one page per person per day, written only on the day, with earlier days chosen
-   from a day strip or calendar.
+   from a week strip or a calendar. Four tabs: Home, To-dos and Chat (placeholders), Journal.
 
-If the session ended before all three were opened, check which branches exist (`git ls-remote origin`) and finish
-the next one in the list.
+All three are open and waiting for the owner to merge. If one was closed instead, ask before rebuilding it.
 
-**Waiting on the owner:** the one-time setup for the first TestFlight build (`mobile/README.md`, "First build").
-When he sends the Expo project ID (not a secret), add it to `mobile/app.json` as `extra.eas.projectId` (and `owner`).
+**Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
+- `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
+  the Playground's look changes show on Home and in the Journal.
+- `mobile/src/features/home/Home.tsx`: `SAMPLE_TODOS`, the to-do counts on Home's cards.
+- `mobile/src/features/journal/journalStore.ts`: pages in memory, seeded with a few sample days. Its rules (only
+  today, read-only past, hearts on your partner's page) are tested in `src/features/__tests__/journal.test.ts`; keep
+  them when the store moves to SQLite and sync.
+
+**Waiting on the owner:**
+- The one-time setup for the first TestFlight build (`mobile/README.md`, "First build"). When he sends the Expo
+  project ID (not a secret), add it to `mobile/app.json` as `extra.eas.projectId` (and `owner`).
+- **The app's CI audit step is red** on #24 and #25 since 2026-11-18. `npm audit --omit=dev --audit-level=high` now
+  fails on a new picomatch advisory (GHSA-fc5q-39xc-vjpf, every version up to 4.0.7, and no fixed version is
+  published yet). picomatch comes with Expo's, Metro's and Jest's build tools. The bundle's source maps show it is
+  not in the code that ships to phones. Types, unit tests and the iOS bundle pass. Changing the security check is
+  the owner's call: either wait for a fixed picomatch (then pin it with `overrides`), or audit only the packages
+  inside the bundle. Don't change `.github/workflows/app.yml` without his yes.
 
 ## What to do next, in order
 
-1. **Finish the three PRs above** if any is missing. Each gets screenshots of the web preview in light and dark.
+1. **After the three PRs merge:** check the TestFlight build on the owner's phone against each PR's iPhone checklist
+   and fix what he reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar
+   sheet).
 2. **Phase 1, the rest:** the Supabase schema with Row Level Security and its tests (`docs/architecture.md`,
    section 2): tables, policies, `create_space` and `join_space`, Realtime Broadcast policies, the photos bucket.
    Tests run against a local Supabase in GitHub Actions (`supabase start` needs Docker; this workspace has none).
@@ -91,6 +107,13 @@ When he sends the Expo project ID (not a secret), add it to `mobile/app.json` as
   - `npx expo install` can't reach Expo's servers here. Install the exact version listed in
     `mobile/node_modules/expo/bundledNativeModules.json`.
   - `csstype` is pinned to 3.2.3 (`overrides`) because 3.2.4 was too new to download.
-  - Reanimated's own Jest mock fails under the iOS preset, so `mobile/jest/reanimated.js` stands in.
+  - Reanimated's own Jest mock fails under the iOS preset, so `mobile/jest/reanimated.js` stands in. Gesture
+    Handler v3 asks it for `isSharedValue`, `useEvent`, `useHandler`, `useComposedEventHandler` and
+    `NativeEventsManager`, so those are stubbed there too; Worklets uses its own mock (`jest.setup.js`).
+  - In a card you can both swipe and tap, use a tap gesture that races the pan (`useCompetingGestures`), not a
+    `Pressable`: on the web a `Pressable` still fires after a swipe. VoiceOver opens the card through
+    `onAccessibilityTap`.
+  - Screens use `useToday()` (`features/dates.ts`) for the date: it changes at midnight. Tests set the clock with
+    `jest.useFakeTimers({ now })`.
   - The splash plugin needs an image to use its colours (`assets/splash-blank.png`).
   - `expo prebuild` is only for checks: never commit `ios/` or `android/`.

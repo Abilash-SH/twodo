@@ -4,31 +4,34 @@ import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { Avatar } from '@/ui/avatar/Avatar';
-import { DEFAULT_LOOKS, HAIRS, HAIR_NAMES, LOOKS, LOOK_NAMES, SKINS, SKIN_NAMES, type AvatarLook, type Hair, type Skin } from '@/ui/avatar/looks';
+import { HAIRS, HAIR_NAMES, LOOKS, LOOK_NAMES, SKINS, SKIN_NAMES, type AvatarLook, type Hair, type Skin } from '@/ui/avatar/looks';
 import { MOMENTS, MOOD_NAMES, STATES, type CharState } from '@/ui/avatar/moods';
 import { Portrait } from '@/ui/avatar/Portrait';
 import { Stage } from '@/ui/avatar/Stage';
 import { useMoments } from '@/ui/avatar/useMoments';
 import { contrast } from '@/ui/color';
-import { Badge, Button, Card, Chip, EmptyState, LargeTitle, Row, Screen, Section, Toast } from '@/ui/components';
+import { BackButton, Badge, Button, Card, Chip, EmptyState, LargeTitle, Row, Screen, Section, Toast } from '@/ui/components';
 import { haptic } from '@/ui/haptics';
 import { launch } from '@/ui/launch/launchStore';
 import { Txt } from '@/ui/Text';
 import { useTheme, type SchemeChoice } from '@/ui/theme';
 import { COLOR_NAMES, INK, PALETTE, RADIUS, SPACE, TYPE, type ColorName, type TypeVariant } from '@/ui/tokens';
+import { peopleStore, usePeople } from '../people';
 
 interface Pick { avatar: AvatarLook; color: ColorName }
 
 const SAMPLE: Record<TypeVariant, string> = {
   largeTitle: 'Today', title: 'This week', headline: 'Buy flowers', body: 'Pick up the cake on the way home.',
-  callout: 'Add a to-do', footnote: 'Tomorrow · 6 pm', caption: 'Seen',
+  callout: 'Add a to-do', footnote: 'Tomorrow · 6 pm', caption: 'Seen', display: '3 to-dos left', label: 'Today',
 };
 const SCHEMES: [SchemeChoice, string][] = [['system', 'Like my phone'], ['light', 'Light'], ['dark', 'Dark']];
 
-export function Playground() {
+/** `onBack` shows a way back to Home (the Playground sits on top of the tabs). */
+export function Playground({ onBack }: { onBack?: () => void }) {
   const t = useTheme(), reduce = useReducedMotion();
-  const [me, setMe] = useState<Pick>({ avatar: DEFAULT_LOOKS.male, color: 'blue' });
-  const [pt, setPt] = useState<Pick>({ avatar: DEFAULT_LOOKS.female, color: 'pink' });
+  // The two looks live in the people store, so a change here shows on Home and in the Journal too.
+  const people = usePeople(), me: Pick = people.me, pt: Pick = people.partner;
+  const setMe = (p: Pick) => peopleStore.set('me', p), setPt = (p: Pick) => peopleStore.set('partner', p);
   const [meState, setMeState] = useState<CharState>('idle');
   const [ptState, setPtState] = useState<CharState>('think');
   const meM = useMoments(), ptM = useMoments();
@@ -43,6 +46,7 @@ export function Playground() {
   return (
     <View style={styles.fill}>
       <Screen>
+        {onBack ? <BackButton label="Home" onPress={onBack} /> : null}
         <LargeTitle title="Playground" sub="Twodo's look, piece by piece: the two characters, their moods, colours, type and controls. Everything here is pretend: nothing is saved or sent." />
         <View style={styles.wrap}>
           {SCHEMES.map(([c, label]) => (

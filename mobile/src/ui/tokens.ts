@@ -104,10 +104,33 @@ export const TYPE = {
   callout: t({ fontSize: 15, lineHeight: 20, fontWeight: '500' }),
   footnote: t({ fontSize: 13, lineHeight: 18, fontWeight: '400' }),
   caption: t({ fontSize: 12, lineHeight: 16, fontWeight: '600' }),
+  /** Big, heavy capitals on cards ("3 TO-DOS LEFT"), after the reference's bold card titles. */
+  display: t({ fontFamily: ROUNDED, fontSize: 30, lineHeight: 32, fontWeight: '900', letterSpacing: -0.3, textTransform: 'uppercase' }),
+  /** Small capitals for badges and day names. */
+  label: t({ fontFamily: ROUNDED, fontSize: 12, lineHeight: 16, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }),
 } as const;
 export type TypeVariant = keyof typeof TYPE;
 /** How far Dynamic Type may grow each style before layouts would break. */
-export const MAX_SCALE: Record<TypeVariant, number> = { largeTitle: 1.3, title: 1.5, headline: 1.7, body: 1.8, callout: 1.8, footnote: 1.6, caption: 1.5 };
+export const MAX_SCALE: Record<TypeVariant, number> = { largeTitle: 1.3, title: 1.5, headline: 1.7, body: 1.8, callout: 1.8, footnote: 1.6, caption: 1.5, display: 1.2, label: 1.4 };
+
+/** Card backgrounds: a light wash of one colour into another (or the same). Ink text stays readable on both ends. */
+export function cardGradient(a: ColorName, b: ColorName | undefined, s: Scheme): [string, string] {
+  return [mix(COLORS[a][s], 55, WHITE), COLORS[b ?? a][s]];
+}
+
+/** The floating tab bar: a dark pill; the chosen tab is a light circle with a dark icon. */
+export const PILL: Record<Scheme, { bg: string; icon: string; activeBg: string; activeIcon: string }> = {
+  light: { bg: INK, icon: mix(WHITE, 62, INK), activeBg: WHITE, activeIcon: INK },
+  dark: { bg: '#2B2934', icon: mix(WHITE, 62, '#2B2934'), activeBg: WHITE, activeIcon: INK },
+};
+/** Badges on cards: small dark pills with white capitals. */
+export const BADGE = { bg: INK, text: WHITE } as const;
+/** "Online" dots and similar small signs. */
+export const PRESENCE = '#3CC57C';
+/** Hearts given to a page: always this pink, so a heart reads as a heart whatever your colours (3:1 as an icon). */
+export const LOVE: Record<Scheme, string> = { light: '#D63F74', dark: '#F57AA6' };
+/** The soft circle behind a given heart. */
+export const loveTint = (s: Scheme): string => mix(LOVE[s], s === 'dark' ? 24 : 14, NEUTRALS[s].raised);
 
 /* ---------- Space, corners, shadows ---------- */
 export const SPACE = { xxs: 4, xs: 8, s: 12, m: 16, l: 20, xl: 24, xxl: 32 } as const;

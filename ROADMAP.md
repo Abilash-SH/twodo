@@ -132,7 +132,7 @@ and data checks, and a short iPhone checklist.
 - **Data:** goals are a new record kind; planning only changes a to-do's date. `docs/journal-and-planner.md`.
 - **Done when:** test 14 passes; checked on an iPhone (the ribbon while scrolling, *Add to …* with the keyboard).
 
-### 15. Journal — ✅ #11 (pages) · 🔎 thread (this PR)
+### 15. Journal — ✅ #11 (pages) · ✅ thread (#19, #20) · 🔎 the app: one page each per day (#25)
 - **Asked for 2026-11-15**, with the planner: a journal for the two of you (first with a private one each).
 - **Changed the same day:** "a continuous thread with just posting … keep it raw", no private posts.
 - **Built:** To-dos → *Journal* (or the note on the board): a box to write in, *Post*, then the posts, newest first,
@@ -141,6 +141,9 @@ and data checks, and a short iPhone checklist.
   `docs/journal-and-planner.md`, "The journal as a thread".
 - **Done when:** test 15 passes; checked on an iPhone (writing a long post with the keyboard up, posting, the
   partner's phone).
+- **Changed 2026-11-18, in the app:** "I dont need it like a threads … only for the same day i need it to enter and
+  for seeing previous days i need to select days". The app's journal is one page each per day: only today's can be
+  written; a week strip and a calendar open earlier days, read-only. The web app keeps its thread until the move.
 
 ### 16. Data and rendering performance — 🔎 this PR
 - **Request:** audit repeated queries, index coverage, stable-data caches, below-fold photos and optimistic UI.
@@ -155,16 +158,18 @@ and data checks, and a short iPhone checklist.
 - **Files/evidence/iPhone checks:** `docs/performance-audit.md`, `src/lib/recordStream.ts`, `live.ts`, `sync.ts`,
   `chat.ts`, `Avatar.tsx`, `40-lazy-photos.css`, `tests/performance.cjs`, `tests/e2e/test_16_data_performance.py`.
 
-### 17. The React Native app (Expo + Supabase) — 🔎 architecture doc (#21) · 🔎 phase 1: app foundation (this PR)
+### 17. The React Native app (Expo + Supabase) — ✅ architecture doc (#21) · ✅ phase 1 foundation (#22) · 🔎 characters (#24), Home and journal (#25)
 - **Request (2026-11-17):** framework React Native, database Supabase, sign-in with no preference, photos in the
   journal and chat, a Home Screen widget, and a playful, character-first design that stays stable.
 - **Deliver:** `docs/architecture.md`: the decisions, the schema with Row Level Security, the join token, sign-in, the
   integrations, the design system, the security rules, the move from Firebase, tests, costs, phases and open decisions.
 - **Done when:** the doc is merged (that approves it) and the open decisions in its section 11 are answered or accepted
   as recommended. Then phase 1 (foundations) becomes ⏭.
-- **Phase 1 (this PR):** `mobile/`, the design system (tokens, theme, text, components), the six characters with eight
+- **Phase 1 (#22):** `mobile/`, the design system (tokens, theme, text, components), the characters with eight
   moods, the launch, the Playground, checks on every PR (`.github/workflows/app.yml`) and builds to TestFlight
   (`mobile/.eas/workflows/testflight.yml`). Next in phase 1: the Supabase schema with Row Level Security and its tests.
+- **2026-11-18:** two original characters, female and male (#24); Home and the journal by day as designs with sample
+  data (this PR), with four tabs and a floating tab bar.
 - **Needed before builds reach the phones:** the Apple Developer Program, an Expo account and a Supabase project (both
   free), each with 2FA, and the partner added as a TestFlight tester.
 
@@ -205,6 +210,8 @@ and data checks, and a short iPhone checklist.
 | 2026-11-17 | Open decisions accepted as recommended to start phase 1: "Twodo" under the icon, no over-the-air updates, iPhone only | "Go ahead"; each can still change, and none is hard to undo before the move |
 | 2026-11-17 | The app's colours and type come only from `mobile/src/ui/tokens.ts`; the rounded face is the iPhone's own (`ui-rounded`) | One source keeps every screen consistent (a test enforces it); the system face needs nothing bundled |
 | 2026-11-18 | Two original human characters, female and male, in a soft 3D style replace the six blob characters in the app | Asked for, from a 3D avatar reference; drawn in parts so moods still move, and the same API could take rendered images later |
+| 2026-11-18 | The app's Home is a fanned stack of cards (Today, your partner, the journal, the week) under a big hello, with a floating pill tab bar | Asked for from the reference's home screen; one card at a time keeps it uncluttered, and a card shows counts, never a message's text |
+| 2026-11-18 | The journal is one page each per day: only today's can be written, earlier days are read from a week strip or a calendar | Asked for instead of threads; one record per person per day keeps "only its writer edits it" (`docs/architecture.md`, section 7) |
 
 ## How to pick up work
 

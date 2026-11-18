@@ -1,8 +1,8 @@
 # Twodo app (`mobile/`) — rules for coding agents
 
-The React Native rebuild of Twodo (Expo SDK 58, React Native 0.88, TypeScript). It is being built in phases; this
-folder is phase 1 so far: the design system, the two characters (female and male) with their moods, the launch and
-the Playground.
+The React Native rebuild of Twodo (Expo SDK 58, React Native 0.88, TypeScript). It is being built in phases; so far:
+the design system, the two characters (female and male) with their moods, the launch, the Playground, and Home and
+the Journal as designs with sample data (four tabs with a floating pill bar). Nothing is stored or sent yet.
 
 ## Read first
 - `../HANDOFF.md`: where things stand and what to do next. Update it before you end a session.
@@ -29,13 +29,17 @@ CI runs the same checks (`.github/workflows/app.yml`). Merging to `main` builds 
 TestFlight (`.eas/workflows/testflight.yml`).
 
 ## Where things are
-- `src/app/`: screens (Expo Router). Only screens live here.
+- `src/app/`: screens (Expo Router). Only screens live here: `(tabs)/` holds Home (`index`), To-dos, Journal and Chat
+  with the pill bar; `playground.tsx` opens on top.
 - `src/ui/`: the design system. `tokens.ts` is the only place colours, type, space, corners, shadows and motion are
   defined; `theme.tsx` (light, dark, people's colours), `Text.tsx` (`<Txt>`), `components.tsx`, `haptics.ts`,
-  `color.ts` (mixing and contrast), `shapes.ts`, `avatar/` (looks, drawings, moods, `<Avatar>`, `<Portrait>`,
-  `<Stage>`), `launch/`.
-- `src/features/`: one folder per feature (`playground/` for now).
-- `jest/`: test stand-ins (Reanimated runs as plain JavaScript in tests).
+  `color.ts` (mixing and contrast), `shapes.ts`, `icons.tsx`, `Gradient.tsx`, `PillBar.tsx` (the tab bar), `avatar/`
+  (looks, drawings, moods, `<Avatar>`, `<Portrait>`, `<Stage>`), `launch/`.
+- `src/features/`: one folder per feature: `home/` (Home and its card stack), `journal/` (the screen, the day strip,
+  the calendar, and `journalStore.ts` with the journal's rules), `playground/`; plus `people.ts` (the two of you,
+  sample people until phase 2), `dates.ts` (local calendar days) and `ComingSoon.tsx`.
+- `jest/`: test stand-ins (Reanimated runs as plain JavaScript in tests; Gesture Handler and Worklets use their own
+  Jest mocks, set up in `jest.setup.js`).
 
 ## Rules
 - Colours and sizes come only from the tokens, through the theme and the components. A test fails if a colour value
@@ -51,4 +55,8 @@ TestFlight (`.eas/workflows/testflight.yml`).
 - A new library needs a reason in its PR (what it does, who maintains it, why the list in `docs/architecture.md` can't
   do it), at an exact version.
 - In tests and examples the partner is "Deiva" (never "Priya").
+- The journal's rules live in `journalStore.ts` and its tests: only today's page can be written (the store refuses
+  any other date), earlier days are read-only, a heart goes only on your partner's page. Keep them there, not in a
+  screen.
+- A card or a notification shows a count or a nudge, never the text of a message or a page.
 - One topic per PR, with what was tested and what wasn't, the security checks, and an iPhone checklist.
