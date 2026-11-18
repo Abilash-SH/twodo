@@ -27,10 +27,13 @@ journal), #26 and #27 (the same characters and Home on the web app), #29 (Codex:
 **Open:**
 - #31 `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
   the end). Merge it first; it also fixes #30's note covering Home after Back.
-- #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Not reviewed yet.
+- #32 `feat/web-journal-day` (Claude, built on #31): the web journal by day, designed like the app's, with test 15
+  rewritten. Merge after #31.
+- #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
+  `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
 **Known broken on `main`:** browser test 15 (journal) still checks the old thread; #29 changed the screen without
-updating it. Fix it together with the journal (next steps, 2).
+updating it. #32 fixes it.
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -55,11 +58,9 @@ updating it. Fix it together with the journal (next steps, 2).
 1. **The crash on Home's top-right picture:** after #31 merges, the owner taps it again on
    his iPhone. If a note or the *Twodo stopped for a moment* page appears, its code line names the error: fix that
    cause with a test that reproduces it. Then decide with him whether to keep the notes as they are.
-2. **The web journal, finished:** #29 works but is plain and untested. Rebuild it to the design (week strip with a
-   calendar sheet for older days, both characters, your page and your partner's, hearts) on the day pages decided
-   below (`us-<date>-<who>`; #29 instead edits the newest `us-p…` post of today: pick one and record why), and
-   rewrite test 15 for it. Keep #29's rules: only today is written, earlier days are read-only.
-3. **Review #28** (Supabase schema and RLS) against `docs/architecture.md`, section 2, before it is merged.
+2. **The web journal:** after #32 merges, check it on the owner's iPhone (its PR checklist).
+3. **#28** (Supabase schema and RLS): Codex, or whoever continues it, works through the review comment, then the
+   adversarial RLS tests, and checks it against `docs/architecture.md`, section 2, before it is merged.
 4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
    reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar sheet).
 5. **Phase 2, data:** move pure logic to `shared/`; port the encryption with test vectors that match the web app
@@ -77,9 +78,10 @@ updating it. Fix it together with the journal (next steps, 2).
   is their own colour. Stored with the person, like name and colour. The web app's six characters (`char`) map to
   a default avatar during the move.
 - **Journal:** one page per person per day. You can write only today's page; earlier days are read-only and chosen
-  from a day strip or a calendar; future days can't be chosen. Stored as `journal` records with ids
-  `us-<date>-<who>` (the format the web app used before the thread). Posts from the web app's thread (`us-p…`) show
-  under the day they were written, read-only. Hearts stay: one per person per page.
+  from a day strip or a calendar; future days can't be chosen. The iPhone app stores day pages (`us-<date>-<who>`,
+  the format the web app used before the thread). The web app keeps the thread's posts (`us-p…`) by their day: your
+  newest post from today is today's page (decided 2026-11-18; why in `docs/journal-and-planner.md`). When the data
+  moves, each person's newest post of a day becomes that day's page. Hearts stay.
 
 ## How to work here
 

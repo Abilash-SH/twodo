@@ -53,13 +53,14 @@ on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-do
 back, a secret to-do never showing (it creates a passcode in its own browser only), seven columns on wide screens,
 and contrast.
 
-Test 15 covers the journal thread: posting (the box empties, the post is at the top with your name and the time),
-your partner seeing it live and Home's journal button saying so, with no way to edit it, newest first, compact rows on a
-love thread (from each character to the next, in both colours, none after the last), hearts (a
-double tap gives one and a second double tap keeps it, the heart button takes it back, "Deiva loved this" on the
-other phone, a heart is its own record with no text), a draft kept when you leave and come back, editing and
-deleting your own post (deleted on both phones, its text gone from storage), nothing private anywhere, text contrast
-for every colour in light and dark, and the wide layout.
+Test 15 covers the journal by day: it opens on today (a week strip with days to come shut, both characters, an empty
+page, no tabs, prompts or private pages), *Save page* (Saved, a dot on today) and saving again into the same record,
+your partner seeing your page live (and Home's journal button saying so) with no way to edit it while theirs arrives
+on yours, hearts (a double tap gives one and a second keeps it, the button takes it back, "Deiva loved your page" on
+the other phone, a heart is its own record with no text), a draft kept when you leave and come back, an earlier day
+read-only (from the strip and the calendar sheet, which shuts days to come; *Go to today*), a page from an earlier day
+shown under it, an emptied page deleted after a question on both phones (its words gone from storage), text contrast
+for every colour in light and dark (the page and the calendar), and the wide layout.
 
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,

@@ -11,7 +11,7 @@ import { memo, useEffect, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
 import { avatarOf, dayLine, lines, roleName, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { posts } from '@/lib/journal';
+import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
@@ -81,12 +81,12 @@ export function boardData(): Board {
     unread, today: dueToday.length, next: timed.length ? { title: timed[0].title, time: fmtTime(timed[0].time) } : null,
     overdue: open.filter(t => t.due && t.due < t0).length,
     pinned: pins[0] ? { title: pins[0].title, when: pins[0].due ? fmtDue(pins[0].due, pins[0].time) : '' } : null,
-    doneByPt: doneByPt ? doneByPt.title : null, together, ptPosted: !!posts().find(e => e.date === t0 && e.who === pk),
+    doneByPt: doneByPt ? doneByPt.title : null, together, ptPosted: wroteOn(t0, pk),
   };
   return {
     msg, today: today.length, next: facts.next, overdue: facts.overdue, together,
     weekOpen: plan.days.reduce((n, d) => n + d.open.length, 0), weekDone: plan.days.reduce((n, d) => n + d.done.length, 0),
-    wrote: posts().some(e => e.date === t0 && e.who === L.me), ptWrote: facts.ptPosted, facts,
+    wrote: wroteOn(t0, L.me), ptWrote: facts.ptPosted, facts,
   };
 }
 
@@ -195,7 +195,7 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
   const ok = paired(), me = L.me, pk = partnerKey();
   const warn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
   const unread = unreadNow(), pt = firstWord(person(pk).name);
-  const posted = posts().some(e => e.date === todayStr() && e.who === pk); // your partner wrote in the journal today
+  const posted = wroteOn(todayStr(), pk); // your partner wrote in the journal today
   useEffect(() => { // the offline note and "Waiting to send" follow the connection
     const net = () => renderNow();
     addEventListener('online', net); addEventListener('offline', net);
