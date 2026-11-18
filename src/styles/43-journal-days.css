@@ -1,0 +1,29 @@
+/* Date-wise shared journal. All colours inherit the existing palette. */
+.jd{padding:16px 16px calc(var(--safe-bottom, 0px) + 110px);max-width:760px;margin:auto}
+.jd-heading p{color:var(--label2);margin:4px 0 20px}
+.jd-dates{display:flex;align-items:stretch;gap:6px}
+.jd-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;flex:1;min-width:0}
+.jd-week-nav{min-width:28px;border:0;background:none;color:var(--label);font-size:26px}
+.jd-date{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid transparent;border-radius:14px;background:transparent;color:var(--label);padding:10px 1px;min-width:0}
+.jd-date span{font-size:12px}.jd-date b{font-size:18px}.jd-date i{font-style:normal;font-size:11px;min-height:14px;color:var(--accent)}
+.jd-date.chosen{background:var(--label);color:var(--bg)}.jd-date.today:not(.chosen){border-color:var(--accent)}
+.jd-date:disabled,.jd-week-nav:disabled{opacity:.25}
+.jd-calendar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 24px;color:var(--label2)}
+.jd-calendar input{min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--bg2);color:var(--label);padding:0 10px}
+.jd-calendar button{border:0;background:transparent;color:var(--accent);min-height:44px}
+.jd-day-title{font-size:20px;margin:0 0 16px}
+.jd-pages{display:grid;gap:16px}
+.jd-page{border-radius:22px;padding:18px;background:var(--bg2);border:1px solid var(--line)}
+.jd-person{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.jd-person strong{flex:1}.jd-readonly{font-size:12px;color:var(--label2)}
+.jd-entry{position:relative;margin:0 0 14px}
+.jd-words{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;margin:0 0 10px}
+.jd-heart{border:0;background:transparent;font-size:26px;color:var(--label2);min-width:44px;min-height:44px}
+.jd-heart.on{color:var(--accent)}
+.jd-empty,.jd-heart-note{color:var(--label2);font-size:14px}
+.jd-editor{display:flex;flex-direction:column;gap:10px}
+.jd-editor label{font-size:14px;color:var(--label2)}
+.jd-editor textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid var(--line);border-radius:14px;padding:14px;font:inherit;color:var(--label);background:var(--bg);min-height:136px}
+.jd-save{align-self:flex-end;min-height:44px;border:0;border-radius:14px;padding:0 20px;background:var(--label);color:var(--bg);font-weight:700}
+.jd-save:disabled{opacity:.4}
+@media(min-width:700px){.jd-pages{grid-template-columns:repeat(2,minmax(0,1fr))}}
