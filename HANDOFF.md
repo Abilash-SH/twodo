@@ -25,7 +25,7 @@ journal), #26 and #27 (the same characters and Home on the web app), #29 (Codex:
 (Codex: an error boundary around the chat).
 
 **Open:**
-- `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
+- #31 `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
   the end). Merge it first; it also fixes #30's note covering Home after Back.
 - #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Not reviewed yet.
 
@@ -52,7 +52,7 @@ updating it. Fix it together with the journal (next steps, 2).
 
 ## What to do next, in order
 
-1. **The crash on Home's top-right picture:** after `fix/home-crash-containment` merges, the owner taps it again on
+1. **The crash on Home's top-right picture:** after #31 merges, the owner taps it again on
    his iPhone. If a note or the *Twodo stopped for a moment* page appears, its code line names the error: fix that
    cause with a test that reproduces it. Then decide with him whether to keep the notes as they are.
 2. **The web journal, finished:** #29 works but is plain and untested. Rebuild it to the design (week strip with a
@@ -135,7 +135,7 @@ updating it. Fix it together with the journal (next steps, 2).
   Screen mode and unread messages; WebKit can't be downloaded in this workspace, so Safari itself wasn't tried.
 - #30 (merged) put the chat in an error boundary. Its note always drew as an open screen, so after Back it stayed
   over Home and took every tap.
-- `fix/home-crash-containment` (open): the chat's note now slides and parks with the chat and tries again when the
+- #31 (open): the chat's note now slides and parks with the chat and tries again when the
   chat opens; Home's top and Home's content each have their own boundary (`ui/AreaBoundary.tsx`), so the bar keeps
   working; `app/global-error.tsx` replaces the framework's blank page with *Twodo stopped for a moment*, a Reload
   button and one line safe to screenshot (`lib/errors.ts` `errorSummary`: the error's type and a short message with
