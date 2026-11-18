@@ -98,7 +98,8 @@ export function pushView(spec: Spec, { replace = false } = {}): number {
   const e: Entry = { id: ++seq, spec, phase: 'in' };
   // contents rise in one after another (not the chat: it is already drawn, and marking it would restyle every message inside the tap)
   if (spec.type !== 'chat') { Nav.entering.add(e.id); setTimeout(() => { Nav.entering.delete(e.id); scheduleRender(); }, 1100); }
-  navState.set(s => ({ entries: [...s.entries, e] }));
+  // a chat that is still sliding away (closed less than half a second ago) leaves now: there is only ever one chat screen
+  navState.set(s => ({ entries: [...s.entries.filter(x => !(spec.type === 'chat' && x.spec.type === 'chat')), e] }));
   Nav.seq++;
   if (!replace) armTrap();
   // the tick lands with the screen, not before it moves (and not at all if it was already closed again)

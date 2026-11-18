@@ -147,6 +147,17 @@ async def main():
         assert await q(TITLES) == ['Board'] and not await q(TRAP) and 'localhost:8003' in A.url
         print(f'PASS: {len(doors) + 5} doors on Home each open one screen (or sheet), cards brought up by their dots; Back returns Home')
 
+        # ---------- the chat opened again while it is still sliding away (the iPhone crash of 2026-11-18): one chat, nothing fails
+        for _ in range(2):
+            await A.click('.home-pt'); await A.wait_for_timeout(900)
+            await q("history.back()"); await A.wait_for_timeout(120)   # it is still leaving
+            await q("document.querySelector('.home-pt').click()"); await A.wait_for_timeout(1000)   # the tap reaches the chip as on the iPhone
+            got = await q("[document.querySelectorAll('#stack > .chatview').length, !!document.querySelector('.chat-fail'), /Twodo stopped|couldn.t load/.test(document.body.innerText)]")
+            assert await q(TITLES) == ['Board', 'Chat'] and got == [1, False, False], ('reopening the chat while it leaves', await q(TITLES), got)
+            await q("history.back()"); await A.wait_for_timeout(900)
+        assert await q(TITLES) == ['Board']
+        print('PASS: tapping your partner again while the chat is still sliding away opens it again (one chat screen, nothing fails)')
+
         # ---------- if part of Home (or the chat) fails to draw, the rest keeps working: a safe note says what failed
         # Home formats dates when it draws; the chat's message bar asks whether this is a touch screen every time it draws
         await q("""(() => { window.__lt = [Date.prototype.toLocaleTimeString, Date.prototype.toLocaleDateString, window.matchMedia];

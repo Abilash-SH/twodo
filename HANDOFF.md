@@ -147,3 +147,10 @@ updating it. #32 fixes it.
   signs in like a new iPhone (touch, dark mode, unread messages tried too) and taps every door on Home: nothing fails
   with the test data. So the cause likely needs the owner's real data or iOS itself; the code line on his screen is
   the next clue.
+- **Cause found (2026-11-18), from the owner's screenshot of the new error page:** `undefined is not an object
+  (evaluating 't.color')`. Mapped with a source-mapped build to `TaskListView` (`SMART[spec.key].color`). Tapping your
+  partner again within half a second of closing the chat (while it still slides away) pushed a second chat entry;
+  NavStack only drew the first as the chat, so the new one fell through to the list page with no key. Fix
+  (`fix/chat-reopen-crash`): pushing the chat first removes a chat that is still leaving; NavStack never draws a chat
+  entry as a page; an unknown list page shows "Nothing here" instead of failing. Test 13 checks it (it fails without
+  the fix).
