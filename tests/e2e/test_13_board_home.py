@@ -176,14 +176,21 @@ async def main():
         errors[:] = [e for e in errors if 'broken on purpose' not in e and 'above error occurred' not in e]
         print('PASS: a part of Home or the chat that fails to draw shows a safe note (no quoted text); the bar still works, a failed chat parks on Back, both try again')
 
-        # ---------- reactions: one tap sends your partner an emoji, like a message (two quick taps send one)
-        HEARTS = "[...document.querySelectorAll('#stack > .chatview .msg-row.me .bwrap')].filter(b => b.textContent.trim().startsWith('❤️')).length"
-        before = await q(HEARTS)
-        await A.click('.react:has-text("Love")'); await A.wait_for_timeout(120); await A.click('.react:has-text("Love")')
-        assert await until(A, "document.querySelector('.home-react-sent').textContent", 'Love sent to Deiva') == 'Love sent to Deiva'
-        assert await q(TITLES) == ['Board'], 'sending stays on Home'
-        assert await until(A, HEARTS, before + 1) == before + 1, ('one ❤️ in the chat for two quick taps', before, await q(HEARTS))
-        print('PASS: a reaction goes to your partner as a message from Home (Home stays; two quick taps send one)')
+        # ---------- reactions: not a message. One tap bursts on your partner's screen (live, wherever they are) with a line
+        cr, R = await phone('/tmp/twodo-B.json')
+        await R.evaluate("window.__bursts = []; new MutationObserver(m => m.forEach(r => r.addedNodes.forEach(n => n.classList && n.classList.contains('react-burst') && window.__bursts.push(n.textContent.slice(0, 2))))).observe(document.body, { childList: true })")
+        HEARTS = "[...document.querySelectorAll('#stack > .chatview .msg-row .bwrap')].filter(b => b.textContent.trim().startsWith('🤗')).length"
+        before = [await q(HEARTS), await R.evaluate(HEARTS)]
+        await q("(() => { const b = [...document.querySelectorAll('.react')].find(x => x.textContent.includes('Hug')); b.click(); setTimeout(() => b.click(), 120); })()")   # two quick taps
+        assert await until(A, "document.querySelector('.home-react-sent').textContent", 'Hug sent to Deiva') == 'Hug sent to Deiva'
+        assert await q(TITLES) == ['Board'] and await q("!!document.querySelector('.react-burst')"), 'sending stays on Home, with a little burst from the tile'
+        got = await until(R, "window.__bursts.length", lambda n: n >= 1, 10000)
+        assert got == 1 and (await R.evaluate("window.__bursts[0]")).startswith('🤗'), ('one burst of 🤗 on the partner\'s screen for two quick taps', got)
+        assert await until(R, "(document.getElementById('isl') || {}).textContent?.includes('Abilash sent you a hug') || false", True), 'and a line saying who sent what'
+        await R.wait_for_timeout(1500)
+        assert [await q(HEARTS), await R.evaluate(HEARTS)] == before, 'never a chat message'
+        await cr.close()
+        print('PASS: a reaction bursts live on your partner\'s screen with "Abilash sent you a hug" (two quick taps, one burst); it is never a chat message')
 
         # ---------- the chat stays mounted while it is closed: opening it builds nothing new, and the board's notes stay as they are
         await q("window.__chat = document.querySelector('#stack > .chatview'); window.__row = window.__chat.querySelector('.msg-row[data-id]'); window.__note = document.querySelector('.board .home-card')")
@@ -307,31 +314,32 @@ async def main():
         await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
         await A.click('.sheet.open .me-char'); await A.wait_for_timeout(1300)
         assert await q(TITLES) == ['Board', 'Your character']
-        before = await q("[document.querySelector('.chv-pick.on').dataset.look, ...[...document.querySelectorAll('.chv-dot.on')].map(d => d.getAttribute('aria-label'))]")
+        before = await q("[document.querySelector('.chv-pick.on').dataset.look, document.querySelector('.chv-face.on').dataset.person]")
         other = 'Male' if before[0] == 'female' else 'Female'
         await A.click(f'.chv-pick[data-look="{other.lower()}"]'); await A.wait_for_timeout(300)
-        skin, hair = ('Peach', 'Golden') if before[1:] == ['Cocoa', 'Auburn'] else ('Cocoa', 'Auburn')
-        await A.click(f'.chv-dot[aria-label="{skin}"]'); await A.wait_for_timeout(200)
-        await A.click(f'.chv-dot[aria-label="{hair}"]'); await A.wait_for_timeout(200)
+        faces = await q("[...document.querySelectorAll('.chv-face')].map(f => [f.dataset.person, f.getAttribute('aria-label')])")
+        assert len(faces) == 7 and all(f[0][0] == other[0].lower() for f in faces), ('seven people to pick from, of that look', faces)
+        person = faces[-1][0]; skin, hair = faces[-1][1].split(' skin, ')[0], faces[-1][1].split(' skin, ')[1].split(' hair')[0].capitalize()
+        await A.click(f'.chv-face[data-person="{person}"]'); await A.wait_for_timeout(300)
         await A.click('.chv-role:has-text("Calm friend")'); await A.wait_for_timeout(500)
         look = other.lower()
-        assert await q("[document.querySelector('.chv-pick.on').textContent, [...document.querySelectorAll('.chv-dot.on')].map(d => d.getAttribute('aria-label')).join('/'), document.querySelector('.chv-role.on b').textContent, !!document.querySelector('.chv-preview svg.cv-" + look + "')]") == [other, f'{skin}/{hair}', 'Calm friend', True]
+        assert await q("[document.querySelector('.chv-pick.on').textContent, document.querySelector('.chv-face.on').dataset.person, document.querySelector('.chv-role.on b').textContent, document.querySelector('.chv-preview .p3d').dataset.person]") == [other, person, 'Calm friend', person]
         assert (await q("document.querySelector('.chv-preview .say').textContent")).startswith(GREET['Calm friend'])
-        assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && document.querySelectorAll('.chv-dot').length === 11"), 'skin and hair are labelled radio buttons'
+        assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && [...document.querySelectorAll('.chv-face')].every(f => f.getAttribute('aria-label'))"), 'the people are labelled radio buttons'
         await back_home(A)
         home = await q(BOARD)
-        assert await q(f"document.querySelectorAll('.home-card svg.cv')[0].classList.contains('cv-{look}')") and any(w in home['say'] for w in CALM), home
+        assert await q("document.querySelectorAll('.home-card .p3d')[0].dataset.person") == person and any(w in home['say'] for w in CALM), home
         mine = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
         want = f"{look}/{skin.lower()}/{hair.lower()}/calm"
         assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people, m = p && p.{mine}; return m && m.avatar && [m.avatar.look, m.avatar.skin, m.avatar.hair, m.role].join('/'); }})()", want, 12000) == want, 'it reaches your partner'
-        assert await until(B, f"document.querySelectorAll('.home-card svg.cv')[1].classList.contains('cv-{look}')", True), "your partner's Home shows your new character next to theirs"
+        assert await until(B, "document.querySelectorAll('.home-card .p3d')[1].dataset.person", person) == person, "your partner's Home shows your new person next to theirs"
         await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
         assert await q("document.querySelector('.sheet.open .me-char .sub').textContent") == f'{other} · Calm friend'
-        assert await q("!!document.querySelector('.sheet.open .me-char .cv-portrait svg')"), 'the row shows your character'
+        assert await q(f"document.querySelector('.sheet.open .me-char .cv-portrait').dataset.person") == person and await q("!!document.querySelector('.sheet.open .me-char .cv-portrait img.pt-photo')"), 'the row shows a photo of your person'
         await A.click('.sheet.open .me-char'); await A.wait_for_timeout(1300)
         assert await q(TITLES) == ['Board', 'Your character'], 'Settings leads to it too'
         await A.click(f'.chv-pick[data-look="{before[0]}"]'); await A.wait_for_timeout(200)   # tidy up
-        for label in before[1:]: await A.click(f'.chv-dot[aria-label="{label}"]'); await A.wait_for_timeout(150)
+        await A.click(f'.chv-face[data-person="{before[1]}"]'); await A.wait_for_timeout(150)
         await A.click('.chv-role:has-text("Cheerleader")'); await A.wait_for_timeout(300)
         await back_home(A)
         print("PASS: picking a look, skin, hair and role (from Settings) changes Home at once and reaches your partner (on their card, turned to them)")

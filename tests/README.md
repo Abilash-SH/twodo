@@ -39,8 +39,8 @@ here), so it checks the engine and the app's touch paths, not iOS itself.
 Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
 Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
 Test 13 covers Home: the hello and what today holds in your character's voice, the one Today card (against the
-To-dos screen, both characters on it, your partner's turned to you), six reactions (one tap sends your partner the
-emoji as a message and stays on Home; two quick taps send one), every door (the card, your partner's chip, the bar's
+To-dos screen, both characters on it, your partner's turned to you), six reactions (one tap bursts live on your
+partner's screen with a line saying who sent what, never a chat message; two quick taps send one), every door (the card, your partner's chip, the bar's
 To-dos, Journal and Chat, Settings), reopening the chat while it still slides away, a part of Home or the chat that
 fails to draw (a safe note; the bar still works), adding a to-do from the bar, ticking off on Today with Undo, picking
 a character's look, skin, hair and role from Settings (it reaches the partner's card), that nothing from a secret list

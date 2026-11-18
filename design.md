@@ -111,8 +111,10 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   card is enough"): Today, a wide wash of yellow into orange with a dark *Today* badge, how many to-dos are left in big
   rounded capitals and the next one with a time; the two characters lean in from its right edge, yours first, your
   partner's turned to you. Tap it to open Today. Below, **Send Deiva a reaction**: six soft tiles in a 3 × 2 grid
-  (Love ❤️, Hug 🤗, Kiss 😘, Miss you 🥺, Haha 😂, Proud ✨), each a big emoji with its name. One tap sends that emoji to
-  your partner as a message (it lifts off the tile; a quiet line says "Love sent to Deiva"); Home stays where it is.
+  (Love ❤️, Hug 🤗, Kiss 😘, Miss you 🥺, Haha 😂, Proud ✨), each a big emoji with its name. One tap sends it live, never as a
+  message: a small burst of it leaves your tile and a quiet line says "Love sent to Deiva"; on your partner's phone a
+  burst of that emoji rises over whatever they are looking at, with "Abilash sent you love" on the island. With
+  Reduce Motion it is one big emoji that fades. Home stays where it is.
   Before pairing the tiles lead to *Add partner*. Your character and role are changed from Settings. A floating dark bar at the bottom: Home, To-dos, Journal (a dot
   when your partner wrote today) and Chat (a count), with *Add a to-do* beside it in your colour; it steps aside while
   the task box is up. Ticking to-dos happens on Today. Nothing from a secret list, ever. `docs/characters.md`.
@@ -141,6 +143,10 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   page says the same with *Reload*. Never red, never the framework's blank error page.
 
 ## 6. Characters
+
+> **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;
+> see `docs/characters.md`, "The 3D people". The drawings below remain as their stand-in while loading and without WebGL.
+
 
 Two original characters, female and male, in a soft 3D style; each of you picks a look, a skin tone and a hair colour,
 and a role (Cheerleader, Calm friend, Cheeky, Poet) for how it talks to you. The hoodie is your colour. The same
