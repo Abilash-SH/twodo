@@ -33,7 +33,7 @@ All touch gestures share the same rules (`src/hooks/swipe.ts`):
 | Focus timer | Rightward drag, or downward when scrolled to the top (the ring included) | `useSwipeAway`, used by `overlays/FocusOverlay.tsx` | `flung` | Closes the timer view (the timer keeps running) | Stop the timer |
 | Effects picker | Rightward or downward drag | `useSwipeAway`, used by `chat/FxPicker.tsx` | `flung` | Cancels the picker, keeps the draft | Send the message |
 | Editing controls | `input`, `textarea`, `select`, `[contenteditable]`, `.seg`, `.pills`, `.tip-pills`, `.picker`, `.colors`, `.no-pan` (`NO_SWIPE`) | The control itself | — | Caret, selection, slider, picker | Be claimed by a back or dismiss swipe |
-| Heart a journal page | Two taps within 320 ms on your partner's words in the journal (not on a button) | `journal/JournalView.tsx` (`Theirs`) | The second tap | Gives their words your heart (never takes it back; the heart button does) | Act on your own page; react to a tap on a button or in the writing box |
+| ~~Heart a journal page~~ (removed 2026-11-18) | Two taps within 320 ms on your partner's words in the journal (not on a button) | `journal/JournalView.tsx` (`Theirs`) | The second tap | Gives their words your heart (never takes it back; the heart button does) | Act on your own page; react to a tap on a button or in the writing box |
 
 ## History
 
