@@ -154,3 +154,14 @@ updating it. #32 fixes it.
   (`fix/chat-reopen-crash`): pushing the chat first removes a chat that is still leaving; NavStack never draws a chat
   entry as a page; an unknown list page shows "Nothing here" instead of failing. Test 13 checks it (it fails without
   the fix).
+
+## 2026-11-18 Home reactions (data decision, rule 13)
+
+- Asked for: reactions on Home that are "not sent in the chat, something reactive".
+- No new path, key or rule: a reaction rides on your live presence record (`/spaces/{space}/c/e/x/{uid}`, the one
+  that already carries typing, read and online), as `poke: { e, at }` inside the same AES-GCM ciphertext. The
+  receiving app plays each `at` once, only within a minute (`POKE_MS`), and only for the six known emoji
+  (`isReaction`). It is never stored or shown in the chat. Older app versions ignore the extra field.
+- Limit: a reaction reaches your partner only if their app is open (or opens within a minute). No push for it.
+- Next, asked the same day: realistic 3D characters (option A, 3D models). The owner has none; find properly
+  licensed models (male and female) before building.
