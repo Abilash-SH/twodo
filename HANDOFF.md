@@ -18,22 +18,19 @@ Last updated: 2026-11-18.
     `docs/architecture.md`; the rules are `mobile/AGENTS.md`. It replaces the web app at the end (phase 6).
 - Every prompt the owner has given is in `docs/prompts.md`, kept as history.
 
-## State on 2026-11-18
+## State on 2026-11-18 (evening)
 
-**Merged:** the web app through #20 (two-hearts launch, Home with both characters, the journal on love threads); the
-architecture doc (#21); phase 1 of the iPhone app: design system, characters, launch, Playground, CI and TestFlight
-workflow (#22).
+`main` is at `b3967a8`. **Merged:** #23 (this file), #24 and #25 (the iPhone app's characters, Home and day-page
+journal), #26 and #27 (the same characters and Home on the web app), #29 (Codex: the web journal by date) and #30
+(Codex: an error boundary around the chat).
 
-**This session, as PRs to `main`, merged in this order** (each later branch includes the earlier ones):
+**Open:**
+- #31 `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
+  the end). Merge it first; it also fixes #30's note covering Home after Back.
+- #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Not reviewed yet.
 
-1. #23 `docs/handoff`: this file and `docs/prompts.md` (the old `PROMPT.md` moved there).
-2. #24 `feat/app-avatars`: two original human characters, male and female, in a soft 3D style, replacing the six
-   blob characters in the iPhone app.
-3. #25 `feat/app-home-journal`: a new Home like the owner's reference (greeting, a fanned stack of cards, a floating
-   tab bar) and the journal as one page per person per day, written only on the day, with earlier days chosen
-   from a week strip or a calendar. Four tabs: Home, To-dos and Chat (placeholders), Journal.
-
-All three are open and waiting for the owner to merge. If one was closed instead, ask before rebuilding it.
+**Known broken on `main`:** browser test 15 (journal) still checks the old thread; #29 changed the screen without
+updating it. Fix it together with the journal (next steps, 2).
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -55,19 +52,23 @@ All three are open and waiting for the owner to merge. If one was closed instead
 
 ## What to do next, in order
 
-1. **After the three PRs merge:** check the TestFlight build on the owner's phone against each PR's iPhone checklist
-   and fix what he reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar
-   sheet).
-2. **Phase 1, the rest:** the Supabase schema with Row Level Security and its tests (`docs/architecture.md`,
-   section 2): tables, policies, `create_space` and `join_space`, Realtime Broadcast policies, the photos bucket.
-   Tests run against a local Supabase in GitHub Actions (`supabase start` needs Docker; this workspace has none).
-3. **Phase 2, data:** move pure logic to `shared/`; port the encryption with test vectors that match the web app
+1. **The crash on Home's top-right picture:** after #31 merges, the owner taps it again on
+   his iPhone. If a note or the *Twodo stopped for a moment* page appears, its code line names the error: fix that
+   cause with a test that reproduces it. Then decide with him whether to keep the notes as they are.
+2. **The web journal, finished:** #29 works but is plain and untested. Rebuild it to the design (week strip with a
+   calendar sheet for older days, both characters, your page and your partner's, hearts) on the day pages decided
+   below (`us-<date>-<who>`; #29 instead edits the newest `us-p…` post of today: pick one and record why), and
+   rewrite test 15 for it. Keep #29's rules: only today is written, earlier days are read-only.
+3. **Review #28** (Supabase schema and RLS) against `docs/architecture.md`, section 2, before it is merged.
+4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
+   reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar sheet).
+5. **Phase 2, data:** move pure logic to `shared/`; port the encryption with test vectors that match the web app
    byte for byte; the SQLite store, sync and Realtime; sign-up and sign-in; pairing; the join token. Save the
    avatar choices and the journal's day pages (see "Data decisions" below). Before the first build with
    encryption, answer Apple's export-compliance question again (`mobile/app.json` says none today; a test checks).
-4. **Phase 3, screens:** To-dos and Today, the week, chat, Settings, the secret-list vault (Home and Journal exist
-   from this session as designs with sample data; connect them).
-5. **Phases 4 to 6:** integrations (reminders, notifications, photos, widget), the move from Firebase, retiring the
+6. **Phase 3, screens:** To-dos and Today, the week, chat, Settings, the secret-list vault (Home and Journal exist
+   as designs with sample data; connect them).
+7. **Phases 4 to 6:** integrations (reminders, notifications, photos, widget), the move from Firebase, retiring the
    web app. Open decisions are in `docs/architecture.md`, section 11.
 
 ## Data decisions from this session (written down before building, as rule 13 asks)
@@ -98,7 +99,8 @@ All three are open and waiting for the owner to merge. If one was closed instead
 ## Checks and tools
 
 - **Web app:** `npm ci --ignore-scripts && npm run typecheck && npm run build`. The browser tests in `tests/e2e/`
-  use a fake Firebase (`tests/README.md`); run test 1 first.
+  use a fake Firebase (`tests/README.md`); run test 1 first. Safari's engine: `tests/webkit/` (WebKitGTK from
+  Ubuntu's packages, because Playwright's WebKit download is blocked here).
 - **iPhone app:** `cd mobile && npm ci && npm run typecheck && npm test && npm run bundle:ios`.
   - To see screens without a Mac: `npm run preview:web`, serve `.web-preview/` with a fallback to `index.html`, and
     screenshot it with Playwright and Chrome at 390 x 844 in light and dark.
@@ -126,6 +128,20 @@ All three are open and waiting for the owner to merge. If one was closed instead
 
 ## 2026-11-18 Safari and installed-app Chat crash
 
-- User confirmed tapping the top-right partner picture crashes **both** Safari and the installed Home Screen web app. Do not assume a service-worker-only issue.
-- Draft branch `fix/chat-navigation-crash-guard` adds a React error boundary around the parked ChatView to prevent render failures from taking down Home. This is **containment, not a verified root-cause fix**. It does not catch event-handler, async or full document navigation errors.
-- Root cause still unknown; reproduce on iOS Safari with real paired data, inspect console and network, and add a targeted regression test. Run typecheck/build and verify no chat messages are lost. Keep separate from web journal PR #29.
+- User confirmed tapping the top-right partner picture crashes **both** Safari and the installed Home Screen web app
+  (Next's black *This page couldn't load*). Do not assume a service-worker-only issue.
+- The chip, the partner's character on Home and the bar's chat button all call the same `toPartner` (the chat when
+  paired, the invitation otherwise). Not reproduced in Chrome with an iPhone screen, touch, no vibration, Home
+  Screen mode and unread messages; WebKit can't be downloaded in this workspace, so Safari itself wasn't tried.
+- #30 (merged) put the chat in an error boundary. Its note always drew as an open screen, so after Back it stayed
+  over Home and took every tap.
+- #31 (open): the chat's note now slides and parks with the chat and tries again when the
+  chat opens; Home's top and Home's content each have their own boundary (`ui/AreaBoundary.tsx`), so the bar keeps
+  working; `app/global-error.tsx` replaces the framework's blank page with *Twodo stopped for a moment*, a Reload
+  button and one line safe to screenshot (`lib/errors.ts` `errorSummary`: the error's type and a short message with
+  anything quoted removed; never a stack or a component stack, and nothing is sent anywhere). Test 13 breaks date formatting on
+  purpose to check all of it. **This is containment and diagnosis, not the fix:** the cause is still unknown.
+- Also not reproduced in WebKit itself: `tests/webkit/test_home_webkit.py` (WebKitGTK 2.52 from Ubuntu's packages)
+  signs in like a new iPhone (touch, dark mode, unread messages tried too) and taps every door on Home: nothing fails
+  with the test data. So the cause likely needs the owner's real data or iOS itself; the code line on his screen is
+  the next clue.

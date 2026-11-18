@@ -89,3 +89,17 @@
 .home-v2 .dock-add .i { width: 26px; height: 26px; stroke-width: 2.4; }
 @media (max-width: 359px) { .home-v2 .dock-tab, .boardview .dock-tab.fab-btn, .home-v2 .dock-tab.tray-btn { width: 48px; } .home-v2 .dock-add { width: 56px; height: 56px; } }
 @media (prefers-reduced-motion: reduce) { .hc, .hc.flying { transition: opacity var(--dur-quick) linear; } }
+
+/* ---------- when part of a screen fails (AreaBoundary): a quiet note, the rest keeps working ---------- */
+.area-fail { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 16px 0; padding: 18px 16px; border-radius: 22px;
+  background: var(--bg2); color: var(--label); text-align: center; box-shadow: var(--card-sh, 0 1px 2px rgba(27,23,48,.08)); }
+.area-fail b { font: 700 17px/22px var(--round); }
+.area-fail span { font-size: 15px; line-height: 20px; color: color-mix(in srgb, var(--label) 64%, var(--bg2)); }
+.area-fail code, .area-code { display: inline-block; max-width: 100%; padding: 6px 10px; border-radius: 10px;
+  background: color-mix(in srgb, var(--label) 7%, var(--bg2)); font-size: 12px; line-height: 17px; color: var(--label); overflow-wrap: anywhere; }
+.area-fail.compact { flex-direction: row; flex-wrap: wrap; justify-content: center; margin: 0; padding: 6px 10px; }
+.home-v2 > .area-fail:not(.compact) { margin-bottom: auto; } /* in place of Home's content: the bar stays at the bottom */
+.chat-fail-in { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+  padding: max(80px, calc(env(safe-area-inset-top) + 56px)) 24px 24px; }
+.chat-fail-in h2 { margin: 0; font: 700 22px/28px var(--round); color: var(--label); }
+.chat-fail-in p { margin: 0; font-size: 15px; line-height: 20px; color: var(--label); }

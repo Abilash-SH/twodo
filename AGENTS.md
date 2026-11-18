@@ -24,6 +24,7 @@ Twodo is a private to-do list + chat PWA for two people. In tests the partner is
 - Anything read from storage or the network goes through `cleanRecord`/`cleanMap` (`src/lib/store.ts`).
 - Don't change the encryption, the sync format or the storage keys (`twodo:data`, `twodo:local`, `twodo:chat`, `twodo:vault`, IndexedDB `twodo`).
 - Secret lists are never synced, exported, searched, counted or shown outside their own list.
+- A part that fails to draw must not take down the app: Home's parts sit in `ui/AreaBoundary.tsx`, the chat in `chat/ChatErrorBoundary.tsx` (it parks with the chat), and `app/global-error.tsx` is the last resort. Errors are shown or logged only through `errorSummary` (`lib/errors.ts`: the error's type and a short message with anything quoted removed), never a stack or a component stack, and nothing is sent anywhere.
 - Check every change for security problems and say what you checked in the PR.
 
 ## iPhone rules
