@@ -45,7 +45,7 @@ begin
     or p_slot not in ('a','b') then raise exception 'Invalid invitation'; end if;
  -- Serialize joins to prevent racing into the same slot.
  select join_hash into expected from public.spaces where id=p_id for update;
- if expected is null or expected <> extensions.digest(decode(p_token,'hex'),'sha256')
+ if expected is null or expected <> public.digest(decode(p_token,'hex'),'sha256')
  then raise exception 'Invalid invitation'; end if;
  if (select count(*) from public.space_members where space_id=p_id) >= 2
  then raise exception 'Space full'; end if;
