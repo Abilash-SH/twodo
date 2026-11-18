@@ -1,8 +1,12 @@
 # Twodo for iPhone
 
-The React Native rebuild of Twodo (`docs/architecture.md`). **Phase 1:** the design system, the two characters
-(female and male) and their moods, the two-hearts launch, and a Playground screen to try it all on your phone. Nothing in this app stores
-or sends anything yet; the web app keeps working as before until the move (phase 5).
+The React Native rebuild of Twodo (`docs/architecture.md`). **So far:** the design system, the two characters
+(female and male) and their moods, the two-hearts launch, Home (a fanned stack of cards), the journal by day (only
+today's page can be written; earlier days from a week strip or a calendar), four tabs with a floating tab bar, and a
+Playground to try every piece and change how you both look. To-dos and Chat are placeholders until phase 3.
+
+Nothing in this app is stored or sent yet: Home uses sample numbers, and journal pages stay in memory until the app
+closes. The web app keeps working as before until the move (phase 5).
 
 - **App ID (bundle identifier):** `io.github.abilashsh.twodo`
 - **Name under the icon:** Twodo

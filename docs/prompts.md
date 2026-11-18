@@ -151,5 +151,5 @@ character cards and a floating tab bar; a character detail screen; a dressing-ro
 >
 > Also, do keep my prompts in GitHub, remove all the prompts which I have given and create a separate file for another agent to understand. Incase if this session limit gets over the next agent should know where to continue and execute it.
 
-Outcome: this file and `HANDOFF.md` (the old `PROMPT.md` moved here), new characters, a new Home and a day-by-day
-journal in the iPhone app. See `HANDOFF.md` for the PRs.
+Outcome: this file and `HANDOFF.md` (#23; the old `PROMPT.md` moved here), two new characters (#24), and a new Home
+with a day-by-day journal in the iPhone app (#25).

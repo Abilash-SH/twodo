@@ -148,10 +148,10 @@ twodo/
 It knows the same as Firebase does today:
 
 - who has an account, and who is in which space;
-- each record's key (`t:…` for a to-do, `j:…` for a journal post), its size, and when and by whom it changed;
+- each record's key (`t:…` for a to-do, `j:…` for a journal page), its size, and when and by whom it changed;
 - the public profile you use to find each other by @username: name, colour and public key.
 
-It never knows a title, a message, a journal post, a photo or anything from a secret list.
+It never knows a title, a message, a journal page, a photo or anything from a secret list.
 
 ### Tables
 
@@ -252,17 +252,17 @@ You had no preference, so sign-in stays as it is today and moves to Supabase.
 ### 4.1 Photos in the journal and chat
 
 1. **Pick or take.** Use the system photo picker, which doesn't give the app your whole library, or the camera (the app
-   asks the first time). Up to 4 photos per post or message.
+   asks the first time). Up to 4 photos per journal page or message.
 2. **Shrink on the phone.** The photo is resized to 1,600 px on its long side, with a 400 px thumbnail, both re-encoded
    as JPEG. Re-encoding also drops location and other metadata; a test checks this.
 3. **Encrypt on the phone** with the space key, a random IV for every file, and the space id and file id bound as
    additional data.
 4. **Upload** the photo and its thumbnail to `photos/<space>/<random id>`.
-5. **Reference it.** The post or message carries only `{ id, w, h }` for each photo, inside its ciphertext. Your
+5. **Reference it.** The page or message carries only `{ id, w, h }` for each photo, inside its ciphertext. Your
    partner's phone downloads, decrypts and keeps the photo in the app's protected files.
 
-Deleting a post or unsending a message deletes its photos. Only your phones can read which photos are still in use, so
-the app tidies up leftovers (files no post or message points to), not the server.
+Removing a photo from today's page or unsending a message deletes its photos. Only your phones can read which photos
+are still in use, so the app tidies up leftovers (files no page or message points to), not the server.
 
 ### 4.2 Home Screen widget
 
@@ -291,8 +291,8 @@ changes. It never reaches the network and never holds a key.
     sync.
   - The title never leaves your phone.
   - This replaces the GitHub Action that sends web pushes every five minutes.
-- **Notifications from your partner** ("Deiva sent you a message", "Deiva posted in the journal", "Deiva loved your
-  post"):
+- **Notifications from your partner** ("Deiva sent you a message", "Deiva wrote today's page", "Deiva loved your
+  page"):
   - a database webhook calls the `notify` Edge Function, which sends a push through Expo's push service;
   - the push says only who and what kind, never the content, and tapping it opens the right screen;
   - it also nudges the phone to sync, which picks up new reminders;
@@ -335,10 +335,10 @@ every screen: they greet, cheer, react and keep each other company. One design s
 | Screen | Host | Moments |
 | --- | --- | --- |
 | Launch | Two hearts | The two hearts meet: "Two souls, one space." A still splash first, then the animation inside the app |
-| Home | Both of you | Yours speaks in its role's voice. Your partner's turns to you and waves when they're online. A badge counts new messages, never their text |
+| Home | Both of you | A fanned stack of cards (today's to-dos, your partner, the journal, the week): swipe the top one away or tap a dot to bring another up. Each card's characters react when it comes to the top (your partner's waves). Cards show counts and nudges, never a message's or a page's text |
 | Today and To-dos | Yours | A small hop on each tick; when the day is done, both characters celebrate |
 | This week | Yours | Sits on the day you're looking at; a busy day gets a gentle "phew" |
-| Journal | Both | Characters at the top of each love thread. A double tap sends a heart that floats from your character to the post |
+| Journal | Both, on a stage above the day's page | Yours thinks while today's page is empty and smiles when you save it; giving a heart to your partner's page makes yours love it. Tap either to wave |
 | Chat | Your partner's, in the header | Thinks while they type; hearts when "I love you" is sent; dozes when they've been away for a while |
 | Empty states | Yours | A friendly line and one clear thing to do |
 | Offline or error | Yours | Holds an umbrella: "Saved on your phone; it'll sync when you're back online" |
@@ -370,11 +370,18 @@ every screen: they greet, cheer, react and keep each other company. One design s
 
 ### Components
 
-Screen, LargeTitle, Card, Row, Button (primary, quiet, danger), Chip, Badge, Sheet, Composer, TodoRow, ThreadPost,
-MessageBubble, PhotoGrid, Character, Stage (two characters), EmptyState and Toast.
+Screen, LargeTitle, Card, Row, Button (primary, quiet, danger), PillButton (a washed call to action), BackButton, Chip,
+Badge, Sheet, Composer, TodoRow, MessageBubble, PhotoGrid, Avatar, Portrait, Stage (two characters), PillBar (the tab
+bar), CardStack (Home's fan), the journal's day strip and calendar, EmptyState and Toast.
 
 Screens are built only from these components and the tokens. A lint rule rejects raw colours and sizes outside
 `src/ui`.
+
+### Navigation
+
+Four tabs, Home, To-dos, Journal and Chat, switched from a floating dark pill near the bottom (after the owner's
+reference); the chosen tab is a light circle. Screens leave room for it. The Playground, where you change how you both
+look, opens on top of the tabs from your picture on Home.
 
 ### Accessibility
 
@@ -428,6 +435,16 @@ Each of you moves once, on your own phone, and nothing is decrypted anywhere but
 **Secret lists can't come along on their own.** By design they never leave the phone they're on, and the new app can't
 reach the web app's storage. Re-create them by hand (recommended), or decide on a one-time transfer (open decision 1).
 
+**The journal by day (decided 2026-11-18, before building, as roadmap rule 13 asks).**
+- One page per person per day, kept as `journal` records with ids `us-<date>-<who>` (the web app's format before the
+  thread), so only its writer ever edits a page and two phones never write the same record.
+- Only today's page can be written: the app refuses any other date, and earlier days are read-only. "Today" is the
+  phone's own calendar day; words typed just before midnight stay in the box and save to the new day.
+- Posts from the web app's thread (`us-p…`) show under the day they were written, read-only.
+- Hearts stay: one per person per page, only on your partner's page.
+- Characters: each person's look, skin tone and hair colour are stored with the person, like name and colour. The web
+  app's six characters (`char`) map to a default look during the move.
+
 ## 8. Testing
 
 | Level | What | Where it runs |
@@ -436,7 +453,7 @@ reach the web app's storage. Re-create them by hand (recommended), or decide on 
 | Encryption | Test vectors: a record encrypted by the web app decrypts in the app and back; v2 additional data; the join token | GitHub Actions |
 | Database | Row Level Security tests for every table and the bucket | A local Supabase (`supabase start`, in Docker) on GitHub Actions |
 | Two phones | Two app clients against the local Supabase: sync, live updates, hearts, messages, last write wins, joining | GitHub Actions |
-| Screens | Maestro flows on an iOS simulator: sign in, add and tick a to-do, the week, a journal post and a heart, a message with a photo, the vault. Screenshots in light and dark | EAS Workflows (its Maestro job is in alpha), or a macOS runner on GitHub Actions |
+| Screens | Maestro flows on an iOS simulator: sign in, add and tick a to-do, the week, today's journal page and a heart, a message with a photo, the vault. Screenshots in light and dark | EAS Workflows (its Maestro job is in alpha), or a macOS runner on GitHub Actions |
 | iPhone | The checklist in each PR, on your phones through TestFlight | You |
 
 The web app's test suite keeps running until the web app is retired.
@@ -460,7 +477,7 @@ Each phase is one or more PRs to `main`, merged in order. The web app keeps work
 | --- | --- | --- |
 | 1. Foundations | The Expo app with the tokens, the components, the characters and their moods, the launch and the Playground; checks on every PR; builds to TestFlight. Then the Supabase schema with Row Level Security and its tests | A TestFlight build with the launch, the characters and the Playground |
 | 2. Data | `shared/` extracted (web app unchanged); encryption ported with test vectors; the SQLite store, sync and Realtime; sign-up, sign-in, pairing, the join token | Sign in and pair in the app (test accounts) |
-| 3. Screens | Home, Today and To-dos, the week, the journal with love threads and hearts, chat, Settings, the vault | The whole app working on test accounts |
+| 3. Screens | Home, Today and To-dos, the week, the journal by day (one page each, only today written) and hearts, chat, Settings, the vault (Home and the journal exist as designs with sample data since 2026-11-18) | The whole app working on test accounts |
 | 4. Integrations | Reminders and notifications from your partner, photos in the journal and chat, the widget | Photos, notifications and the widget |
 | 5. The move | The move from Firebase, the "moved" banner in the web app, account deletion | Both of you on the app, with your real data |
 | 6. Retire the web app | The web app goes read-only, then is removed with Firebase and the reminders action (open decision 3) | One app |

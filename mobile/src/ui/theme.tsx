@@ -2,7 +2,7 @@
    Components read it with useTheme(); nothing else decides a colour. */
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useColorScheme } from 'react-native';
-import { COLORS, NEUTRALS, SHADOW, personColors, type ColorName, type Neutrals, type PersonColors, type Scheme } from './tokens';
+import { COLORS, LOVE, NEUTRALS, SHADOW, cardGradient, loveTint, personColors, type ColorName, type Neutrals, type PersonColors, type Scheme } from './tokens';
 
 export type SchemeChoice = 'system' | Scheme;
 
@@ -14,6 +14,10 @@ export interface Theme {
   color: (name: ColorName) => string;
   /** Everything derived from one person's colour. */
   person: (name: ColorName) => PersonColors;
+  /** A card's background: a light wash of one colour into another. */
+  gradient: (a: ColorName, b?: ColorName) => [string, string];
+  /** A given heart, and the circle behind it. */
+  love: { color: string; tint: string };
   choice: SchemeChoice;
   setChoice: (c: SchemeChoice) => void;
 }
@@ -30,6 +34,8 @@ export function makeTheme(scheme: Scheme, choice: SchemeChoice = 'system', setCh
       if (!p) cache.set(name, (p = personColors(name, scheme)));
       return p;
     },
+    gradient: (a, b) => cardGradient(a, b, scheme),
+    love: { color: LOVE[scheme], tint: loveTint(scheme) },
     choice,
     setChoice,
   };

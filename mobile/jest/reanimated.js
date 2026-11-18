@@ -22,6 +22,8 @@ function createAnimatedComponent(Component) {
   return Animated;
 }
 const done = (to, cb) => { if (typeof cb === 'function') cb(true); return to; };
+/** Gesture Handler asks Reanimated for these when a gesture has worklet callbacks; in tests they do nothing. */
+class NativeEventsManager { attachEvents() {} detachEvents() {} updateEvents() {} }
 
 module.exports = {
   __esModule: true,
@@ -30,7 +32,13 @@ module.exports = {
     ScrollView: createAnimatedComponent(ScrollView), Image: createAnimatedComponent(Image), createAnimatedComponent,
   },
   createAnimatedComponent,
-  useSharedValue: initial => React.useRef({ value: initial }).current,
+  useSharedValue: initial => React.useRef({ value: initial, _isSharedValue: true }).current,
+  isSharedValue: v => !!v && typeof v === 'object' && v._isSharedValue === true,
+  useEvent: handler => handler,
+  useHandler: () => ({ context: {}, doDependenciesDiffer: false, useWeb: false }),
+  useComposedEventHandler: () => () => {},
+  setGestureState: () => {},
+  NativeEventsManager,
   useAnimatedStyle: updater => updater(),
   useAnimatedProps: updater => updater(),
   useDerivedValue: updater => ({ value: updater() }),

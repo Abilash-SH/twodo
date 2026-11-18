@@ -8,7 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { Avatar } from './avatar/Avatar';
 import type { AvatarLook } from './avatar/looks';
+import { Gradient } from './Gradient';
 import { haptic } from './haptics';
+import { Icon } from './icons';
 import { CHEVRON } from './shapes';
 import { Txt } from './Text';
 import { useTheme } from './theme';
@@ -34,6 +36,21 @@ export function LargeTitle({ title, sub }: { title: string; sub?: string }) {
       <Txt variant="largeTitle" accessibilityRole="header">{title}</Txt>
       {sub ? <Txt variant="callout" tone="soft" style={styles.titleSub}>{sub}</Txt> : null}
     </View>
+  );
+}
+
+/** Back to the screen underneath ("Home"), for screens pushed on top of the tabs. */
+export function BackButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressable
+      onPress={() => { haptic.press(); onPress(); }} hitSlop={8}
+      accessibilityRole="button" accessibilityLabel={`Back to ${label}`}
+      style={({ pressed }) => [styles.back, { backgroundColor: pressed ? t.n.fill2 : t.n.fill }]}
+    >
+      <Icon name="left" size={18} color={t.n.label} width={2.4} />
+      <Txt variant="callout" style={{ fontWeight: '600' }}>{label}</Txt>
+    </Pressable>
   );
 }
 
@@ -79,6 +96,24 @@ export function Button({ title, onPress, kind = 'primary', color = 'blue', disab
     >
       <Animated.View style={[styles.button, { backgroundColor: bg, opacity: disabled ? 0.4 : 1 }, press.style]}>
         <Txt variant="headline" style={{ color: fg }}>{title}</Txt>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/** The big call to action on a page ("Save page"): a pill washed from one colour into another, with dark ink. */
+export function PillButton({ title, onPress, colors, disabled = false, hint }: {
+  title: string; onPress: () => void; colors: [ColorName, ColorName?]; disabled?: boolean; hint?: string;
+}) {
+  const t = useTheme(), press = usePress();
+  return (
+    <Pressable
+      accessibilityRole="button" accessibilityHint={hint} accessibilityState={{ disabled }} disabled={disabled}
+      onPressIn={press.onPressIn} onPressOut={press.onPressOut} onPress={() => { haptic.press(); onPress(); }}
+    >
+      <Animated.View style={[styles.pillButton, { opacity: disabled ? 0.45 : 1 }, press.style]}>
+        <Gradient colors={t.gradient(colors[0], colors[1])} />
+        <Txt variant="headline" tone="on">{title}</Txt>
       </Animated.View>
     </Pressable>
   );
@@ -173,10 +208,12 @@ export function Toast({ text }: { text: string }) {
 const styles = StyleSheet.create({
   titleBox: { paddingTop: SPACE.s, paddingBottom: SPACE.xs },
   titleSub: { marginTop: SPACE.xxs },
+  back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 2, minHeight: HIT - 8, paddingLeft: SPACE.xs, paddingRight: SPACE.s, borderRadius: 999, marginTop: SPACE.xxs },
   section: { marginTop: SPACE.xxl },
   sectionSub: { marginTop: 2 },
   sectionBody: { marginTop: SPACE.s },
   card: { borderRadius: RADIUS.l, paddingVertical: SPACE.xxs },
+  pillButton: { minHeight: 50, paddingHorizontal: SPACE.xl, borderRadius: RADIUS.pill, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   button: { minHeight: 50, paddingHorizontal: SPACE.l, borderRadius: RADIUS.m, alignItems: 'center', justifyContent: 'center' },
   chip: { minHeight: 36, paddingHorizontal: SPACE.s, borderRadius: RADIUS.pill, flexDirection: 'row', alignItems: 'center', gap: 6 },
   swatchDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 2 },
