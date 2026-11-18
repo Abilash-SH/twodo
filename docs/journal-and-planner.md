@@ -119,7 +119,8 @@ need to select days". The iPhone app got it first (#25); the web app followed (#
 - **Only today.** `editPost` refuses a post from another day, and the screen only offers a writing box for today. If
   midnight passes while you type, your words stay and save to the new day; an untouched box starts the new day empty.
 - **Emptied, a page is deleted** (after a question): it is marked deleted and its words are removed, on both phones.
-- **Hearts** stay as they were (a record each, `us-h-<post>-<who>`), now given to your partner's words on a day.
+- **Hearts** are no longer shown or given (2026-11-18: "do not have love like option for all the post"). Heart
+  records already written stay as they are and are simply not shown. The box has no prompt; its button says *Post*.
 - **Why posts and not one record per day** (`us-<date>-<who>`, the app's shape): #29 had already written posts
   today, and keeping them needs no migration. Two phones of the same person can each start today's page offline;
   then the newer is the page and the older stays, read-only, above it. When the data moves to the app (phase 2), each

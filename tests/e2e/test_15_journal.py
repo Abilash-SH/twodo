@@ -1,8 +1,7 @@
 """The journal by day: a page each per day, and only today's can be written. A week strip (today ringed, days to come
 shut) and a calendar sheet pick the day; earlier days are read-only. Your page: type, Save (it changes the same
 record all day), a draft waits if you leave, an emptied page is deleted on both phones (after a question). Your
-partner sees it live (and on Home), can't edit it, and gives it a heart (a double tap or the button; a second double
-tap keeps it); you see "Deiva loved your page". Nothing else: no prompts, weather, tabs or private pages. Contrast for
+partner sees it live (and on Home) and can't edit it. Nothing else: no hearts, no prompts, weather, tabs or private pages. Contrast for
 every colour, light and dark; the wide layout.
 Run test 1 first (it creates Abilash in /tmp/twodo-A.json and Deiva in /tmp/twodo-B.json). Needs the test build on 8003."""
 import asyncio, os, time
@@ -65,9 +64,9 @@ async def main():
 
         # ---------- write today's page, then change it: one record for the day
         await A.click('.jd-ta'); await A.keyboard.type(mine)
-        assert await q("[document.querySelector('.jd-btn').disabled, document.querySelector('.jd-btn').textContent]") == [False, 'Save page']
+        assert await q("[document.querySelector('.jd-btn').disabled, document.querySelector('.jd-btn').textContent]") == [False, 'Post']
         await A.click('.jd-btn'); await A.wait_for_timeout(600)
-        assert await q("[document.querySelector('.jd-btn').disabled, document.querySelector('.jd-btn').textContent, (document.querySelector('.jd-saved') || {}).textContent]") == [True, 'Saved', 'Saved']
+        assert await q("[document.querySelector('.jd-btn').disabled, document.querySelector('.jd-btn').textContent, (document.querySelector('.jd-saved') || {}).textContent]") == [True, 'Posted', 'Posted']
         rec = await q(JOURNAL + f".find(e => e.text === {mine!r})")
         assert rec and rec['id'].startswith('us-p') and rec['date'] == today and not rec['private'] and rec['mood'] == 0 and rec['prompt'] == '', rec
         tl = await q("document.querySelector('.jd-day.today').getAttribute('aria-label')")
@@ -76,7 +75,7 @@ async def main():
         me = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
         todays = await q(JOURNAL + f".filter(e => e.date === {today!r} && e.who === {me!r} && !e.deleted && !e.id.startsWith('us-h-'))")
         assert len(todays) == 1 and todays[0]['id'] == rec['id'] and todays[0]['text'] == edited, ('Save changes the same page all day', todays)
-        print('PASS: Save writes today\'s page (Saved, a dot on today); saving again changes the same record')
+        print('PASS: Post writes today\'s page (Posted, a dot on today); saving again changes the same record')
 
         # ---------- your partner sees it live (and Home says so), can't edit it, and writes theirs
         cb, B = await phone('/tmp/twodo-B.json')
@@ -89,24 +88,10 @@ async def main():
         assert await until(A, THEIRS, [reply]) == [reply], "Deiva's page arrives live"
         print('PASS: your partner sees your page live (and Home says so) without a way to edit it; theirs arrives on yours')
 
-        # ---------- hearts: a double tap or the button, on your partner's page only
-        entry = f'.jd-block.theirs .jd-entry[data-id="{rec["id"]}"]'
-        assert await B.locator(f'{entry} .jd-heart').count() == 1 and not await q("document.querySelectorAll('.jd-block:not(.theirs) .jd-heart').length"), 'a heart on your partner\'s page, none on yours'
-        await B.locator(entry).evaluate("e => e.scrollIntoView({ block: 'center' })"); await B.wait_for_timeout(300)
-        await double_tap(B, f'{entry} .jd-text')
-        assert await B.evaluate(f"document.querySelector('{entry} .jd-heart').getAttribute('aria-pressed')") == 'true', 'a double tap gives it your heart'
-        hid = f"us-h-{rec['id']}-" + await B.evaluate("JSON.parse(localStorage.getItem('twodo:local')).me")
-        assert await B.evaluate(JOURNAL + f".some(e => e.id === {hid!r} && !e.deleted && e.text === '')"), 'a heart is its own record, with no text'
-        await double_tap(B, f'{entry} .jd-text')
-        assert await B.evaluate(f"document.querySelector('{entry} .jd-heart').getAttribute('aria-pressed')") == 'true', 'a second double tap never takes it back'
-        LOVED = "(document.querySelector('.jd-loved') || {}).textContent || ''"
-        assert await until(A, LOVED, 'Deiva loved your page') == 'Deiva loved your page'
-        await B.click(f'{entry} .jd-heart'); await B.wait_for_timeout(400)
-        assert await B.evaluate(f"document.querySelector('{entry} .jd-heart').getAttribute('aria-pressed')") == 'false', 'the button takes it back'
-        assert await until(A, LOVED, '') == '', 'and it goes on the other phone'
-        await B.click(f'{entry} .jd-heart'); await B.wait_for_timeout(300)   # and gives it again
-        assert await until(A, LOVED, 'Deiva loved your page') == 'Deiva loved your page'
-        print('PASS: your partner gives your page a heart with a double tap or the button (a second double tap keeps it); you see "Deiva loved your page"; the button takes it back')
+        # ---------- no hearts and no prompts: just the words
+        assert not await B.evaluate("!!document.querySelector('.jd-heart, .jd-burst, .jd-loved')") and not await q("!!document.querySelector('.jd-heart, .jd-loved')"), 'no hearts'
+        assert await q("document.querySelector('.jd-ta').placeholder") == '', 'no prompt in the box'
+        print('PASS: no hearts on the pages and no prompt in the box')
 
         # ---------- a draft waits while you look elsewhere
         await A.fill('.jd-ta', 'half a thought'); await q("document.activeElement.blur()")
@@ -114,7 +99,7 @@ async def main():
         await A.click('.plan-group .cell:has-text("Journal")'); await A.wait_for_timeout(900)
         assert await q("[document.querySelector('.jd-ta').value, document.querySelector('.jd-btn').disabled]") == ['half a thought', False]
         await A.fill('.jd-ta', edited); await A.wait_for_timeout(200)
-        assert await q("[document.querySelector('.jd-btn').disabled, document.querySelector('.jd-btn').textContent]") == [True, 'Saved'], 'back to what is saved'
+        assert await q("[document.querySelector('.jd-btn').disabled, document.querySelector('.jd-btn').textContent]") == [True, 'Posted'], 'back to what is posted'
         print('PASS: what you were writing is still there when you come back')
 
         # ---------- earlier days are read-only; the calendar picks any of them

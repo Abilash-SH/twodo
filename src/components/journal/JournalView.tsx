@@ -2,14 +2,14 @@
 /* Twodo · the journal, one page each per day (asked for on 2026-11-18, like the iPhone app): "only for the same day i
    need it to enter and for seeing previous days i need to select days". A week strip (and a calendar for any earlier
    day) picks the day; both characters stand on a stage washed in your two colours; a sheet over it holds the day and
-   both pages. Only today's page can be written; earlier days are read-only; days to come can't be picked. Your
-   partner's words can have your heart (the button, or a double tap). Nothing private, no prompts, no counts.
+   both pages. Only today's page can be written (a plain box and Post); earlier days are read-only; days to come
+   can't be picked. No prompts, no hearts, nothing private, no counts (asked for 2026-11-18: "clumsy").
    Records are the thread's posts, by the day they were written (lib/journal.ts). Data: docs/journal-and-planner.md */
 import { useEffect, useRef, useState } from 'react';
 import { avatarOf } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { POST_MAX, entriesOn, heart, hearts, journalOpen, todayPage, writeToday, writtenDays } from '@/lib/journal';
-import { EASE, MS, calm } from '@/lib/motion';
+import { POST_MAX, entriesOn, journalOpen, todayPage, writeToday, writtenDays } from '@/lib/journal';
+import { calm } from '@/lib/motion';
 import { L, partnerKey, person } from '@/lib/store';
 import type { JournalEntry } from '@/lib/types';
 import { addDays, firstWord, fromYmd, todayStr, ymd } from '@/lib/util';
@@ -142,39 +142,14 @@ function TodayPage({ today, earlier, onSaved }: { today: string; earlier: Journa
   return (<>
     {earlier.length ? <div className="jd-earlier">{earlier.map(e => <p key={e.id} className="jd-text">{e.text}</p>)}</div> : null}
     <div className="jt-grow jd-grow" data-v={text}>
-      <textarea className="jt-ta jd-ta" value={text} maxLength={POST_MAX} aria-label="Your page for today" placeholder="How was today?"
+      <textarea className="jt-ta jd-ta" value={text} maxLength={POST_MAX} aria-label="Your page for today"
         onChange={ev => setText(ev.currentTarget.value)} />
     </div>
     <div className="jd-save">
-      <span className="jd-note">{text.length > POST_MAX - 500 ? `${POST_MAX - text.length} characters left` : 'Only today can be written.'}</span>
-      <button type="button" className="jd-btn" disabled={!dirty} onClick={() => void save()}>{!dirty && saved ? 'Saved' : 'Save page'}</button>
+      <span className="jd-note">{text.length > POST_MAX - 500 ? `${POST_MAX - text.length} characters left` : ''}</span>
+      <button type="button" className="jd-btn" disabled={!dirty} onClick={() => void save()}>{!dirty && saved ? 'Posted' : saved ? 'Update' : 'Post'}</button>
     </div>
   </>);
-}
-
-/** One thing your partner wrote: your heart with the button, or a double tap */
-function Theirs({ e, loved }: { e: JournalEntry; loved: boolean }) {
-  const lastTap = useRef(0), burst = useRef<HTMLSpanElement>(null);
-  const pop = () => {
-    haptic('light');
-    if (calm() || !burst.current) return;
-    burst.current.animate(
-      [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1.15)', offset: .35 }, { opacity: 1, transform: 'scale(1)', offset: .6 }, { opacity: 0, transform: 'scale(1.3)' }],
-      { duration: MS.page + MS.standard, easing: EASE.out });
-  };
-  const tap = (ev: React.MouseEvent) => {
-    if ((ev.target as HTMLElement).closest('button')) return;
-    const now = Date.now();
-    if (now - lastTap.current < 320) { heart(e.id, true); pop(); lastTap.current = 0; } else lastTap.current = now;
-  };
-  return (
-    <div className="jd-entry" data-id={e.id} onClick={tap}>
-      <span className="jd-burst" ref={burst} aria-hidden="true"><Icon name="heart" /></span>
-      <p className="jd-text">{e.text}</p>
-      <button type="button" className={`jd-heart${loved ? ' on' : ''}`} aria-pressed={loved} aria-label={loved ? 'Take back your heart' : 'Give it your heart'}
-        onClick={() => { if (heart(e.id)) pop(); else haptic('light'); }}><Icon name="heart" /></button>
-    </div>
-  );
 }
 
 export function JournalView() {
@@ -185,9 +160,8 @@ export function JournalView() {
   useEffect(() => setMonday(weekOf(date)), [date]);
   const [wave, setWave] = useState<{ me: string; pt: string }>({ me: '', pt: '' });
   const [said, setSaid] = useState(false);
-  const me = L.me, pk = partnerKey(), pt = firstWord(person(pk).name), love = hearts();
+  const me = L.me, pk = partnerKey(), pt = firstWord(person(pk).name);
   const mine = entriesOn(date, me), theirs = entriesOn(date, pk), page = isToday ? todayPage() : undefined;
-  const lovedMine = mine.some(e => love.get(e.id)?.has(pk));
   const play = (who: 'me' | 'pt', mood: string) => {
     if (calm()) return;
     setWave(w => ({ ...w, [who]: '' })); requestAnimationFrame(() => setWave(w => ({ ...w, [who]: mood })));
@@ -214,17 +188,16 @@ export function JournalView() {
         <span className="jd-label">{isToday ? 'Today' : fmt(date, 'wdl', { weekday: 'long' })}</span>
         <h2 className="jd-date">{fmt(date, 'dm', { day: 'numeric', month: 'long' })}</h2>
         <div className="jd-block" style={colorVar(person(me).color)}>
-          <div className="jd-who"><Portrait look={avatarOf(me)} size={32} /><b>Your page</b>{said ? <span className="jd-saved" role="status">Saved</span> : null}</div>
+          <div className="jd-who"><Portrait look={avatarOf(me)} size={32} /><b>Your page</b>{said ? <span className="jd-saved" role="status">Posted</span> : null}</div>
           {isToday ? <TodayPage today={today} earlier={mine.filter(e => e.id !== page?.id)} onSaved={() => { setSaid(true); play('me', 'happy'); setTimeout(() => setSaid(false), 1800); }} />
             : (<>
               {mine.length ? mine.map(e => <p key={e.id} className="jd-text">{e.text}</p>) : <p className="jd-none">You didn’t write this day.</p>}
               <p className="jd-lock"><Icon name="lock" cls="xs" />Only today’s page can be written.</p>
             </>)}
-          {lovedMine ? <p className="jd-loved"><Icon name="heart" cls="xs" />{pt} loved your page</p> : null}
         </div>
         <div className="jd-block theirs" style={colorVar(person(pk).color)}>
           <div className="jd-who"><Portrait look={avatarOf(pk)} size={32} /><b>{pt}’s page</b></div>
-          {theirs.length ? theirs.map(e => <Theirs key={e.id} e={e} loved={!!love.get(e.id)?.has(me)} />)
+          {theirs.length ? theirs.map(e => <p key={e.id} className="jd-text">{e.text}</p>)
             : <p className="jd-none">{isToday ? `${pt} hasn’t written today yet.` : `${pt} didn’t write this day.`}</p>}
         </div>
       </section>

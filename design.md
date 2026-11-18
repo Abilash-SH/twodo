@@ -124,9 +124,8 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   wrote, days to come shut) and a calendar sheet for older days (*Pick a day*, the same dots, *Go to today*). Below, a
   stage washed from your colour into your partner's with both characters (yours thinks until you write) and a *Today*
   or *Read only* badge, then a sheet over it with the day in big capitals and the two pages. Only today's page has a
-  writing box and *Save page* (*Saved* once it is); earlier days say so with a lock. Your partner's words have a heart
-  (double-tap them, or tap the heart; a heart blooms over them), always the love pink (`#D63F74`, `#F57AA6` in dark,
-  as in the app); your page says when they loved it. No prompts, weather, counts or private pages.
+  writing box (empty, no prompt) and *Post* (*Posted* once it is, *Update* after a change); earlier days say so with a
+  lock. No hearts (2026-11-18: they looked clumsy on every page), prompts, weather, counts or private pages.
 - **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
   labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
 - **Launch and the first screen.** No app name is shown. Two hearts, one in each of your colours (yours on the
