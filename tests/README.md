@@ -25,6 +25,17 @@ after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
 
 Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
+
+**Safari's engine.** Playwright's WebKit can't be downloaded in every workspace, so `tests/webkit/` drives WebKitGTK
+from Ubuntu's own packages (the engine Safari uses) through the system Python:
+```sh
+sudo apt-get install libwebkit2gtk-4.1-0 gir1.2-webkit2-4.1 python3-gi python3-gi-cairo xvfb xauth
+xvfb-run -a /usr/bin/python3.12 tests/webkit/test_home_webkit.py     # after test 1, with the mock and 8003 running
+```
+It signs in as Abilash like a new iPhone (iPhone user agent, `(hover: none)`, dark mode, no vibration) and taps every
+door on Home with a finger: the partner chip, the partner, the bar's chat, Journal, To-dos and Settings. Nothing may
+fail. Set `SHOTS=/some/folder` to save screenshots. The touch events are stand-ins (WebKitGTK has no touch screen
+here), so it checks the engine and the app's touch paths, not iOS itself.
 Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
 Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
 Test 13 covers Home: the hello and what today holds in your character's role, the four cards (only the top one
@@ -33,8 +44,9 @@ by its dot, your partner's chip and character, Change, the bar's To-dos, Journal
 (either way; a held short drag, a scroll or opening nothing), adding a to-do from the bar, ticking off on Today with
 Undo (and the partner's character telling them who did it), picking a character's look, skin, hair and role (it
 reaches the partner and stands next to theirs; Settings leads there too), that nothing from a secret list is shown or
-said (unlocked, ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, and text
-contrast for every colour in light and dark.
+said (unlocked, ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, text
+contrast for every colour in light and dark, and a part of Home or the chat that fails to draw (a safe note with no
+quoted text; the bar still works; a failed chat parks on Back instead of covering Home; both try again).
 
 Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
 on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-dos left open from before, looking

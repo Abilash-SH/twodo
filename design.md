@@ -134,6 +134,10 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   caption as their title. Transform and opacity only; with Reduce Motion the hearts are simply there.
 - **Empty states.** One emoji or character, one sentence, one button. Friendly, never guilt.
 - **Offline.** Say it once, quietly, where it matters ("Will send when you're back"). The app keeps working.
+- **When something fails to draw.** Only that part is replaced, by a calm card: what couldn't load, that the
+  to-dos and messages are saved, one line safe to screenshot (the error's type and what code failed, with anything quoted
+  removed) and *Try again*. Home's bar, the top of Home and Back keep working. If everything fails, a plain
+  page says the same with *Reload*. Never red, never the framework's blank error page.
 
 ## 6. Characters
 

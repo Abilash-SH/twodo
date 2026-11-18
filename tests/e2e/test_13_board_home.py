@@ -147,6 +147,35 @@ async def main():
         assert await q(TITLES) == ['Board'] and not await q(TRAP) and 'localhost:8003' in A.url
         print(f'PASS: {len(doors) + 5} doors on Home each open one screen (or sheet), cards brought up by their dots; Back returns Home')
 
+        # ---------- if part of Home (or the chat) fails to draw, the rest keeps working: a safe note says what failed
+        # Home formats dates when it draws; the chat's message bar asks whether this is a touch screen every time it draws
+        await q("""(() => { window.__lt = [Date.prototype.toLocaleTimeString, Date.prototype.toLocaleDateString, window.matchMedia];
+          const boom = () => { throw new TypeError('broken on purpose "secret words"'); }, mm = window.matchMedia;
+          Date.prototype.toLocaleTimeString = Date.prototype.toLocaleDateString = boom;
+          window.matchMedia = function (m) { if (/hover:\s*none/.test(m)) boom(); return mm.call(window, m); }; })()""")
+        await A.click('.board .stage-char.me'); await A.wait_for_timeout(600)   # Home draws again, and fails
+        fail = await q("(() => { const f = document.querySelector('.boardview .area-fail'); return f && [f.querySelector('code').textContent, !!document.querySelector('.home-hi')]; })()")
+        assert fail and fail[0].startswith('Home · TypeError: broken on purpose') and 'secret' not in fail[0] and fail[1] is False, ('a failed Home part shows a safe note instead of a blank app', fail)
+        assert await q("!!document.querySelector('.home-pt') && !!document.querySelector('.board-tray .tray-btn.chat')"), 'the top and the bar are still there'
+        await A.click(OPEN_CHAT); await A.wait_for_timeout(1000)
+        assert await q(TITLES) == ['Board', 'Chat'], 'the bar still opens the chat'
+        cf = await q("(() => { const c = document.querySelector('.chatview.chat-fail'); return c && [c.querySelector('code').textContent, c.getAttribute('role'), c.inert]; })()")
+        assert cf and cf[0].startswith('Chat · TypeError: broken on purpose') and 'secret' not in cf[0] and cf[1] == 'alert' and cf[2] is False, ('the chat says what failed, safely', cf)
+        await q("history.back()"); await A.wait_for_timeout(900)
+        assert await q(TITLES) == ['Board'], 'back closes the failed chat'
+        parked = await q("""(() => { const c = document.querySelector('.chatview'); const b = document.querySelector('.boardview .area-fail .btn').getBoundingClientRect();
+          const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          return [c.classList.contains('parked'), c.inert, !!(hit && hit.closest('.boardview'))]; })()""")
+        assert parked == [True, True, True], ('a failed chat parks like the chat and never covers Home', parked)
+        await q("(() => { [Date.prototype.toLocaleTimeString, Date.prototype.toLocaleDateString, window.matchMedia] = window.__lt; })()")
+        await A.click('.boardview .area-fail .btn'); await A.wait_for_timeout(600)
+        assert await q("!document.querySelector('.boardview .area-fail') && !!document.querySelector('.home-hi')"), 'Try again brings Home back'
+        await A.click(OPEN_CHAT); await A.wait_for_timeout(1000)
+        assert await q(TITLES) == ['Board', 'Chat'] and await q("!document.querySelector('.chat-fail') && !!document.querySelector('.chatview .cb-in')"), 'the chat tries again when it opens, and works'
+        await q("history.back()"); await A.wait_for_timeout(900)
+        errors[:] = [e for e in errors if 'broken on purpose' not in e and 'above error occurred' not in e]
+        print('PASS: a part of Home or the chat that fails to draw shows a safe note (no quoted text); the bar still works, a failed chat parks on Back, both try again')
+
         # ---------- a sideways swipe sends the top card to the back; a short one, a scroll or a second finger does nothing
         box = await A.locator('.board .hc.top').bounding_box()
         cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2

@@ -25,6 +25,7 @@ import { updateStore } from '@/ui/update';
 import { ChatCtl } from '../chat/chatCtl';
 import { openInviteSheet } from '../settings/AccountSheets';
 import { openSettings } from '../settings/Settings';
+import { AreaBoundary } from '../ui/AreaBoundary';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { Character, Portrait } from './Character';
@@ -204,6 +205,7 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
     <section className={`${cls} boardview home-v2${adding ? ' adding' : ''}`} data-vid={entry.id}>
       <header className="home-top">
         <h1 className="board-title">Home</h1>
+        <AreaBoundary area="Home’s top" compact>
         <button className="fab-btn home-me" type="button" aria-label="Settings" onClick={() => openSettings()} style={colorVar(color(me))}>
           <Portrait look={avatarOf(me)} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
         </button>
@@ -213,8 +215,9 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
           <Portrait look={avatarOf(pk)} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
           {unread ? <b className="home-n" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
         </button>
+        </AreaBoundary>
       </header>
-      <Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} />
+      <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
       <nav className="board-tray home-dock" aria-label="Main">
         <div className="dock-pill">
           <button className="dock-tab on" type="button" aria-label="Home" aria-current="page"><Icon name="home" /></button>
