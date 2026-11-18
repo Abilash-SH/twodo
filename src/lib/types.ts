@@ -5,10 +5,18 @@ export type PersonKey = 'a' | 'b';
 export type Assignee = PersonKey | 'both' | null;
 export type Priority = 0 | 1 | 2 | 3;
 
+/** The six earlier characters: still read (an older version may write one), no longer drawn (docs/characters.md) */
 export type CharKind = 'bun' | 'sprout' | 'pebble' | 'puff' | 'bolt' | 'drop';
 export type RoleKind = 'cheer' | 'calm' | 'cheeky' | 'poet';
-/** char and role: the character each of you picked for Home (docs/characters.md) */
-export interface Person { name: string; color: Color; photo?: string; uid?: string | null; username?: string; char?: CharKind; role?: RoleKind }
+export type Look = 'female' | 'male';
+export type Skin = 'porcelain' | 'peach' | 'honey' | 'caramel' | 'cocoa' | 'ebony';
+export type Hair = 'black' | 'espresso' | 'chestnut' | 'auburn' | 'golden';
+/** How your character looks: female or male, a skin tone and a hair colour; the hoodie is your colour */
+export interface AvatarLook { look: Look; skin: Skin; hair: Hair }
+/** avatar and role: the character each of you picked and the voice it speaks in (docs/characters.md) */
+export interface Person {
+  name: string; color: Color; photo?: string; uid?: string | null; username?: string; avatar?: AvatarLook; char?: CharKind; role?: RoleKind;
+}
 export interface PeopleRec { kind: 'people'; id: 'people'; a: Person; b: Person; updatedAt: number; _s?: 1 }
 export interface List {
   kind: 'list'; id: string; name: string; emoji: string; color: Color; private: boolean; deleted: boolean;

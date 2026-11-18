@@ -7,7 +7,7 @@
    (content, titles, counts) can appear, and the character never mentions one. It never shows a message's text. */
 import { memo, useEffect, useRef, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
-import { charName, charOf, lines, roleName, roleOf, type Facts } from '@/lib/characters';
+import { avatarOf, lines, roleName, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
 import { posts } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
@@ -98,7 +98,7 @@ const whose = (t: Task) => (t.assignee === 'both' ? ', for both of you' : !t.ass
 
 /** The two of you. Yours speaks (tap it for the next thing); your partner's is the way into your chat. */
 function Stage({ facts, unread }: { facts: Facts; unread: number }) {
-  const me = L.me, pk = partnerKey(), kind = charOf(me), role = roleOf(me), said = lines(facts, role);
+  const me = L.me, pk = partnerKey(), role = roleOf(me), said = lines(facts, role);
   const paired = !!(L.pair && L.pair.status === 'paired'), pt = firstWord(person(pk).name);
   const [i, setI] = useState(0), [play, setPlay] = useState('wave'), [ptPlay, setPtPlay] = useState('');
   const line = said[i % said.length];
@@ -122,12 +122,12 @@ function Stage({ facts, unread }: { facts: Facts; unread: number }) {
         </div>
       </div>
       <div className="stage-floor">
-        <button className="stage-char me" type="button" style={colorVar(color(me))} onClick={next} aria-label={`${charName(kind)}, your character. Tap for what’s next`}>
-          <Character kind={kind} size={108} cls={still ? '' : play} /><span className="stage-name">You</span>
+        <button className="stage-char me" type="button" style={colorVar(color(me))} onClick={next} aria-label="Your character. Tap for what’s next">
+          <Character look={avatarOf(me)} size={122} cls={still ? '' : play} /><span className="stage-name">You</span>
         </button>
         <button className="stage-char pt" type="button" style={colorVar(color(pk))} onClick={toPartner}
           aria-label={paired ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
-          <Character kind={charOf(pk)} size={92} cls={still ? '' : ptPlay} />
+          <Character look={avatarOf(pk)} size={110} cls={still ? '' : ptPlay} flip />
           {unread ? <b className="pt-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
           <span className="stage-name">{paired ? pt : 'Add partner'}</span>
         </button>

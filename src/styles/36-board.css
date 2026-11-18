@@ -31,7 +31,6 @@ button.hcard:active { transform: scale(.98); }
 .say-n { margin-left: auto; font-size: 12px; line-height: 16px; color: var(--soft); font-variant-numeric: tabular-nums; }
 .stage-floor { display: flex; align-items: flex-end; justify-content: space-around; gap: 8px; padding: 0 6px; }
 .stage-char { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 96px; padding: 0 4px 2px; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
-.stage-char.pt .cr { transform: scaleX(-1); } /* turned towards you */
 .stage-name { font-size: 13px; line-height: 18px; font-weight: 700; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
 .pt-badge { position: absolute; top: 4px; right: 4px; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 11px; background: var(--c); color: var(--on-color);
   font-size: 12px; line-height: 22px; font-weight: 800; text-align: center; box-shadow: 0 0 0 2.5px var(--bg2); }
@@ -89,7 +88,7 @@ button.hcard:active { transform: scale(.98); }
   .boardview { padding-left: calc(10px + var(--safe-left)); padding-right: calc(10px + var(--safe-right)); }
   .board-tray { gap: 8px; margin: 0 -10px; padding-left: 10px; padding-right: 10px; }
   .tray-btn { flex: 1 1 auto; gap: 6px; padding: 0 10px; font-size: 15px; } .tray-btn.chat { flex-grow: 1; } .tray-btn span:last-child { flex: none; }
-  .stage-char { min-width: 84px; } .stage-char .cr { width: 88px; height: 88px; } .say-n { display: none; }
+  .stage-char { min-width: 84px; } .stage-char .cv { width: 84px; height: 100px; } .say-n { display: none; }
 }
 @media (min-width: 700px) { .board-tray { justify-content: center; } .board-tray .tray-btn { flex: 0 1 260px; } }
 

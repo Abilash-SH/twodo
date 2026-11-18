@@ -1,0 +1,97 @@
+/* Twodo · the two characters (design.md, "Characters"; docs/characters.md; src/components/home/Character.tsx).
+   The hoodie is the person's colour (--c on a parent). A state lasts while it is true: think (eyes up, a thought
+   bubble), sleepy (eyes closed, z's). A moment plays once when its class is set: wave, hop, happy, cheer, love, each
+   under 1.5 s. Only transform and opacity animate; keyframes leave out their ends so a moment starts and finishes on
+   whatever the state shows. With Reduce Motion nothing moves: states are shown still and moments don't play. */
+.cv, .cv-portrait { --cv-o: var(--c, var(--me-c)); }
+.cv { display: block; overflow: visible; }
+.cv .cv-fig, .cv .cv-head, .cv .cv-arm, .cv .cv-ground, .cv .cv-brow { transform-box: view-box; }
+.cv .cv-fig { transform-origin: 50px 114px; }
+.cv .cv-ground { transform-origin: 50px 115.5px; }
+.cv .cv-head { transform-origin: 50px 62.4px; transition: transform var(--dur-page) var(--ease-out); }
+.cv .cv-arm-l { transform-origin: 35.5px 63px; }
+.cv .cv-arm-r { transform-origin: 64.5px 63px; }
+
+/* faces: open eyes and a smile unless a state or a moment says otherwise */
+.cv .cv-e-up, .cv .cv-e-closed, .cv .cv-e-happy, .cv .cv-e-heart, .cv .cv-m-o, .cv .cv-m-big, .cv .cv-blush2,
+.cv .cv-hearts .cv-h, .cv .cv-sparks .cv-s, .cv .cv-think, .cv .cv-zs { opacity: 0; }
+.cv.st-think .cv-e-open, .cv.st-sleepy .cv-e-open, .cv.st-think .cv-m-smile, .cv.st-sleepy .cv-m-smile { opacity: 0; }
+.cv.st-think .cv-e-up, .cv.st-sleepy .cv-e-closed, .cv.st-think .cv-m-o, .cv.st-sleepy .cv-m-o,
+.cv.st-think .cv-think, .cv.st-sleepy .cv-zs { opacity: 1; }
+.cv.st-think .cv-head { transform: rotate(-6deg); }
+.cv.st-sleepy .cv-head { transform: rotate(8deg); }
+.cv.st-think .cv-brow { transform: translateY(-1.2px); }
+
+/* what floats */
+.cv .cv-bubble { fill: var(--bg2); stroke: var(--sep); stroke-width: .8; }
+.cv .cv-dot { fill: var(--label2); }
+.cv .cv-zs path { stroke: var(--label2); }
+.cv.st-think .cv-dot { animation: cvBlink 960ms ease-in-out infinite; }
+.cv.st-think .cv-d1 { animation-delay: 160ms; }
+.cv.st-think .cv-d2 { animation-delay: 320ms; }
+.cv.st-sleepy .cv-z0, .cv.st-sleepy .cv-z1 { animation: cvDrift 1.6s var(--ease-out) infinite; }
+.cv.st-sleepy .cv-z1 { animation-delay: 800ms; }
+@keyframes cvBlink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+@keyframes cvDrift { 0% { opacity: 0; transform: translateY(4px); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+
+/* moments */
+.cv.wave .cv-arm-r { animation: cvWaveArm 1.2s var(--ease-out); }
+.cv.wave .cv-head { animation: cvWaveHead 1.2s var(--ease-out); }
+.cv.hop .cv-fig { animation: cvHop 520ms var(--ease-out); }
+.cv.hop .cv-ground { animation: cvGround 520ms var(--ease-out); }
+.cv.happy .cv-head { animation: cvHappyHead 700ms var(--ease-out); }
+.cv.happy .cv-fig { animation: cvSquash 700ms var(--ease-out); }
+.cv.cheer .cv-arm-r { animation: cvCheerR 1.3s var(--ease-out); }
+.cv.cheer .cv-arm-l { animation: cvCheerL 1.3s var(--ease-out); }
+.cv.cheer .cv-fig { animation: cvTwoHops 1.3s var(--ease-out); }
+.cv.love .cv-fig { animation: cvPulse 1.3s var(--ease-out); }
+.cv.love .cv-head { animation: cvLoveHead 1.3s var(--ease-out); }
+.cv.happy .cv-rest-e, .cv.cheer .cv-rest-e, .cv.love .cv-rest-e,
+.cv.happy .cv-rest-m, .cv.cheer .cv-rest-m, .cv.love .cv-rest-m, .cv.love .cv-blush { animation: cvHide 1.3s linear; }
+.cv.happy .cv-rest-e, .cv.happy .cv-rest-m { animation-duration: 700ms; }
+.cv.happy .cv-e-happy, .cv.happy .cv-m-big { animation: cvShow 700ms linear; }
+.cv.cheer .cv-e-happy, .cv.cheer .cv-m-big, .cv.love .cv-e-heart, .cv.love .cv-m-big, .cv.love .cv-blush2 { animation: cvShow 1.3s linear; }
+.cv.love .cv-h { animation: cvRise 1s var(--ease-out); }
+.cv.love .cv-h1 { animation-delay: 170ms; }
+.cv.love .cv-h2 { animation-delay: 340ms; }
+.cv.cheer .cv-s { animation: cvPop 680ms var(--ease-out); }
+.cv.cheer .cv-s1 { animation-delay: 140ms; }
+.cv.cheer .cv-s2 { animation-delay: 280ms; }
+
+@keyframes cvShow { 6%, 90% { opacity: 1; } }
+@keyframes cvHide { 6%, 90% { opacity: 0; } }
+@keyframes cvWaveArm { 22% { transform: rotate(-145deg); } 38% { transform: rotate(-118deg); } 55% { transform: rotate(-145deg); } 72% { transform: rotate(-118deg); } }
+@keyframes cvWaveHead { 22%, 70% { transform: rotate(-5deg); } }
+@keyframes cvHop { 35% { transform: translateY(-8.4px) scale(1.03, .97); } 68% { transform: translateY(0) scale(.98, 1.02); } }
+@keyframes cvGround { 35% { transform: scaleX(.8); } }
+@keyframes cvHappyHead { 23% { transform: rotate(6deg); } 51% { transform: rotate(-3deg); } }
+@keyframes cvSquash { 17% { transform: scale(1.04, .95); } 40% { transform: scale(.98, 1.04); } }
+@keyframes cvCheerR { 15%, 77% { transform: rotate(-150deg); } }
+@keyframes cvCheerL { 15%, 77% { transform: rotate(150deg); } }
+@keyframes cvTwoHops { 11% { transform: none; } 25% { transform: translateY(-8.4px) scale(1.03, .97); } 38% { transform: none; } 50% { transform: none; } 64% { transform: translateY(-8.4px) scale(1.03, .97); } 77% { transform: none; } }
+@keyframes cvPulse { 12% { transform: scale(1.05); } 23% { transform: scale(1); } 35% { transform: scale(1.05); } 54% { transform: scale(1); } }
+@keyframes cvLoveHead { 17%, 77% { transform: rotate(5deg); } }
+@keyframes cvRise { 0% { opacity: 0; transform: translateY(0) scale(.6); } 20% { opacity: 1; transform: translateY(-6px) scale(1); } 100% { opacity: 0; transform: translateY(-30px) scale(1); } }
+@keyframes cvPop { 0% { opacity: 0; transform: scale(0) rotate(0); } 38% { opacity: 1; transform: scale(1.2) rotate(45deg); } 100% { opacity: 0; transform: scale(0) rotate(45deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cv *, .cv { animation: none !important; transition: none !important; }
+  .cv.st-think .cv-dot { opacity: .7; }
+}
+
+/* head and shoulders in a circle */
+.cv-portrait { display: inline-block; flex: none; overflow: hidden; border-radius: 50%; vertical-align: middle;
+  background: color-mix(in srgb, var(--cv-o) 22%, var(--bg2)); }
+.cv-portrait svg { display: block; }
+
+/* ---------- Your character (the screen): two looks, skin and hair dots ---------- */
+.chv-grid.looks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.chv-grid.looks .chv-pick { min-height: 160px; padding-top: 14px; }
+.chv-preview .cv { flex: none; }
+.chv-dots { display: flex; flex-wrap: wrap; gap: 12px; }
+.chv-dot { width: 44px; height: 44px; padding: 0; border: 3px solid var(--bg2); border-radius: 50%; background: var(--dot);
+  box-shadow: 0 0 0 1px var(--sep); transition: transform var(--dur-quick) var(--ease-out); }
+.chv-dot:active { transform: scale(.92); }
+.chv-dot.on { box-shadow: 0 0 0 3px var(--c); }
+.chv-note { margin-top: 12px; }
+.chv-pt .cv { flex: none; }
