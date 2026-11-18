@@ -7,19 +7,20 @@
    Nothing is stored for Home itself; characters and roles live in the people record (docs/characters.md).
    Privacy: everything here comes from liveTasks(), the chat and the shared journal, so nothing from a secret list
    (content, titles, counts) can appear, and the character never mentions one. It never shows a message's text. */
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
-import { avatarOf, dayLine, lines, roleName, roleOf, type Facts } from '@/lib/characters';
+import { avatarOf, dayLine, lines, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
+import { EASE, MS, calm } from '@/lib/motion';
 import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
 import type { PersonKey } from '@/lib/types';
-import { dayDiff, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
+import { dayDiff, firstWord, todayStr, ymd } from '@/lib/util';
 import { thisWeek, weekPlan } from '@/lib/week';
 import { useApp } from '@/hooks/useApp';
-import { boardAdd, navTo, openBoardAdd, openCharacter, openJournal, openSmart, openWeek, type Entry } from '@/ui/nav';
+import { boardAdd, navTo, openBoardAdd, openJournal, openSmart, type Entry } from '@/ui/nav';
 import { useStore } from '@/ui/store';
 import { updateStore } from '@/ui/update';
 import { ChatCtl } from '../chat/chatCtl';
@@ -29,7 +30,6 @@ import { AreaBoundary } from '../ui/AreaBoundary';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { Character, Portrait } from './Character';
-import { HomeCards, useArrival, type HomeCard } from './HomeCards';
 
 /* ---------- what is on the board (plain data, so it is easy to check) ---------- */
 interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'waiting' | 'failed' | 'last'; who: PersonKey; text: string; n: number; when: string }
@@ -97,94 +97,81 @@ const paired = () => !!(L.pair && L.pair.status === 'paired');
 const unreadNow = () => (paired() && Chat.ready() ? Chat.unread() : 0);
 const toPartner = () => (paired() ? ChatCtl.open() : openInviteSheet());
 
-/** One person on a card: still while the card waits in the fan; a moment each time the card comes to the top */
-function One({ k, top, mood, size, flip = false, think = false }: { k: PersonKey; top: boolean; mood: string; size: number; flip?: boolean; think?: boolean }) {
-  const cls = useArrival(top, mood);
-  return <span className="hc-who" style={colorVar(color(k))}><Character look={avatarOf(k)} size={size} cls={cls} flip={flip} still={!top} state={think ? 'think' : 'idle'} /></span>;
-}
-function Pair({ top, mood }: { top: boolean; mood: string }) {
-  return (<span className="hc-pair"><One k={L.me} top={top} mood={mood} size={150} /><One k={partnerKey()} top={top} mood={mood} size={138} flip /></span>);
+/** The reactions you can send from Home: one emoji each, sent to your partner like a message */
+export const REACTIONS = [
+  { e: '❤️', label: 'Love' }, { e: '🤗', label: 'Hug' }, { e: '😘', label: 'Kiss' },
+  { e: '🥺', label: 'Miss you' }, { e: '😂', label: 'Haha' }, { e: '✨', label: 'Proud' },
+] as const;
+
+/** Home's one card: today, with the two of you on it. A tap opens Today. */
+function TodayCard({ b }: { b: Board }) {
+  const title = b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today';
+  const sub = b.next ? `${b.next.time} · ${b.next.title}` : b.overdue ? `${b.overdue} left from before` : b.today ? 'Tap to see them' : 'Enjoy it, or add something';
+  return (
+    <button type="button" className="home-card" onClick={() => openSmart('today')} aria-label={`Today. ${title}. ${sub}. Opens Today`}>
+      <span className="home-card-art" aria-hidden="true">
+        <span className="hc-who" style={colorVar(color(L.me))}><Character look={avatarOf(L.me)} size={132} /></span>
+        <span className="hc-who" style={colorVar(color(partnerKey()))}><Character look={avatarOf(partnerKey())} size={122} flip /></span>
+      </span>
+      <span className="home-card-txt">
+        <span className="home-card-badge">Today</span>
+        <b className="home-card-title">{title}</b>
+        <span className="home-card-sub">{sub}</span>
+      </span>
+    </button>
+  );
 }
 
-function cardsFor(b: Board, pt: string): HomeCard[] {
-  const ok = paired(), unread = unreadNow(), m = b.msg;
-  const ptTitle = !ok ? (m.kind === 'request' ? `${m.text} wants to join` : m.kind === 'sent' ? 'Asked to join' : 'Add your partner')
-    : unread ? plural(unread, 'new message') : 'Say hello';
-  const ptSub = !ok ? (m.kind === 'request' ? 'Tap to answer' : m.kind === 'sent' ? 'Waiting for them' : 'Share your space with them')
-    : m.kind === 'failed' ? 'A message didn’t send' : m.kind === 'waiting' ? 'Waiting to send' : m.when ? `Last message ${m.when === 'Yesterday' ? 'yesterday' : m.when}` : 'Start your chat';
-  return [
-    {
-      id: 'today', badge: 'Today', tone: 'hc-today',
-      title: b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today',
-      sub: b.next ? `${b.next.time} · ${b.next.title}` : b.overdue ? `${b.overdue} left from before` : b.today ? 'Tap to see them' : 'Enjoy it, or add something',
-      art: top => <Pair top={top} mood="happy" />, label: 'Show Today', hint: 'Opens Today', onOpen: () => openSmart('today'),
-    },
-    {
-      id: 'partner', badge: ok ? pt : 'Your partner', tone: 'hc-partner',
-      title: ptTitle, sub: ptSub,
-      art: top => <One k={partnerKey()} top={top} mood="wave" size={196} flip />,
-      label: ok ? `Show ${pt}` : 'Show your partner', hint: ok ? 'Opens your chat' : 'Add your partner', onOpen: toPartner,
-    },
-    {
-      id: 'journal', badge: 'Journal', tone: 'hc-journal',
-      title: b.wrote ? 'Today’s page is done' : 'Write today’s page',
-      sub: !ok ? 'Just for the two of you' : b.ptWrote ? `${pt} wrote today` : `${pt} hasn’t written yet`,
-      art: top => <One k={L.me} top={top} mood="happy" size={196} think={!b.wrote} />, label: 'Show the journal', hint: 'Opens the journal', onOpen: openJournal,
-    },
-    {
-      id: 'week', badge: 'This week', tone: 'hc-week',
-      title: b.weekOpen + b.weekDone ? `${b.weekDone} of ${b.weekOpen + b.weekDone} done` : 'Plan your week',
-      sub: b.weekOpen ? `${plural(b.weekOpen, 'thing')} still to do` : b.weekDone ? 'All done. Lovely' : 'Nothing planned yet',
-      art: top => <Pair top={top} mood="cheer" />, label: 'Show this week', hint: 'Opens the planner', onOpen: openWeek,
-    },
-  ];
+/** Send your partner a reaction: one tap, it goes like a message (with a little lift-off on your side) */
+function Reactions({ pt }: { pt: string }) {
+  const ok = paired(), [sent, setSent] = useState(''), last = useRef(0);
+  const send = (e: string, label: string, el: HTMLElement) => {
+    if (!ok) return openInviteSheet();
+    const now = Date.now(); if (now - last.current < 700) return; // one at a time
+    last.current = now;
+    if (!ChatCtl.sendReaction(e)) return;
+    haptic('success'); setSent(`${label} sent to ${pt}`);
+    const fly = el.querySelector<HTMLElement>('.react-fly');
+    if (fly) fly.animate(calm() ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'translateY(0) scale(1)' }, { opacity: 0, transform: 'translateY(-64px) scale(1.6)' }],
+      { duration: MS.page + MS.standard, easing: EASE.out });
+    setTimeout(() => setSent(s => (s === `${label} sent to ${pt}` ? '' : s)), 2200);
+  };
+  return (
+    <section className="home-react" aria-label={ok ? `Send ${pt} a reaction` : 'Reactions'}>
+      <h2 className="home-h">{ok ? `Send ${pt} a reaction` : 'Add your partner to send reactions'}</h2>
+      <div className="react-row">
+        {REACTIONS.map(r => (
+          <button key={r.label} type="button" className="react" aria-label={ok ? `Send ${pt} ${r.label.toLowerCase()} ${r.e}` : 'Add your partner'}
+            onClick={ev => send(r.e, r.label, ev.currentTarget)}>
+            <span className="react-e" aria-hidden="true">{r.e}<span className="react-fly">{r.e}</span></span>
+            <span className="react-l">{r.label}</span>
+          </button>
+        ))}
+      </div>
+      <p className="home-react-sent" role="status">{sent}</p>
+    </section>
+  );
 }
 
 /** Home's content only draws again when the data changes (or the connection does), never when a screen slides over it. */
 const Notes = memo(function Notes({ v, online }: { v: number; online: boolean }) {
   void v;
-  const b = boardData(), me = L.me, pk = partnerKey(), ok = paired(), pt = firstWord(person(pk).name), unread = unreadNow();
+  const b = boardData(), me = L.me, pk = partnerKey(), pt = firstWord(person(pk).name);
   const role = roleOf(me), said = lines(b.facts, role);
   said[0] = dayLine(b.facts, role);
-  const [i, setI] = useState(0), [play, setPlay] = useState(''), [ptPlay, setPtPlay] = useState('');
-  const still = reducedMotion.matches;
-  const next = () => {
-    setI(n => n + 1); haptic('light');
-    if (!still) { setPlay(''); requestAnimationFrame(() => setPlay('hop')); }
-  };
-  const partner = () => {
-    if (!still) { setPtPlay(''); requestAnimationFrame(() => setPtPlay('wave')); }
-    toPartner();
-  };
+  const [i, setI] = useState(0);
   return (
     <main className="board home">
       {online ? null : <div className="tape" role="status"><Icon name="cloud" cls="xs" />Offline. Everything is saved here.</div>}
       <div className="home-hello">
         <p className="home-hi">Hello, {firstWord(person(me).name)}!</p>
-        <div className="home-line">
-          <p className="say" aria-live="polite">{said[i % said.length]}</p>
+        <button type="button" className="home-line" onClick={() => { setI(n => n + 1); haptic('light'); }} aria-label={`${said[i % said.length]}${said.length > 1 ? '. Tap for the next' : ''}`}>
+          <span className="say" aria-live="polite">{said[i % said.length]}</span>
           {said.length > 1 ? <span className="say-n" aria-hidden="true">{(i % said.length) + 1}/{said.length}</span> : null}
-        </div>
+        </button>
       </div>
-      <HomeCards cards={cardsFor(b, pt)} />
-      <section className="stage home-two" aria-label="The two of you">
-        <div className="home-two-top">
-          <h2 className="home-h">The two of you</h2>
-          <span className="role" style={colorVar(color(me))}>{roleName(role)}</span>
-          <button className="role-change" type="button" onClick={openCharacter}>Change</button>
-        </div>
-        <div className="stage-floor">
-          <button className="stage-char me" type="button" style={colorVar(color(me))} onClick={next} aria-label="Your character. Tap for what’s next">
-            <Character look={avatarOf(me)} size={118} cls={still ? '' : play} /><span className="stage-name">You</span>
-          </button>
-          <button className="stage-char pt" type="button" style={colorVar(color(pk))} onClick={partner}
-            aria-label={ok ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
-            <Character look={avatarOf(pk)} size={110} cls={still ? '' : ptPlay} flip />
-            {unread ? <b className="pt-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
-            <span className="stage-name">{ok ? pt : 'Add partner'}</span>
-          </button>
-        </div>
-      </section>
+      <TodayCard b={b} />
+      <Reactions pt={pt} />
     </main>
   );
 });

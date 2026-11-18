@@ -27,49 +27,35 @@
 .home-v2 .home-line .say { flex: 1 1 auto; margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--soft); font-size: 16px; line-height: 21px; }
 .home-v2 .home-line .say-n { flex: none; margin-left: auto; }
 
-/* ---------- the fan of cards ---------- */
-.hc-wrap { --hc-w: min(318px, 74vw); --hc-h: calc(var(--hc-w) * 1.16); }
-.hc-stack { position: relative; height: calc(var(--hc-h) + 26px); }
-.hc { position: absolute; top: 10px; left: 50%; width: var(--hc-w); height: var(--hc-h); margin: 0 0 0 calc(var(--hc-w) / -2); padding: 0; border: 0;
-  border-radius: 28px; overflow: hidden; color: var(--on-color); font: inherit; text-align: left; transform-origin: 50% 100%; touch-action: pan-y;
-  box-shadow: 0 18px 40px -16px rgba(40,20,60,.34); -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-page) var(--ease-spring), opacity var(--dur-standard) var(--ease-out); }
-.hc:not(.top) { pointer-events: none; }
-.hc.dragging, .hc.jump { transition: none; }
-.hc.flying { transition: transform 240ms var(--ease-out); }
-.hc:focus-visible { outline: 3px solid var(--label); outline-offset: 3px; }
-/* each wash starts light and ends on a full colour; the full colour is also the background colour, for contrast checks */
-.hc-today { background-color: var(--c-orange); background-image: linear-gradient(135deg, color-mix(in srgb, var(--c-yellow) 55%, #FFFFFF), var(--c-orange)); }
-.hc-partner { background-color: var(--c-purple); background-image: linear-gradient(135deg, color-mix(in srgb, var(--pt-c) 55%, #FFFFFF), var(--c-purple)); }
-.hc-journal { background-color: var(--c-indigo); background-image: linear-gradient(135deg, color-mix(in srgb, var(--c-purple) 55%, #FFFFFF), var(--c-indigo)); }
-.hc-week { background-color: var(--c-teal); background-image: linear-gradient(135deg, color-mix(in srgb, var(--c-mint) 55%, #FFFFFF), var(--c-teal)); }
-.hc-art { position: absolute; left: 0; right: 0; top: 30px; bottom: 98px; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+/* ---------- Home's one card: today, with the two of you leaning in from the side ---------- */
+.home-card { position: relative; display: flex; align-items: flex-end; width: 100%; min-height: 212px; margin: 14px 0 4px; padding: 0; border: 0;
+  border-radius: 30px; overflow: hidden; text-align: left; color: #1B1730; font: inherit;
+  background-color: var(--c-orange); background-image: linear-gradient(150deg, color-mix(in srgb, var(--c-yellow) 55%, #FFFFFF) 0%, var(--c-orange) 100%);
+  box-shadow: 0 1px 2px rgba(27,23,48,.08), 0 22px 40px -22px rgba(120,60,20,.55); transition: transform var(--dur-quick) var(--ease-out); }
+.home-card:active { transform: scale(.98); }
+.home-card:focus-visible { outline: 3px solid var(--label); outline-offset: 3px; }
+.home-card-txt { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; max-width: 58%; padding: 20px; }
+.home-card-badge { align-self: flex-start; margin-bottom: 8px; padding: 5px 12px; border-radius: 999px; background: #1B1730; color: #FFFFFF;
+  font: 800 12px/16px var(--round); letter-spacing: 1px; text-transform: uppercase; }
+.home-card-title { font: 900 27px/30px var(--round); letter-spacing: -.3px; text-transform: uppercase; overflow-wrap: anywhere; }
+.home-card-sub { font-size: 15px; line-height: 20px; font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.home-card-art { position: absolute; right: -6px; bottom: -10px; display: flex; align-items: flex-end; }
+.home-card-art .hc-who + .hc-who { margin-left: -26px; }
 .hc-who { display: block; }
-.hc-art .cv { width: auto; height: calc(var(--hc-h) - 140px); }
-.hc-pair { display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
-.hc-pair .cv { height: calc((var(--hc-h) - 140px) * .78); }
-.hc-pair .hc-who + .hc-who .cv { height: calc((var(--hc-h) - 140px) * .72); }
-.hc-badge { position: absolute; top: 16px; left: 16px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 5px 12px; border-radius: 999px;
-  background: #1B1730; color: #FFFFFF; font: 800 12px/16px var(--round); letter-spacing: 1px; text-transform: uppercase;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hc-words { position: absolute; left: 20px; right: 20px; bottom: 18px; display: flex; flex-direction: column; gap: 2px; }
-.hc-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
-  font: 900 28px/30px var(--round); letter-spacing: -.3px; text-transform: uppercase; }
-.hc-sub { font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hc .hc-badge, .hc .hc-words { transition: opacity var(--dur-quick) var(--ease-out); }
-.hc:not(.top) .hc-badge, .hc:not(.top) .hc-words { opacity: 0; } /* waiting cards show clean edges, not half-hidden letters */
-.hc-dots { display: flex; justify-content: center; }
-.hc-dot { width: 30px; height: 44px; padding: 0; border: 0; background: none; display: grid; place-items: center; -webkit-tap-highlight-color: transparent; }
-.hc-dot::before { content: ''; width: 8px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--label) 20%, transparent);
-  transition: transform var(--dur-quick) var(--ease-out), opacity var(--dur-quick) var(--ease-out); }
-.hc-dot.on::before { background: var(--dot); transform: scaleX(2.6); }
-.dot-today { --dot: var(--c-orange); } .dot-partner { --dot: var(--pt-c); } .dot-journal { --dot: var(--c-indigo); } .dot-week { --dot: var(--c-teal); }
 
-/* ---------- the two of you ---------- */
-.home-two { margin-top: 6px; }
-.home-two-top { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
-.home-h { margin: 0 auto 0 0; font: 700 20px/25px var(--round); color: var(--label); }
-.home-two .role-change { margin: -10px -6px -10px 0; }
+/* ---------- send a reaction ---------- */
+.home-react { margin-top: 18px; }
+.home-h { margin: 0 2px 10px; font: 700 20px/25px var(--round); color: var(--label); }
+.home-react-sent { min-height: 18px; margin: 10px 0 0; text-align: center; font-size: 13px; line-height: 18px; font-weight: 700; color: var(--soft); }
+.react-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.react { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 86px; padding: 8px 4px; border: 0;
+  border-radius: 22px; background: var(--bg2); color: var(--label); font: inherit; box-shadow: 0 1px 2px rgba(27,23,48,.06), 0 12px 24px -18px rgba(27,23,48,.4);
+  transition: transform var(--dur-quick) var(--ease-bounce); -webkit-tap-highlight-color: transparent; }
+.react:active { transform: scale(.92); }
+.react-e { position: relative; font-size: 34px; line-height: 40px; }
+.react-fly { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
+.react-l { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--soft); }
+.home-line { width: 100%; padding: 0; border: 0; background: none; font: inherit; text-align: left; color: inherit; }
 
 /* ---------- the floating bar: Home, To-dos, Journal, Chat, and Add a to-do beside it ---------- */
 .home-v2 .home-dock { position: sticky; bottom: 0; z-index: 2; flex: none; display: flex; justify-content: center; align-items: center; gap: 10px;
@@ -88,7 +74,7 @@
   background: var(--me-c); color: var(--on-color); box-shadow: 0 16px 32px -14px rgba(27,23,48,.6); pointer-events: auto; }
 .home-v2 .dock-add .i { width: 26px; height: 26px; stroke-width: 2.4; }
 @media (max-width: 359px) { .home-v2 .dock-tab, .boardview .dock-tab.fab-btn, .home-v2 .dock-tab.tray-btn { width: 48px; } .home-v2 .dock-add { width: 56px; height: 56px; } }
-@media (prefers-reduced-motion: reduce) { .hc, .hc.flying { transition: opacity var(--dur-quick) linear; } }
+@media (prefers-reduced-motion: reduce) { .home-card, .react { transition: opacity var(--dur-quick) linear; } }
 
 /* ---------- when part of a screen fails (AreaBoundary): a quiet note, the rest keeps working ---------- */
 .area-fail { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 16px 0; padding: 18px 16px; border-radius: 22px;

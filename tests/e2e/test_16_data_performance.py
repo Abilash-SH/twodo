@@ -32,7 +32,7 @@ async def main():
         ca, A = await phone('/tmp/twodo-A.json', True)
         cb, B = await phone('/tmp/twodo-B.json')
         for pg in (A, B):
-            await pg.click('.board .hc[data-card="today"].top'); await pg.wait_for_timeout(900)   # Home's Today card opens Today
+            await pg.click('.board .home-card'); await pg.wait_for_timeout(900)   # Home's Today card opens Today
         held, release = asyncio.Event(), asyncio.Event()
         captured = {}
         async def hold_task(route):
