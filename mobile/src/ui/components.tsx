@@ -6,8 +6,8 @@ import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle
 import Animated, { FadeInUp, FadeOutUp, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { Character } from './characters/Character';
-import type { CharKind } from './characters/moods';
+import { Avatar } from './avatar/Avatar';
+import type { AvatarLook } from './avatar/looks';
 import { haptic } from './haptics';
 import { CHEVRON } from './shapes';
 import { Txt } from './Text';
@@ -143,12 +143,12 @@ export function Chevron() {
 }
 
 /* ---------- Moments without a screen of their own ---------- */
-export function EmptyState({ kind, color, title, line, action }: {
-  kind: CharKind; color: ColorName; title: string; line: string; action?: { title: string; onPress: () => void };
+export function EmptyState({ avatar, color, title, line, action }: {
+  avatar: AvatarLook; color: ColorName; title: string; line: string; action?: { title: string; onPress: () => void };
 }) {
   return (
     <View style={styles.empty}>
-      <Character kind={kind} color={color} size={88} />
+      <Avatar avatar={avatar} color={color} size={110} />
       <Txt variant="headline" align="center" style={styles.emptyTitle}>{title}</Txt>
       <Txt variant="callout" tone="soft" align="center">{line}</Txt>
       {action ? <View style={styles.emptyAction}><Button title={action.title} onPress={action.onPress} color={color} /></View> : null}

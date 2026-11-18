@@ -237,8 +237,11 @@ The same Twodo, drawn natively. Everything above applies; this is what is specif
   rejects one outside `src/ui`.
 - **Type.** The system font for reading; the iPhone's rounded face (`ui-rounded`) for titles. Dynamic Type is on, with
   a cap per style so layouts hold.
-- **People's colours.** Each colour gives a base, a soft tint, an ink (the colour as readable text), the dark ink for
-  text on it, and a character's lighter face and darker feet. All of them are checked for 4.5:1 in light and dark.
+- **People's colours.** Each colour gives a base, a soft tint, an ink (the colour as readable text) and the dark ink
+  for text on it; the character's hoodie is shaded from it. All of them are checked for 4.5:1 in light and dark.
+- **Characters.** Two original characters, female and male, in a soft 3D style: big eyes with highlights, rounded
+  shapes, gradients lit from the top left. Each person picks a look, skin tone and hair colour; the hoodie is their
+  colour. They replace the web app's six blob characters in the app.
 - **Characters lead.** Every screen has a host character. A state lasts while it is true (thinking while your partner
   types, sleepy while they're away); a moment is a short reaction to something that happened (happy, wave, hop,
   cheer, love), at most one per character every few seconds, none with Reduce Motion. Only Views move, on the UI

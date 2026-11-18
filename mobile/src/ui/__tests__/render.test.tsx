@@ -3,8 +3,10 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Playground } from '@/features/playground/Playground';
-import { Character } from '../characters/Character';
-import { CHAR_KINDS, MOMENTS, STATES } from '../characters/moods';
+import { Avatar } from '../avatar/Avatar';
+import { DEFAULT_LOOKS, HAIRS, LOOKS, SKINS, type Hair, type Skin } from '../avatar/looks';
+import { MOMENTS, STATES } from '../avatar/moods';
+import { Portrait } from '../avatar/Portrait';
 import { LAUNCH_MS, Launch } from '../launch/Launch';
 import { ThemeProvider, type SchemeChoice } from '../theme';
 
@@ -28,19 +30,24 @@ test.each(['light', 'dark'] as const)('the Playground renders in %s and its cont
   await fireEvent.press(screen.getByText('Dark'));
 });
 
-test('every character draws in every state and moment, still or moving, turned or not', async () => {
-  for (const kind of CHAR_KINDS) {
+test('both characters draw in every state and moment, still or moving, turned or not, in every skin and hair', async () => {
+  for (const look of LOOKS) {
+    const avatar = DEFAULT_LOOKS[look];
     for (const state of STATES) {
-      const { unmount } = await render(wrap(<Character kind={kind} color="green" size={64} state={state} flip={kind === 'drop'} />));
+      const { unmount } = await render(wrap(<Avatar avatar={avatar} color="green" size={120} state={state} flip={look === 'female'} />));
       await unmount();
     }
     for (const [i, mood] of MOMENTS.entries()) {
-      const { unmount } = await render(wrap(<Character kind={kind} color="pink" size={64} moment={{ mood, key: i + 1 }} />));
+      const { unmount } = await render(wrap(<Avatar avatar={avatar} color="pink" size={120} moment={{ mood, key: i + 1 }} />));
       await act(async () => { jest.advanceTimersByTime(1600); });
       await unmount();
     }
-    const { unmount } = await render(wrap(<Character kind={kind} color="gray" size={30} still />));
-    await unmount();
+    for (const skin of Object.keys(SKINS) as Skin[]) {
+      for (const hair of Object.keys(HAIRS) as Hair[]) {
+        const { unmount } = await render(wrap(<><Avatar avatar={{ look, skin, hair }} color="gray" size={60} still /><Portrait avatar={{ look, skin, hair }} color="mint" size={40} /></>));
+        await unmount();
+      }
+    }
   }
 });
 

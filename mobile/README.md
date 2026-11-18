@@ -1,7 +1,7 @@
 # Twodo for iPhone
 
-The React Native rebuild of Twodo (`docs/architecture.md`). **Phase 1:** the design system, the six characters and
-their moods, the two-hearts launch, and a Playground screen to try it all on your phone. Nothing in this app stores
+The React Native rebuild of Twodo (`docs/architecture.md`). **Phase 1:** the design system, the two characters
+(female and male) and their moods, the two-hearts launch, and a Playground screen to try it all on your phone. Nothing in this app stores
 or sends anything yet; the web app keeps working as before until the move (phase 5).
 
 - **App ID (bundle identifier):** `io.github.abilashsh.twodo`

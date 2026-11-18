@@ -2,7 +2,7 @@
    and off with Reduce Motion; `force` is only for direct requests in the Playground. */
 import { useCallback, useRef, useState } from 'react';
 import { useReducedMotion } from 'react-native-reanimated';
-import type { MomentKey } from './Character';
+import type { MomentKey } from './Avatar';
 import { createMomentGate, type Moment } from './moods';
 
 export function useMoments(): { moment: MomentKey | null; react: (mood: Moment, force?: boolean) => boolean } {

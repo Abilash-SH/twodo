@@ -3,10 +3,12 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { Character } from '@/ui/characters/Character';
-import { CHAR_KINDS, CHAR_NAMES, MOMENTS, MOOD_NAMES, STATES, type CharKind, type CharState } from '@/ui/characters/moods';
-import { Stage } from '@/ui/characters/Stage';
-import { useMoments } from '@/ui/characters/useMoments';
+import { Avatar } from '@/ui/avatar/Avatar';
+import { DEFAULT_LOOKS, HAIRS, HAIR_NAMES, LOOKS, LOOK_NAMES, SKINS, SKIN_NAMES, type AvatarLook, type Hair, type Skin } from '@/ui/avatar/looks';
+import { MOMENTS, MOOD_NAMES, STATES, type CharState } from '@/ui/avatar/moods';
+import { Portrait } from '@/ui/avatar/Portrait';
+import { Stage } from '@/ui/avatar/Stage';
+import { useMoments } from '@/ui/avatar/useMoments';
 import { contrast } from '@/ui/color';
 import { Badge, Button, Card, Chip, EmptyState, LargeTitle, Row, Screen, Section, Toast } from '@/ui/components';
 import { haptic } from '@/ui/haptics';
@@ -15,7 +17,7 @@ import { Txt } from '@/ui/Text';
 import { useTheme, type SchemeChoice } from '@/ui/theme';
 import { COLOR_NAMES, INK, PALETTE, RADIUS, SPACE, TYPE, type ColorName, type TypeVariant } from '@/ui/tokens';
 
-interface Pick { kind: CharKind; color: ColorName }
+interface Pick { avatar: AvatarLook; color: ColorName }
 
 const SAMPLE: Record<TypeVariant, string> = {
   largeTitle: 'Today', title: 'This week', headline: 'Buy flowers', body: 'Pick up the cake on the way home.',
@@ -25,8 +27,8 @@ const SCHEMES: [SchemeChoice, string][] = [['system', 'Like my phone'], ['light'
 
 export function Playground() {
   const t = useTheme(), reduce = useReducedMotion();
-  const [me, setMe] = useState<Pick>({ kind: 'bun', color: 'blue' });
-  const [pt, setPt] = useState<Pick>({ kind: 'sprout', color: 'pink' });
+  const [me, setMe] = useState<Pick>({ avatar: DEFAULT_LOOKS.male, color: 'blue' });
+  const [pt, setPt] = useState<Pick>({ avatar: DEFAULT_LOOKS.female, color: 'pink' });
   const [meState, setMeState] = useState<CharState>('idle');
   const [ptState, setPtState] = useState<CharState>('think');
   const meM = useMoments(), ptM = useMoments();
@@ -41,7 +43,7 @@ export function Playground() {
   return (
     <View style={styles.fill}>
       <Screen>
-        <LargeTitle title="Playground" sub="Twodo's new look, piece by piece. Everything here is pretend: nothing is saved or sent." />
+        <LargeTitle title="Playground" sub="Twodo's look, piece by piece: the two characters, their moods, colours, type and controls. Everything here is pretend: nothing is saved or sent." />
         <View style={styles.wrap}>
           {SCHEMES.map(([c, label]) => (
             <Chip key={c} label={label} selected={t.choice === c} onPress={() => t.setChoice(c)} color={me.color} />
@@ -50,7 +52,8 @@ export function Playground() {
 
         <Section title="The two of you" sub="Tap a character.">
           <Stage
-            me={{ ...me, name: 'You', state: meState, moment: meM.moment, hint: 'Your character hops', onPress: () => { haptic.tick(); meM.react('hop', true); } }}
+            height={168}
+            me={{ ...me, name: 'You', state: meState, moment: meM.moment, hint: 'Your character waves', onPress: () => { haptic.tick(); meM.react('wave', true); } }}
             partner={{ ...pt, name: 'Your partner', state: ptState, moment: ptM.moment, hint: 'Their character waves', onPress: () => { haptic.tick(); ptM.react('wave', true); } }}
           />
         </Section>
@@ -77,9 +80,9 @@ export function Playground() {
           <Picker value={pt} onChange={setPt} />
         </Section>
 
-        <Section title="All six" sub="Tap one to make it hop.">
+        <Section title="Both looks" sub="Tap one to make it wave.">
           <View style={styles.grid}>
-            {CHAR_KINDS.map(k => <Tile key={k} kind={k} color={me.color} />)}
+            {LOOKS.map(l => <Tile key={l} avatar={{ ...me.avatar, look: l }} color={me.color} label={LOOK_NAMES[l]} />)}
           </View>
         </Section>
 
@@ -110,15 +113,15 @@ export function Playground() {
 
         <Section title="Rows on a card">
           <Card>
-            <Row title="Buy flowers" sub="Today · 6 pm" left={<Character kind={me.kind} color={me.color} size={30} still />} onPress={() => note('Buy flowers')} />
-            <Row title="Plan the weekend" sub="This week" right={<Badge count={2} color={pt.color} />} left={<Character kind={pt.kind} color={pt.color} size={30} still flip />} onPress={() => note('Plan the weekend')} />
+            <Row title="Buy flowers" sub="Today · 6 pm" left={<Portrait avatar={me.avatar} color={me.color} size={36} />} onPress={() => note('Buy flowers')} />
+            <Row title="Plan the weekend" sub="This week" right={<Badge count={2} color={pt.color} />} left={<Portrait avatar={pt.avatar} color={pt.color} size={36} />} onPress={() => note('Plan the weekend')} />
             <Row title="Water the plants" sub="Tomorrow" last onPress={() => note('Water the plants')} />
           </Card>
         </Section>
 
         <Section title="Empty state">
           <Card>
-            <EmptyState kind={me.kind} color={me.color} title="Nothing on today" line="Enjoy it, or add something small." action={{ title: 'Add a to-do', onPress: () => note('Added (pretend)') }} />
+            <EmptyState avatar={me.avatar} color={me.color} title="Nothing on today" line="Enjoy it, or add something small." action={{ title: 'Add a to-do', onPress: () => note('Added (pretend)') }} />
           </Card>
         </Section>
 
@@ -136,52 +139,69 @@ export function Playground() {
   );
 }
 
-/** Choose a character and a colour. */
+/** Choose a look, a skin tone, a hair colour and your colour (the hoodie). */
 function Picker({ value, onChange }: { value: Pick; onChange: (p: Pick) => void }) {
   const t = useTheme();
+  const set = (a: Partial<AvatarLook>) => { haptic.tick(); onChange({ ...value, avatar: { ...value.avatar, ...a } }); };
   return (
     <View>
       <View style={styles.grid}>
-        {CHAR_KINDS.map(k => {
-          const on = value.kind === k;
+        {LOOKS.map(l => {
+          const on = value.avatar.look === l;
           return (
             <Pressable
-              key={k} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={CHAR_NAMES[k]}
-              onPress={() => { haptic.tick(); onChange({ ...value, kind: k }); }}
-              style={[styles.tile, { backgroundColor: on ? t.person(value.color).tint : t.n.raised, borderColor: on ? t.color(value.color) : t.n.raised }]}
+              key={l} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={LOOK_NAMES[l]}
+              onPress={() => set({ look: l })}
+              style={[styles.lookTile, { backgroundColor: on ? t.person(value.color).tint : t.n.raised, borderColor: on ? t.color(value.color) : t.n.raised }]}
             >
-              <Character kind={k} color={value.color} size={52} still />
-              <Txt variant="footnote" style={styles.tileName}>{CHAR_NAMES[k]}</Txt>
+              <Avatar avatar={{ ...value.avatar, look: l }} color={value.color} size={96} still />
+              <Txt variant="footnote" style={styles.tileName}>{LOOK_NAMES[l]}</Txt>
             </Pressable>
           );
         })}
       </View>
-      <View style={[styles.wrap, styles.gap]}>
-        {PALETTE.map(c => {
-          const on = value.color === c;
-          return (
-            <Pressable
-              key={c} accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={COLOR_NAMES[c]} hitSlop={4}
-              onPress={() => { haptic.tick(); onChange({ ...value, color: c }); }}
-              style={[styles.dot, { backgroundColor: t.color(c), borderColor: on ? t.n.label : t.n.bg }]}
-            />
-          );
-        })}
+      <Txt variant="footnote" tone="soft" style={styles.gap}>Skin</Txt>
+      <View style={styles.wrap}>
+        {(Object.keys(SKINS) as Skin[]).map(k => (
+          <Dot key={k} fill={SKINS[k]} on={value.avatar.skin === k} label={SKIN_NAMES[k]} onPress={() => set({ skin: k })} />
+        ))}
+      </View>
+      <Txt variant="footnote" tone="soft" style={styles.gap}>Hair</Txt>
+      <View style={styles.wrap}>
+        {(Object.keys(HAIRS) as Hair[]).map(k => (
+          <Dot key={k} fill={HAIRS[k]} on={value.avatar.hair === k} label={HAIR_NAMES[k]} onPress={() => set({ hair: k })} />
+        ))}
+      </View>
+      <Txt variant="footnote" tone="soft" style={styles.gap}>Your colour (the hoodie)</Txt>
+      <View style={styles.wrap}>
+        {PALETTE.map(c => (
+          <Dot key={c} fill={t.color(c)} on={value.color === c} label={COLOR_NAMES[c]} onPress={() => { haptic.tick(); onChange({ ...value, color: c }); }} />
+        ))}
       </View>
     </View>
   );
 }
 
-function Tile({ kind, color }: { kind: CharKind; color: ColorName }) {
+function Dot({ fill, on, label, onPress }: { fill: string; on: boolean; label: string; onPress: () => void }) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button" accessibilityState={{ selected: on }} accessibilityLabel={label} hitSlop={4} onPress={onPress}
+      style={[styles.dot, { backgroundColor: fill, borderColor: on ? t.n.label : t.n.bg }]}
+    />
+  );
+}
+
+function Tile({ avatar, color, label }: { avatar: AvatarLook; color: ColorName; label: string }) {
   const t = useTheme(), m = useMoments();
   return (
     <Pressable
-      accessibilityRole="button" accessibilityLabel={CHAR_NAMES[kind]} accessibilityHint="Hops"
-      onPress={() => { haptic.tick(); m.react('hop', true); }}
-      style={[styles.tile, { backgroundColor: t.n.raised, borderColor: t.n.raised }]}
+      accessibilityRole="button" accessibilityLabel={label} accessibilityHint="Waves"
+      onPress={() => { haptic.tick(); m.react('wave', true); }}
+      style={[styles.lookTile, { backgroundColor: t.n.raised, borderColor: t.n.raised }]}
     >
-      <Character kind={kind} color={color} size={64} moment={m.moment} />
-      <Txt variant="footnote" style={styles.tileName}>{CHAR_NAMES[kind]}</Txt>
+      <Avatar avatar={avatar} color={color} size={150} moment={m.moment} />
+      <Txt variant="footnote" style={styles.tileName}>{label}</Txt>
     </Pressable>
   );
 }
@@ -205,7 +225,7 @@ const styles = StyleSheet.create({
   gap: { marginTop: SPACE.m },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.xs },
   stack: { gap: SPACE.s },
-  tile: { width: '31.5%', minHeight: 108, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.l, borderWidth: 2, paddingVertical: SPACE.xs },
+  lookTile: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', borderRadius: RADIUS.l, borderWidth: 2, paddingTop: SPACE.m, paddingBottom: SPACE.xs },
   tileName: { marginTop: SPACE.xxs, fontWeight: '600' },
   dot: { width: 34, height: 34, borderRadius: 17, borderWidth: 3 },
   swatch: { width: '31.5%', alignItems: 'center', borderRadius: RADIUS.l, padding: SPACE.xs, paddingBottom: SPACE.s },

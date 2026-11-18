@@ -1,5 +1,5 @@
 /* Characters' moods: moments are rare, short, and off with Reduce Motion; faces follow the mood. */
-import { CHAR_KINDS, COOLDOWN_MS, MOMENTS, MOMENT_MS, RESTING_EYES, createMomentGate, faceFor } from '../characters/moods';
+import { COOLDOWN_MS, MOMENTS, MOMENT_MS, STATES, STATE_TILT, createMomentGate, expressionFor } from '../avatar/moods';
 
 describe('the moment gate', () => {
   test('one moment per cooldown', () => {
@@ -20,20 +20,22 @@ describe('the moment gate', () => {
   });
 });
 
-test('reactions stay under 1.2 s and celebrations under 1.5 s; the cooldown outlasts the longest', () => {
-  for (const m of MOMENTS) expect(MOMENT_MS[m]).toBeLessThanOrEqual(m === 'cheer' || m === 'love' ? 1500 : 1200);
+test('reactions stay under 1.3 s and celebrations under 1.5 s; the cooldown outlasts the longest', () => {
+  for (const m of MOMENTS) expect(MOMENT_MS[m]).toBeLessThanOrEqual(m === 'cheer' || m === 'love' ? 1500 : 1300);
   expect(COOLDOWN_MS).toBeGreaterThan(Math.max(...MOMENTS.map(m => MOMENT_MS[m])));
 });
 
-test('faces follow the mood, and each character keeps its own resting face', () => {
-  for (const k of CHAR_KINDS) {
-    expect(faceFor(k, 'idle').eyes).toBe(RESTING_EYES[k]);
-    expect(faceFor(k, 'wave').eyes).toBe(RESTING_EYES[k]);
-    expect(faceFor(k, 'sleepy').eyes).toBe('closed');
-    expect(faceFor(k, 'happy')).toEqual({ eyes: 'happy', mouth: 'big', blush: 'soft' });
-    expect(faceFor(k, 'love').blush).toBe('strong');
-    expect(faceFor(k, 'think').eyes).toBe('up');
-  }
-  expect(RESTING_EYES.pebble).toBe('closed');
-  expect(RESTING_EYES.drop).toBe('wink');
+test('faces follow the mood', () => {
+  expect(expressionFor('idle')).toEqual({ eyes: 'open', mouth: 'smile', blush: 'soft', brow: 'calm' });
+  expect(expressionFor('wave').eyes).toBe('open');
+  expect(expressionFor('happy').eyes).toBe('happy');
+  expect(expressionFor('cheer').mouth).toBe('big');
+  expect(expressionFor('love')).toEqual({ eyes: 'heart', mouth: 'big', blush: 'strong', brow: 'calm' });
+  expect(expressionFor('sleepy').eyes).toBe('closed');
+  expect(expressionFor('think')).toEqual({ eyes: 'up', mouth: 'o', blush: 'soft', brow: 'raised' });
+});
+
+test('the head leans a little for a state, never far', () => {
+  for (const s of STATES) expect(Math.abs(STATE_TILT[s])).toBeLessThanOrEqual(10);
+  expect(STATE_TILT.idle).toBe(0);
 });

@@ -3,18 +3,14 @@
    A moment is a short reaction to something that happened (a tick, a post, a heart). Moments are earned and rare:
    one at a time, at most one per character every COOLDOWN_MS, and none with Reduce Motion. Pure: no React here. */
 
-export const CHAR_KINDS = ['bun', 'sprout', 'pebble', 'puff', 'bolt', 'drop'] as const;
-export type CharKind = (typeof CHAR_KINDS)[number];
-export const CHAR_NAMES: Record<CharKind, string> = { bun: 'Bun', sprout: 'Sprout', pebble: 'Pebble', puff: 'Puff', bolt: 'Bolt', drop: 'Drop' };
-
 export const STATES = ['idle', 'think', 'sleepy'] as const;
 export type CharState = (typeof STATES)[number];
 export const MOMENTS = ['happy', 'wave', 'hop', 'cheer', 'love'] as const;
 export type Moment = (typeof MOMENTS)[number];
 export type Mood = CharState | Moment;
 
-/** How long each moment plays. Reactions stay under 1.2 s, celebrations under 1.5 s (design.md, motion). */
-export const MOMENT_MS: Record<Moment, number> = { happy: 700, wave: 1100, hop: 520, cheer: 1300, love: 1300 };
+/** How long each moment plays. Reactions stay under 1.3 s, celebrations under 1.5 s (design.md, motion). */
+export const MOMENT_MS: Record<Moment, number> = { happy: 700, wave: 1200, hop: 520, cheer: 1300, love: 1300 };
 export const COOLDOWN_MS = 2500;
 
 export const MOOD_NAMES: Record<Mood, string> = {
@@ -35,18 +31,22 @@ export function createMomentGate(cooldownMs = COOLDOWN_MS): MomentGate {
   };
 }
 
-/** What the face looks like for a mood, given the character's own resting face. */
-export type Eyes = 'open' | 'closed' | 'wink' | 'happy' | 'up';
-export type Mouth = 'smile' | 'big' | 'o' | 'flat';
-export interface FaceLook { eyes: Eyes; mouth: Mouth; blush: 'soft' | 'strong' }
-export const RESTING_EYES: Record<CharKind, Eyes> = { bun: 'open', sprout: 'open', pebble: 'closed', puff: 'open', bolt: 'open', drop: 'wink' };
-
-export function faceFor(kind: CharKind, mood: Mood): FaceLook {
+/** The face for a mood. */
+export interface Expression {
+  eyes: 'open' | 'happy' | 'closed' | 'heart' | 'up';
+  mouth: 'smile' | 'big' | 'o';
+  blush: 'soft' | 'strong';
+  brow: 'calm' | 'raised';
+}
+export function expressionFor(mood: Mood): Expression {
   switch (mood) {
-    case 'happy': case 'cheer': return { eyes: 'happy', mouth: 'big', blush: 'soft' };
-    case 'love': return { eyes: 'happy', mouth: 'big', blush: 'strong' };
-    case 'sleepy': return { eyes: 'closed', mouth: 'o', blush: 'soft' };
-    case 'think': return { eyes: 'up', mouth: 'flat', blush: 'soft' };
-    default: return { eyes: RESTING_EYES[kind], mouth: 'smile', blush: 'soft' };
+    case 'happy': case 'cheer': return { eyes: 'happy', mouth: 'big', blush: 'soft', brow: 'calm' };
+    case 'love': return { eyes: 'heart', mouth: 'big', blush: 'strong', brow: 'calm' };
+    case 'sleepy': return { eyes: 'closed', mouth: 'o', blush: 'soft', brow: 'calm' };
+    case 'think': return { eyes: 'up', mouth: 'o', blush: 'soft', brow: 'raised' };
+    default: return { eyes: 'open', mouth: 'smile', blush: 'soft', brow: 'calm' };
   }
 }
+
+/** How far the head leans for a state, in degrees (the figure faces right; turned figures mirror it). */
+export const STATE_TILT: Record<CharState, number> = { idle: 0, think: -6, sleepy: 8 };

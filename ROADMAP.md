@@ -204,6 +204,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-17 | Rebuild as a React Native app (Expo) on Supabase, still end-to-end encrypted, with a playful, character-first design | Chosen for a real iPhone app with photos and a Home Screen widget; `docs/architecture.md` keeps today's encryption and secret-list rules |
 | 2026-11-17 | Open decisions accepted as recommended to start phase 1: "Twodo" under the icon, no over-the-air updates, iPhone only | "Go ahead"; each can still change, and none is hard to undo before the move |
 | 2026-11-17 | The app's colours and type come only from `mobile/src/ui/tokens.ts`; the rounded face is the iPhone's own (`ui-rounded`) | One source keeps every screen consistent (a test enforces it); the system face needs nothing bundled |
+| 2026-11-18 | Two original human characters, female and male, in a soft 3D style replace the six blob characters in the app | Asked for, from a 3D avatar reference; drawn in parts so moods still move, and the same API could take rendered images later |
 
 ## How to pick up work
 
