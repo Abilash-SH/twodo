@@ -123,3 +123,9 @@ All three are open and waiting for the owner to merge. If one was closed instead
 - User explicitly requested the date-wise journal on the **web app too**. Work started on `feat/web-journal-by-day`: week strip, native date input for older days, two pages, today's own editable page, earlier dates read-only. Existing `us-p…` post records remain encrypted and visible by date; the newest existing post of today acts as the editable page. No migration or storage key change.
 - User reported an iPhone black error page, “This page couldn’t load,” on one tap of the **top-right Home button**. The top-right partner chip invokes `toPartner` (chat when paired, invitation otherwise). Reproduction and root-cause identification are pending. Treat as a separate defect/PR; do not assert it is fixed.
 - Web journal implementation has **not** passed typecheck, build or browser/iPhone tests yet. Do not merge without these and regression coverage. The original feed-specific journal tests may need updating.
+
+## 2026-11-18 Safari and installed-app Chat crash
+
+- User confirmed tapping the top-right partner picture crashes **both** Safari and the installed Home Screen web app. Do not assume a service-worker-only issue.
+- Draft branch `fix/chat-navigation-crash-guard` adds a React error boundary around the parked ChatView to prevent render failures from taking down Home. This is **containment, not a verified root-cause fix**. It does not catch event-handler, async or full document navigation errors.
+- Root cause still unknown; reproduce on iOS Safari with real paired data, inspect console and network, and add a targeted regression test. Run typecheck/build and verify no chat messages are lost. Keep separate from web journal PR #29.
