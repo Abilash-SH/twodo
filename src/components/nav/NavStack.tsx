@@ -8,6 +8,7 @@ import { Nav, boardHome, navState, popView, viewTitle, type Entry } from '@/ui/n
 import { useStore } from '@/ui/store';
 import { toggleDone, togglePin, deleteTask } from '@/ui/tasks';
 import { ChatView } from '../chat/ChatView';
+import { ChatErrorBoundary } from '../chat/ChatErrorBoundary';
 import { BoardView } from '../home/BoardView';
 import { CharacterView } from '../home/CharacterView';
 import { openTaskSheet } from '../sheets/TaskSheet';
@@ -152,7 +153,7 @@ export function NavStack() {
         const kids = [<Fragment key={e.id}>{shadeFor(e)}{view}</Fragment>];
         // The chat stays mounted, parked off to the right, so opening it is only a slide: no first draw of the whole
         // conversation inside the tap. It is always the screen directly above Home (navTo guarantees that).
-        if (i === 0 && board) kids.push(<Fragment key="chat">{chatEntry ? shadeFor(chatEntry) : null}<ChatView entry={chatEntry} cls={chatCls} /></Fragment>);
+        if (i === 0 && board) kids.push(<Fragment key="chat">{chatEntry ? shadeFor(chatEntry) : null}<ChatErrorBoundary><ChatView entry={chatEntry} cls={chatCls} /></ChatErrorBoundary></Fragment>);
         return kids;
       })}
     </div>
