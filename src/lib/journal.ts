@@ -48,7 +48,7 @@ export function addPost(text: string): JournalEntry | null {
 /** Change your own post; emptied, it is deleted */
 export function editPost(id: string, text: string): JournalEntry | null {
   const e = D.journal[id];
-  if (!e || e.deleted || e.private || isHeart(e) || e.who !== L.me) return null;
+  if (!e || e.deleted || e.private || isHeart(e) || e.who !== L.me || e.date !== todayStr()) return null;
   const t = text.trim().slice(0, POST_MAX);
   if (!t) return deletePost(id);
   if (t === e.text) return e;
