@@ -1,7 +1,9 @@
-"""Home when signed in: your character tells you about your day in its role's voice (tap it for the next thing), then
-your partner's character (the way into your chat), and today's to-dos with the week one tap away; its two buttons (message your partner, add a to-do)
-never move; to-dos are added and ticked off in place and your partner's Home follows; picking a character's look, skin,
-hair and role (it reaches your partner too, and their character turns to you); nothing from a secret list ever appears or is said (unlocked or locked); "Waiting to
+"""Home when signed in (after the owner's reference): a big hello with what today holds in your character's voice (tap
+your character for the next thing), a fanned stack of cards (Today, your partner, the journal, this week) that match
+the To-dos screen, swiped or brought up by their dots, each opening one screen; the two of you as characters (your
+partner's opens the chat); a floating bar (Home, To-dos, Journal, Chat) with Add a to-do beside it; ticking a to-do
+off reaches your partner's Home; picking a character's look, skin, hair and role (it reaches your partner too, and
+their character turns to you); nothing from a secret list ever appears or is said (unlocked or locked); "Waiting to
 send" while offline; what it says before a partner is connected and with nothing to do; a tip's "Open chat"; signing
 out; the chat stays mounted so opening it draws nothing new; text contrast for every colour, light and dark.
 Run test 1 first (it creates Abilash in /tmp/twodo-A.json and Deiva in /tmp/twodo-B.json). Needs the test build on 8003."""
@@ -11,8 +13,10 @@ from helpers import OPEN_CHAT, TITLES, open_chat, back_home
 
 # what is on the board, read from the screen
 BOARD = """(() => { const t = s => { const e = document.querySelector('.board ' + s); return e ? e.textContent : null; };
-  const rows = [...document.querySelectorAll('.board .bn-task')].map(r => r.querySelector('.bn-title').textContent), more = t('.n-today button.n-go');
-  return { rows, more, today: rows.length + (more ? parseInt(more) : 0), say: t('.say'), role: t('.role'), tape: t('.tape'),
+  const card = id => document.querySelector(`.board .hc[data-card="${id}"]`), title = id => card(id) ? card(id).querySelector('.hc-title').textContent : null;
+  const top = document.querySelector('.board .hc.top'), n = s => { const m = /^(\\d+)/.exec(s || ''); return m ? +m[1] : 0; };
+  return { top: top && top.dataset.card, today: n(title('today')), todayTitle: title('today'), todaySub: card('today') && card('today').querySelector('.hc-sub').textContent,
+    partner: title('partner'), journal: title('journal'), week: title('week'), say: t('.say'), role: t('.role'), tape: t('.tape'),
     pt: t('.stage-char.pt .stage-name'), badge: t('.stage-char.pt .pt-badge') }; })()"""
 # what the To-dos screen counts (it must be open)
 HUB = """(() => { const v = document.querySelector('#stack > .view.pushed:not(.parked):not(.under)');
@@ -24,6 +28,8 @@ COMPOSER_UP = "!document.getElementById('composer').classList.contains('hide')"
 TRAY_SHOWN = "getComputedStyle(document.querySelector('.board-tray')).visibility === 'visible'"
 GREET = {'Cheerleader': ('Morning, ', 'Afternoon, ', 'Evening, ', 'Still up, '), 'Calm friend': ('Good morning.', 'Good afternoon.', 'Good evening.', 'It’s late.'),
          'Cheeky': ('Up already?', 'Oh, hi.', 'Evening, ', 'Can’t sleep?'), 'Poet': ('The morning opens.', 'The afternoon hums along.', 'Evening settles in.', 'The night is quiet.')}
+# what a Calm friend says about the day (Home's line, without the greeting)
+CALM = ('A gentle day', 'small thing', 'Rest counts too', 'no rush')
 # Lowest text contrast on the board over every colour a person can pick, light and dark. Each piece of text is measured
 # against what is actually painted behind it. (Initials in a profile picture are the app-wide avatar: design.md lists
 # that gap separately. Emoji carry their own colours.)
@@ -77,6 +83,10 @@ async def main():
             r = await pg.locator(sel).first.bounding_box()
             await pg.mouse.move(r['x'] + 90, r['y'] + r['height'] / 2); await pg.mouse.down(); await pg.wait_for_timeout(650); await pg.mouse.up(); await pg.wait_for_timeout(600)
             await pg.click(f'#menu [data-m="{pick}"]'); await pg.wait_for_timeout(900)
+        async def open_today(pg):
+            """bring the Today card to the top with its dot, then open it"""
+            await pg.click('.hc-dot[aria-label="Show Today"]'); await pg.wait_for_timeout(500)
+            await pg.click('.board .hc.top'); await pg.wait_for_timeout(1000)
         async def todos(pg):
             await pg.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await pg.wait_for_timeout(1000)
         async def said(pg):
@@ -92,37 +102,42 @@ async def main():
         ca, A = await phone('/tmp/twodo-A.json')
         q = A.evaluate
 
-        # ---------- Home: your character speaks first; the cards say what the To-dos screen counts
-        assert await q(TITLES) == ['Board'] and await q("document.querySelector('.board-title').textContent") == 'Home'
-        assert not await q(COMPOSER_UP) and await q(TRAY_SHOWN), "Home shows its own two buttons, not the task box"
-        assert await q("[...document.querySelectorAll('.board-tray .tray-btn')].map(b => b.textContent)") == ['Message Deiva', 'Add a to-do']
+        # ---------- Home: hello, then what today holds in your character's voice; the cards say what the To-dos screen counts
+        assert await q(TITLES) == ['Board'] and await q("document.querySelector('.home-hi').textContent") == 'Hello, Abilash!'
+        assert not await q(COMPOSER_UP) and await q(TRAY_SHOWN), "Home shows its own bar, not the task box"
+        bar = await q("[...document.querySelectorAll('.board-tray button')].map(b => b.getAttribute('aria-label'))")
+        assert bar[:2] == ['Home', 'To-dos and reminders'] and bar[2].startswith('Journal') and bar[3].startswith('Message Deiva') and bar[4] == 'Add a to-do', bar
         board = await q(BOARD)
-        assert board['role'] in GREET and board['say'].startswith(GREET[board['role']]), ('it greets you in its role\'s voice', board['say'], board['role'])
         due0 = await q(TASKS + ".filter(t => !t.deleted && !t.done && t.due === (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })()).length")
-        assert (f'{due0} ' in board['say']) if due0 else ('Nothing new today' in board['say'] or 'Nothing planned' in board['say'] or 'empty page' in board['say'] or 'quiet day' in board['say']), ('and how many things today', due0, board['say'])
+        assert (f'{due0} ' in board['say']) if due0 else ('Nothing new today' in board['say'] or 'Nothing planned' in board['say'] or 'empty page' in board['say'] or 'quiet day' in board['say']), ('it says how many things today', due0, board['say'])
+        assert board['role'] in GREET and not any(board['say'].startswith(g) for g in GREET.values()), ('Home says hello itself; the line is what today holds', board)
+        cards = await q("[...document.querySelectorAll('.board .hc')].map(c => [c.dataset.card, c.classList.contains('top'), c.inert, c.getAttribute('aria-hidden')])")
+        assert sorted(c[0] for c in cards) == ['journal', 'partner', 'today', 'week'] and board['top'] == 'today', cards
+        assert all((c[1] and not c[2] and c[3] is None) or (not c[1] and c[2] and c[3] == 'true') for c in cards), ('only the top card can be reached', cards)
         await todos(A)
         hub = await q(HUB)
-        assert board['today'] == hub['cards']['Today'] and len(board['rows']) == min(3, hub['cards']['Today']), (board, hub)
+        assert board['today'] == hub['cards']['Today'], (board, hub)
         assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.stage svg.cv').length") == 2, 'both of you are there, as your characters'
         assert await q("document.querySelector('.stage .stage-char.pt svg.cv').classList.contains('flip')"), "your partner's character turns to you"
         assert not await q("document.querySelector('.board .n-msg, .board .tiles')"), "no message card, no row of extra doors"
         await back_home(A)
-        print(f"PASS: your character greets you as a {board['role']} and says what's on today; the cards match the To-dos screen ({board['today']} today)")
+        print(f"PASS: Home says hello and what today holds as a {board['role']}; four cards, only the top one reachable; Today matches the To-dos screen ({board['today']})")
 
-        # ---------- every note is a door: one tap, one screen, and Back returns to the board
-        doors = [('.board .stage-char.pt', ['Chat']), ('.board .n-today .n-h.link', ['Today']), ('.board .n-today .n-week', ['Week']),
-                 ('.boardview .fab-btn[aria-label^="Journal"]', ['Journal']), ('.board .role-change', ['Your character'])]
-        if board['more']: doors.append(('.board .n-today button.n-go', ['Today']))
-        for sel, titles in doors:
+        # ---------- every card and button is a door: one tap, one screen, and Back returns to the board
+        async def door(sel, titles):
             await A.click(sel); await A.wait_for_timeout(1000)
             now = await q(TITLES)
             assert len(now) == 2 and now[0] == 'Board' and now[1] in titles and await q(TRAP), (sel, now)
             await q("history.back()"); await A.wait_for_timeout(900)
             assert await q(TITLES) == ['Board'] and not await q(TRAP), (sel, await q(TITLES))
-        await A.click('.board .bn-task .bn-title'); await A.wait_for_timeout(900)
-        assert await q("document.querySelector('.sheet.open .d-tt').value") == board['rows'][0], 'a to-do on the board opens its details'
-        await q("history.back()"); await A.wait_for_timeout(900)
-        assert not await A.locator('.sheet.open').count() and await q(TITLES) == ['Board']
+        doors = [('.board .hc.top', ['Today']), ('.board .stage-char.pt', ['Chat']), ('.home-pt', ['Chat']), ('.board .role-change', ['Your character']),
+                 ('.boardview .fab-btn[aria-label^="Journal"]', ['Journal']), (OPEN_CHAT, ['Chat'])]
+        for sel, titles in doors: await door(sel, titles)
+        for dot, card, titles in (('Show the journal', 'journal', ['Journal']), ('Show this week', 'week', ['Week']), ('Show Deiva', 'partner', ['Chat'])):
+            await A.click(f'.hc-dot[aria-label="{dot}"]'); await A.wait_for_timeout(600)
+            assert (await q(BOARD))['top'] == card and await q(f"document.querySelector('.hc-dot[aria-label=\"{dot}\"]').getAttribute('aria-pressed')") == 'true', dot
+            await door('.board .hc.top', titles)
+        await A.click('.hc-dot[aria-label="Show Today"]'); await A.wait_for_timeout(500)
         await todos(A)
         assert await q(TITLES) == ['Board', 'To-dos'] and await q(f"document.querySelector('{top} .nav-btn.back').innerText.trim()") == 'Home'
         await A.click(f'{top} .nav-btn.back'); await A.wait_for_timeout(900)
@@ -130,15 +145,42 @@ async def main():
         assert await q("document.querySelector('.sheet.open h3').textContent") == 'Settings'
         await q("history.back()"); await A.wait_for_timeout(900)
         assert await q(TITLES) == ['Board'] and not await q(TRAP) and 'localhost:8003' in A.url
-        print(f'PASS: {len(doors) + 3} doors on Home each open one screen (or sheet); Back returns Home')
+        print(f'PASS: {len(doors) + 5} doors on Home each open one screen (or sheet), cards brought up by their dots; Back returns Home')
+
+        # ---------- a sideways swipe sends the top card to the back; a short one, a scroll or a second finger does nothing
+        box = await A.locator('.board .hc.top').bounding_box()
+        cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        async def swipe(dx, dy=0, steps=8, hold=0):
+            await A.evaluate("""([x, y, dx, dy, steps, hold]) => new Promise(done => {
+              const el = document.elementFromPoint(x, y), mk = (cx, cy) => new Touch({ identifier: 7, target: el, clientX: cx, clientY: cy });
+              const fire = (type, cx, cy, list = true) => el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true,
+                touches: list ? [mk(cx, cy)] : [], targetTouches: list ? [mk(cx, cy)] : [], changedTouches: [mk(cx, cy)] }));
+              fire('touchstart', x, y); let i = 0;
+              const step = () => { i++; fire('touchmove', x + dx * i / steps, y + dy * i / steps);
+                if (i < steps) setTimeout(step, 16); else setTimeout(() => { fire('touchend', x + dx, y + dy, false); setTimeout(done, 700); }, hold); };
+              setTimeout(step, 16); })""", [cx, cy, dx, dy, steps, hold])
+        first = (await q(BOARD))['top']
+        await swipe(-30, hold=300)
+        assert (await q(BOARD))['top'] == first, 'a short drag that is held springs back'
+        await swipe(8, 160)
+        assert (await q(BOARD))['top'] == first and await q(TITLES) == ['Board'], 'a scroll leaves the cards alone and opens nothing'
+        await swipe(-220)
+        after_swipe = await q(BOARD)
+        assert after_swipe['top'] != first and await q(TITLES) == ['Board'], ('a swipe brings the next card up and opens nothing', first, after_swipe['top'])
+        order = await q("[...document.querySelectorAll('.board .hc')].sort((a, b) => b.style.zIndex - a.style.zIndex).map(c => c.dataset.card)")
+        assert order[-1] == first, ('the swiped card waits at the back', order)
+        await swipe(240)
+        assert (await q(BOARD))['top'] != after_swipe['top'], 'a swipe to the right works too'
+        await A.click('.hc-dot[aria-label="Show Today"]'); await A.wait_for_timeout(500)
+        print('PASS: a sideways swipe sends the top card to the back (either way); a held short drag or a scroll does nothing')
 
         # ---------- the chat stays mounted while it is closed: opening it builds nothing new, and the board's notes stay as they are
-        await q("window.__chat = document.querySelector('#stack > .chatview'); window.__row = window.__chat.querySelector('.msg-row[data-id]'); window.__note = document.querySelector('.board .n-today')")
+        await q("window.__chat = document.querySelector('#stack > .chatview'); window.__row = window.__chat.querySelector('.msg-row[data-id]'); window.__note = document.querySelector('.board .hc-stack')")
         assert await q("!!window.__row && window.__chat.inert && getComputedStyle(window.__chat).visibility === 'hidden'"), 'closed: the conversation is drawn, hidden and unreachable'
         await open_chat(A)
         assert await q("document.querySelector('#stack > .chatview') === window.__chat && window.__row.isConnected && !window.__chat.inert && getComputedStyle(window.__chat).visibility === 'visible'")
         await back_home(A)
-        assert await q("document.querySelector('#stack > .chatview') === window.__chat && window.__row.isConnected && document.querySelector('.board .n-today') === window.__note")
+        assert await q("document.querySelector('#stack > .chatview') === window.__chat && window.__row.isConnected && document.querySelector('.board .hc-stack') === window.__note")
         print('PASS: opening and closing the chat reuses the same screen and the same messages; the board is not rebuilt')
 
         # ---------- "Add a to-do": the task box comes up over the board, the to-do is for today, the buttons come back
@@ -155,51 +197,47 @@ async def main():
         await A.fill('#cta', ''); await q("document.activeElement.blur()"); await A.wait_for_timeout(500)
         assert not await q(COMPOSER_UP) and await q(TRAY_SHOWN), "left empty, the box goes and the board's buttons return"
         after = await q(BOARD)
-        assert after['today'] == board['today'] + 1, ('the new to-do counts on the Today note', board['today'], after['today'])
-        await A.click('#boardAdd'); await A.wait_for_timeout(300)   # leaving the board while the box is up: it belongs to the next screen
-        await todos(A)
-        assert await q(TITLES) == ['Board', 'To-dos'] and await q(COMPOSER_UP)
+        assert after['today'] == board['today'] + 1, ('the new to-do counts on the Today card', board['today'], after['today'])
+        await A.click('#boardAdd'); await A.wait_for_timeout(300)   # leaving the board while the box is up (the bar steps aside): it belongs to the next screen
+        await A.click('.board .hc.top'); await A.wait_for_timeout(1000)
+        assert await q(TITLES) == ['Board', 'Today'] and await q(COMPOSER_UP)
         await q("document.activeElement.blur(); history.back()"); await A.wait_for_timeout(900)
         assert await q(TITLES) == ['Board'] and not await q(COMPOSER_UP) and await q(TRAY_SHOWN)
         print('PASS: Add a to-do from the board: focused in the tap, due today, the box leaves when empty')
 
-        # ---------- pin a to-do: it leads Today, and your character tells you about it
-        await A.click('.board .n-today .n-h.link'); await A.wait_for_timeout(1000)
+        # ---------- pin a to-do: your character tells you about it
+        await open_today(A)
         await press(A, f'{top} .task:has-text("{item}") .ti', 'pin')
         await back_home(A)
-        pinned = await q(BOARD)
-        assert item in pinned['rows'], ('a pinned to-do is on Today', pinned)
-        if not hub['cards']['Pinned']: assert pinned['rows'][0] == item, pinned
         lines = await said(A)
         assert any(item in l for l in lines) or hub['cards']['Pinned'], ('your character mentions what you pinned', lines)
         assert (await q(BOARD))['say'] == lines[0], 'after going round, it is back at the first thing'
-        print(f'PASS: a pinned to-do leads Today and your character mentions it (taps went through {len(lines)} things it had to say)')
+        await open_today(A)   # tidy up: unpin it again
+        await press(A, f'{top} .task:has-text("{item}") .ti', 'pin')
+        await back_home(A)
+        print(f'PASS: your character mentions a pinned to-do (taps went through {len(lines)} things it had to say)')
 
-        # ---------- tick in place: a second tap cancels; a tick completes, the others move up, your partner's board says who did it
+        # ---------- tick it off on Today: Undo puts it back; done, Home counts one less and your partner's character says who did it
         cb, B = await phone('/tmp/twodo-B.json')
-        tid = made['id']; row = f'.board .bn-task[data-id="{tid}"]'
-        done = TASKS + f".find(t => t.id === {tid!r}).done"
-        await A.click(f'{row} .bn-chk'); await A.wait_for_timeout(150)
-        assert await q(f"document.querySelector('{row}').classList.contains('checked')"), 'the circle fills at once'
-        await A.click(f'{row} .bn-chk'); await A.wait_for_timeout(1300)
-        assert not await q(done) and not await q(f"document.querySelector('{row}').classList.contains('checked')"), 'a second tap straight away cancels it'
-        await A.click(f'{row} .bn-chk')
+        tid = made['id']; done = TASKS + f".find(t => t.id === {tid!r}).done"
+        await open_today(A)
+        row = f'{top} .task:has-text("{item}")'
+        await A.click(f'{row} .chk')
+        assert await until(A, done, True) is True
+        assert 'Completed' in await q("document.getElementById('isl').innerText"), 'the usual "Completed" with Undo appears'
+        await A.click('#isl .ib'); await A.wait_for_timeout(900)   # Undo
+        assert not await q(done), 'Undo puts it back'
+        await A.click(f'{row} .chk')
         assert await until(A, done, True) is True
         await A.wait_for_timeout(600)
+        await back_home(A)
         ticked = await q(BOARD)
-        assert item not in ticked['rows'] and ticked['today'] == after['today'] - 1, ticked
-        assert 'Completed' in await q("document.getElementById('isl').innerText"), 'the usual "Completed" with Undo appears'
+        assert ticked['today'] == after['today'] - 1, ticked
         await B.wait_for_timeout(2500)
         heard = await said(B)
         assert any(f'ticked off {item}' in l and 'Abilash' in l for l in heard), ("Deiva's character tells her who ticked it off", heard)
-        await A.click('#isl .ib'); await A.wait_for_timeout(900)   # Undo
-        undone = await q(BOARD)
-        assert not await q(done) and item in undone['rows'], ('Undo puts it back', undone)
-        await A.click('.board .n-today .n-h.link'); await A.wait_for_timeout(1000)   # tidy up: unpin it again
-        await press(A, f'{top} .task:has-text("{item}") .ti', 'pin')
-        await back_home(A)
         await cb.close()
-        print("PASS: tick on Home: cancel with a second tap, complete, Undo; your partner's character tells them who ticked it off")
+        print("PASS: ticked off on Today (Undo works): Home counts one less; your partner's character tells them who ticked it off")
 
         # ---------- nothing from a secret list is ever on the board: not its to-dos, not its name, not a count
         before = await q(BOARD)
@@ -217,7 +255,7 @@ async def main():
         await press(A, f'{top} .task:has-text("Anniversary surprise") .ti', 'pin')
         assert await A.locator(f'{top} .task:has-text("Anniversary surprise")').count() == 1, 'the secret to-do exists: due today, for both, pinned'
         def same_board(now):
-            return all(now[k] == before[k] for k in ('rows', 'more', 'today'))
+            return all(now[k] == before[k] for k in ('today', 'todayTitle', 'todaySub', 'partner', 'journal', 'week'))
         hidden = "(() => { const t = document.querySelector('.boardview').textContent; return !t.includes('Anniversary') && !t.includes('Secret'); })()"
         async def says_nothing_secret():
             return not any('Anniversary' in l or 'Secret' in l for l in await said(A))
@@ -270,7 +308,7 @@ async def main():
         assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && document.querySelectorAll('.chv-dot').length === 11"), 'skin and hair are labelled radio buttons'
         await back_home(A)
         home = await q(BOARD)
-        assert await q(f"!!document.querySelector('.stage .stage-char.me svg.cv-{look}')") and home['role'] == 'Calm friend' and home['say'].startswith(GREET['Calm friend']), home
+        assert await q(f"!!document.querySelector('.stage .stage-char.me svg.cv-{look}')") and home['role'] == 'Calm friend' and any(w in home['say'] for w in CALM), home
         mine = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
         want = f"{look}/{skin.lower()}/{hair.lower()}/calm"
         assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people, m = p && p.{mine}; return m && m.avatar && [m.avatar.look, m.avatar.skin, m.avatar.hair, m.role].join('/'); }})()", want, 12000) == want, 'it reaches your partner'
@@ -292,16 +330,16 @@ async def main():
             await B.click('#boardAdd'); await B.wait_for_timeout(300)
             await B.keyboard.type(title); await B.keyboard.press('Enter'); await B.wait_for_timeout(700)
             await B.evaluate("document.activeElement.blur()"); await B.wait_for_timeout(500)
-        await B.click('.board .n-today .n-h.link'); await B.wait_for_timeout(1000)
+        await B.click('.hc-dot[aria-label="Show Today"]'); await B.wait_for_timeout(500); await B.click('.board .hc.top'); await B.wait_for_timeout(1000)
         await press(B, f'{top} .task:has-text("Pinned for contrast {stamp}") .ti', 'pin')
         await press(B, f'{top} .task:has-text("Done for contrast {stamp}") .ti', 'done'); await B.wait_for_timeout(1400)
         await back_home(B)
-        missing = await B.evaluate("['.say', '.role', '.role-change', '.stage-name', '.pt-badge', '.n-today .bn-title', '.n-today .n-date', '.n-today .n-week', '.n-today button.n-go', '.tray-n'].filter(s => !document.querySelector('.boardview ' + s))")
+        missing = await B.evaluate("['.home-hi', '.home-me-txt b', '.say', '.say-n', '.role', '.role-change', '.stage-name', '.pt-badge', '.home-n', '.hc.top .hc-title', '.hc.top .hc-sub', '.hc-badge', '.tray-n'].filter(s => !document.querySelector('.boardview ' + s))")
         assert not missing, ('the board under test should show every kind of note', missing)
         worst = await B.evaluate(CONTRAST)
         assert worst['ratio'] >= 4.5, ('board text contrast', worst)
         print(f"PASS: Home text keeps at least {min(worst['ratio'], offline_worst['ratio'])}:1 ({worst['measured']} pieces of text x 12 colours x light and dark, online and offline)")
-        await B.click('.board .n-today .n-h.link'); await B.wait_for_timeout(1000)     # tidy up: unpin it again
+        await B.click('.hc-dot[aria-label="Show Today"]'); await B.wait_for_timeout(500); await B.click('.board .hc.top'); await B.wait_for_timeout(1000)     # tidy up: unpin it again
         await press(B, f'{top} .task:has-text("Pinned for contrast {stamp}") .ti', 'pin')
         await back_home(B)
         await cb.close(); await ca.close()
@@ -314,9 +352,9 @@ async def main():
         await C.fill('#gUser', f'kavin{stamp}'); await C.click('[data-p="username"] [data-submit]'); await C.wait_for_timeout(2000)
         await C.click('text=Get started'); await C.wait_for_timeout(1500)
         first = await C.evaluate(BOARD)
-        assert first['pt'] == 'Add partner' and first['rows'], first
-        assert await C.evaluate("document.querySelector('.board-tray .tray-btn.chat').textContent") == 'Add partner'
-        for sel in ('.board .stage-char.pt', OPEN_CHAT):
+        assert first['pt'] == 'Add partner' and first['today'] > 0 and first['partner'] == 'Add your partner', first
+        assert await C.evaluate("[document.querySelector('.board-tray .tray-btn.chat').getAttribute('aria-label'), document.querySelector('.home-pt').textContent, document.querySelector('.home-me-txt span').textContent]") == ['Add your partner', 'Add partner', 'Just you, for now']
+        for sel in ('.board .stage-char.pt', OPEN_CHAT, '.home-pt'):
             await C.click(sel); await C.wait_for_timeout(900)
             assert await C.evaluate("document.querySelector('.sheet.open h3').textContent") == 'Add partner', sel
             await C.evaluate("history.back()"); await C.wait_for_timeout(900)
@@ -329,16 +367,16 @@ async def main():
         await back_home(C)
         empty = await C.evaluate(BOARD)
         heard = await said(C)
-        assert empty['rows'] == [] and await C.evaluate("document.querySelector('.n-today > .n-sub').textContent") == 'Nothing planned today.', empty
+        assert empty['today'] == 0 and empty['todayTitle'] == 'Nothing today', empty
         assert 'Nothing planned today' in heard[0] and any('partner' in l for l in heard), ('with nothing to do it says so, and suggests adding your partner', heard)
-        assert await C.evaluate("[...document.querySelectorAll('.board-tray .tray-btn')].map(b => b.textContent)") == ['Add partner', 'Add a to-do']
+        assert await C.evaluate("[...document.querySelectorAll('.board-tray .tray-btn')].map(b => b.getAttribute('aria-label'))") == ['Add your partner', 'Add a to-do']
         worst = await C.evaluate(CONTRAST)
         assert worst['ratio'] >= 4.5, ('empty board text contrast', worst)
         await C.click('#boardAdd'); await C.wait_for_timeout(300)
         await C.keyboard.type('First thing'); await C.keyboard.press('Enter'); await C.wait_for_timeout(700)
         await C.evaluate("document.activeElement.blur()"); await C.wait_for_timeout(500)
         filled = await C.evaluate(BOARD)
-        assert filled['rows'] == ['First thing'] and '1 ' in filled['say'], ('one to-do: it is on Today and your character says so', filled)
+        assert filled['today'] == 1 and filled['todayTitle'] == '1 to-do left' and '1 ' in filled['say'], ('one to-do: it is on Today and your character says so', filled)
         print(f"PASS: before pairing Home leads to Add partner; with nothing to do your character says so (text at least {worst['ratio']}:1); the first to-do fills Today")
 
         # ---------- a tip's "Open chat" from above the board: the tip slides away and the chat is there; then signing out

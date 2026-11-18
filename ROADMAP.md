@@ -213,6 +213,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-18 | The app's Home is a fanned stack of cards (Today, your partner, the journal, the week) under a big hello, with a floating pill tab bar | Asked for from the reference's home screen; one card at a time keeps it uncluttered, and a card shows counts, never a message's text |
 | 2026-11-18 | The journal is one page each per day: only today's can be written, earlier days are read from a week strip or a calendar | Asked for instead of threads; one record per person per day keeps "only its writer edits it" (`docs/architecture.md`, section 7) |
 | 2026-11-18 | The web app gets the iPhone app's two characters too, stored as `avatar` (look, skin, hair) on each person; `char` is still read, no longer drawn | Asked to have the new Home and journal in the web app as well; both are built around these characters. One optional field, kept by older versions |
+| 2026-11-18 | The web app's Home becomes the iPhone app's: a hello, a fanned stack of cards, the two of you, and a floating bar with Add a to-do beside it; ticking moves to Today | Asked for the reference's Home in the web app too; one card at a time keeps it calm, and Today is one tap away |
 
 ## How to pick up work
 

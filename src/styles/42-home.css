@@ -1,0 +1,91 @@
+/* Twodo · Home (after the owner's reference, like the iPhone app; design.md, "Home"): your picture and your partner's
+   chip, a big hello, a fanned stack of cards washed in two colours, the two of you, and a floating dark bar.
+   Text on a card is dark ink (--on-color): 4.5:1 or more on both ends of every wash. Only transform and opacity move. */
+.home-v2 { gap: 0; isolation: isolate; } /* the cards' and the bar's layers stay inside Home: a screen pushed over it (even with Reduce Motion, when nothing moves) is always on top */
+
+/* ---------- top: you (Settings) and your partner (the chat) ---------- */
+.home-v2 .home-top { position: relative; flex: none; display: flex; align-items: center; gap: 10px; min-height: 56px; }
+.boardview .home-me.fab-btn { width: 50px; height: 50px; flex: none; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.home-me .cv-portrait { box-shadow: 0 0 0 2px var(--bg2), 0 6px 16px -8px rgba(27,23,48,.5); }
+.home-me .fab-dot { top: 1px; right: 1px; }
+.home-me-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.home-me-txt b { font: 700 17px/22px var(--round); color: var(--label); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-me-txt span { font-size: 13px; line-height: 18px; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-pt { flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px 0 6px; border: 0; border-radius: 999px;
+  background: var(--bg2); color: var(--label); box-shadow: var(--card-sh); font: inherit; font-size: 15px; line-height: 20px; font-weight: 700;
+  transition: transform var(--dur-quick) var(--ease-out); -webkit-tap-highlight-color: transparent; }
+.home-pt:active { transform: scale(.96); }
+.home-pt-name { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-n { min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 11px; background: var(--c); color: var(--on-color);
+  font-size: 12px; line-height: 22px; font-weight: 800; text-align: center; }
+
+/* ---------- hello, and what today holds in your character's voice ---------- */
+.home-v2 .board.home { gap: 6px; }
+.home-hello { padding: 18px 4px 0; }
+.home-hi { margin: 0; font: 800 34px/41px var(--round); letter-spacing: -.4px; color: var(--label); overflow-wrap: anywhere; }
+.home-line { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
+.home-v2 .home-line .say { flex: 1 1 auto; margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--soft); font-size: 16px; line-height: 21px; }
+.home-v2 .home-line .say-n { flex: none; margin-left: auto; }
+
+/* ---------- the fan of cards ---------- */
+.hc-wrap { --hc-w: min(318px, 74vw); --hc-h: calc(var(--hc-w) * 1.16); }
+.hc-stack { position: relative; height: calc(var(--hc-h) + 26px); }
+.hc { position: absolute; top: 10px; left: 50%; width: var(--hc-w); height: var(--hc-h); margin: 0 0 0 calc(var(--hc-w) / -2); padding: 0; border: 0;
+  border-radius: 28px; overflow: hidden; color: var(--on-color); font: inherit; text-align: left; transform-origin: 50% 100%; touch-action: pan-y;
+  box-shadow: 0 18px 40px -16px rgba(40,20,60,.34); -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-page) var(--ease-spring), opacity var(--dur-standard) var(--ease-out); }
+.hc:not(.top) { pointer-events: none; }
+.hc.dragging, .hc.jump { transition: none; }
+.hc.flying { transition: transform 240ms var(--ease-out); }
+.hc:focus-visible { outline: 3px solid var(--label); outline-offset: 3px; }
+/* each wash starts light and ends on a full colour; the full colour is also the background colour, for contrast checks */
+.hc-today { background-color: var(--c-orange); background-image: linear-gradient(135deg, color-mix(in srgb, var(--c-yellow) 55%, #FFFFFF), var(--c-orange)); }
+.hc-partner { background-color: var(--c-purple); background-image: linear-gradient(135deg, color-mix(in srgb, var(--pt-c) 55%, #FFFFFF), var(--c-purple)); }
+.hc-journal { background-color: var(--c-indigo); background-image: linear-gradient(135deg, color-mix(in srgb, var(--c-purple) 55%, #FFFFFF), var(--c-indigo)); }
+.hc-week { background-color: var(--c-teal); background-image: linear-gradient(135deg, color-mix(in srgb, var(--c-mint) 55%, #FFFFFF), var(--c-teal)); }
+.hc-art { position: absolute; left: 0; right: 0; top: 30px; bottom: 98px; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
+.hc-who { display: block; }
+.hc-art .cv { width: auto; height: calc(var(--hc-h) - 140px); }
+.hc-pair { display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.hc-pair .cv { height: calc((var(--hc-h) - 140px) * .78); }
+.hc-pair .hc-who + .hc-who .cv { height: calc((var(--hc-h) - 140px) * .72); }
+.hc-badge { position: absolute; top: 16px; left: 16px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 5px 12px; border-radius: 999px;
+  background: #1B1730; color: #FFFFFF; font: 800 12px/16px var(--round); letter-spacing: 1px; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hc-words { position: absolute; left: 20px; right: 20px; bottom: 18px; display: flex; flex-direction: column; gap: 2px; }
+.hc-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere;
+  font: 900 28px/30px var(--round); letter-spacing: -.3px; text-transform: uppercase; }
+.hc-sub { font-size: 15px; line-height: 20px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hc .hc-badge, .hc .hc-words { transition: opacity var(--dur-quick) var(--ease-out); }
+.hc:not(.top) .hc-badge, .hc:not(.top) .hc-words { opacity: 0; } /* waiting cards show clean edges, not half-hidden letters */
+.hc-dots { display: flex; justify-content: center; }
+.hc-dot { width: 30px; height: 44px; padding: 0; border: 0; background: none; display: grid; place-items: center; -webkit-tap-highlight-color: transparent; }
+.hc-dot::before { content: ''; width: 8px; height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--label) 20%, transparent);
+  transition: transform var(--dur-quick) var(--ease-out), opacity var(--dur-quick) var(--ease-out); }
+.hc-dot.on::before { background: var(--dot); transform: scaleX(2.6); }
+.dot-today { --dot: var(--c-orange); } .dot-partner { --dot: var(--pt-c); } .dot-journal { --dot: var(--c-indigo); } .dot-week { --dot: var(--c-teal); }
+
+/* ---------- the two of you ---------- */
+.home-two { margin-top: 6px; }
+.home-two-top { display: flex; align-items: center; gap: 6px; padding: 0 2px; }
+.home-h { margin: 0 auto 0 0; font: 700 20px/25px var(--round); color: var(--label); }
+.home-two .role-change { margin: -10px -6px -10px 0; }
+
+/* ---------- the floating bar: Home, To-dos, Journal, Chat, and Add a to-do beside it ---------- */
+.home-v2 .home-dock { position: sticky; bottom: 0; z-index: 2; flex: none; display: flex; justify-content: center; align-items: center; gap: 10px;
+  margin: 0 -16px; padding: 10px 16px calc(14px + var(--safe-bottom)); background: none; pointer-events: none; }
+.dock-pill { display: flex; gap: 4px; padding: 6px; border-radius: 999px; background: #1B1730; box-shadow: 0 18px 40px -14px rgba(27,23,48,.55); pointer-events: auto; }
+[data-theme="dark"] .dock-pill { background: #2B2934; }
+.home-v2 .dock-tab, .boardview .dock-tab.fab-btn, .home-v2 .dock-tab.tray-btn { position: relative; flex: none; width: 54px; height: 50px; min-width: 0; margin: 0; padding: 0;
+  border: 0; border-radius: 25px; display: grid; place-items: center; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  color: color-mix(in srgb, #FFFFFF 62%, #1B1730); }
+[data-theme="dark"] .home-v2 .dock-tab, [data-theme="dark"] .boardview .dock-tab.fab-btn { color: color-mix(in srgb, #FFFFFF 62%, #2B2934); }
+.home-v2 .dock-tab.on { background: #FFFFFF; color: #1B1730; }
+.home-v2 .dock-tab .i { width: 23px; height: 23px; stroke-width: 2; }
+.home-v2 .dock-tab .fab-dot { top: 9px; right: 13px; box-shadow: 0 0 0 2px #1B1730; }
+.home-v2 .dock-tab .tray-n { top: 3px; right: 3px; background: var(--pt-c); color: var(--on-color); box-shadow: 0 0 0 2px #1B1730; }
+.home-v2 .dock-add, .home-v2 .dock-add.tray-btn { flex: none; width: 62px; height: 62px; padding: 0; border-radius: 50%; display: grid; place-items: center;
+  background: var(--me-c); color: var(--on-color); box-shadow: 0 16px 32px -14px rgba(27,23,48,.6); pointer-events: auto; }
+.home-v2 .dock-add .i { width: 26px; height: 26px; stroke-width: 2.4; }
+@media (max-width: 359px) { .home-v2 .dock-tab, .boardview .dock-tab.fab-btn, .home-v2 .dock-tab.tray-btn { width: 48px; } .home-v2 .dock-add { width: 56px; height: 56px; } }
+@media (prefers-reduced-motion: reduce) { .hc, .hc.flying { transition: opacity var(--dur-quick) linear; } }

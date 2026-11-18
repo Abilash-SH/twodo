@@ -81,6 +81,8 @@ function plan(r: RoleKind, f: Facts): string {
     poet: `${plural(n, 'small task')} wait like stones on a path.`,
   })[r];
 }
+/** What today holds, in the role's voice, without the greeting (Home says hello itself) */
+export const dayLine = (f: Facts, r: RoleKind): string => plan(r, f);
 /** The first line is the greeting and the day; tapping the character goes through the rest */
 export function lines(f: Facts, r: RoleKind): string[] {
   const out = [`${greeting(r, f.hour, f.me)} ${plan(r, f)}`];

@@ -104,13 +104,17 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 - **Menus.** Open from the thing that was pressed, above the sheet layer. At most seven items; destructive last.
 - **The island.** One short line, an optional second line, at most one button. It never takes focus, never covers a
   focused field, and leaves by itself.
-- **Home.** Three things, nothing scattered: what your character says (a bubble, its role in a filled chip,
-  *Change*); the two of you as your characters side by side on a soft glow of both colours (yours speaks, your
-  partner's opens your chat and carries a count of what's new, never a message's text); and Today (rings in the colour
-  of whose it is, times on the right, the date under the title, *This week* one tap away). At the top: Settings on the
-  left, Journal (a dot when your partner posted today) and To-dos on the right. Two filled buttons sit at the bottom
-  and never move: *Message* in your partner's colour, *Add a to-do* in yours, labels in `--on-color`. Nothing from a
-  secret list, ever. `docs/characters.md`.
+- **Home.** After the owner's reference (2026-11-18), the same as the iPhone app: your picture (Settings, with a dot
+  for an update or a sync problem) and name with "with Deiva", your partner's chip on the right (their portrait, a
+  count of what's new, never a message's text; it opens your chat). A big rounded "Hello, name!" and, under it, what
+  today holds in your character's voice (tap your character for the next thing). Then a fanned stack of four cards:
+  Today (how many to-dos, the next one with a time), your partner (new messages, never their text), the journal
+  (write today's page) and this week (how many done). Each card is a wash of two colours with a dark badge in small
+  capitals, the characters in the middle and big rounded capitals in `--on-color`; cards waiting in the fan show only
+  their edges. Swipe the top card away or tap a dot to bring another up; tap it to open. Below, the two of you on a
+  soft glow of both colours, your role and *Change*. A floating dark bar at the bottom: Home, To-dos, Journal (a dot
+  when your partner wrote today) and Chat (a count), with *Add a to-do* beside it in your colour; it steps aside while
+  the task box is up. Ticking to-dos happens on Today. Nothing from a secret list, ever. `docs/characters.md`.
 - **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
   how full the day is in both of your colours, and a dot marks a busy day (six open to-dos or more). Goals are a short
   list of three at most, ticked in the colour of whoever ticked them. The look back (from Friday) shows what you did,
