@@ -119,7 +119,7 @@ healthy('signed in'); shot('home')
 print('PASS: signed in on a new phone in WebKit (iPhone, touch, dark mode, no vibration)')
 
 # ---------- every door on Home, with a finger
-for sel, want in [('.home-pt', 'Chat'), ('.stage-char.pt', 'Chat'), ('.board-tray .tray-btn.chat', 'Chat'),
+for sel, want in [('.home-pt', 'Chat'), ('.board-tray .tray-btn.chat', 'Chat'),
                   ('.boardview .fab-btn[aria-label^="Journal"]', 'Journal'), ('.boardview .fab-btn[aria-label="To-dos and reminders"]', 'To-dos')]:
     tap(sel)
     titles = q(TITLES)
@@ -130,7 +130,7 @@ for sel, want in [('.home-pt', 'Chat'), ('.stage-char.pt', 'Chat'), ('.board-tra
     back()
     assert q(TITLES) == ['Board'], (sel, q(TITLES))
     healthy(sel + ', then back')
-print('PASS: the partner chip, the partner, the bar\'s chat, Journal and To-dos open and close with nothing failing')
+print('PASS: the partner chip, the bar\'s chat, Journal and To-dos open and close with nothing failing')
 
 tap('.home-me')   # Settings
 assert q("(document.querySelector('.sheet.open') || {}).getAttribute?.('aria-label')") == 'Settings', 'Settings opened'

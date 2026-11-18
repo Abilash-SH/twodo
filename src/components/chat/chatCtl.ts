@@ -294,6 +294,18 @@ export const ChatCtl = {
     if (sb && !reducedMotion.matches) sb.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 -22px', opacity: 0, offset: .5 }, { translate: '0 14px', opacity: 0, offset: .51 }, { translate: '0 0', opacity: 1 }], { duration: 460, easing: 'cubic-bezier(.3,.8,.3,1)' });
   },
 
+  /** A reaction from Home (one emoji): sent like a message, without touching what is typed in the chat's box */
+  sendReaction(emoji: string): boolean {
+    if (!Chat.ready()) { island({ e: '⚠️', text: 'Not connected yet', sub: 'Check you’re online and paired' }); return false; }
+    const m = Chat.send({ t: emoji, fx: null, task: null, rp: null });
+    Chat.played[m.id] = 1;
+    this.divider = null;
+    this.draw({});
+    setTimeout(() => { if (m.status === 'sending') renderNow(); }, 950);
+    chatSound('send');
+    return true;
+  },
+
   /* ---------- reply ---------- */
   previewOf(m: Msg): string { return String(m.del ? 'Unsent message' : m.task ? '📋 ' + m.task.title : m.t || '').replace(/\s+/g, ' ').trim().slice(0, 120); },
   setReply(m: Msg | undefined, withHaptic = true) {
