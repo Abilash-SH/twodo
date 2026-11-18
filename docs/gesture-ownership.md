@@ -25,8 +25,8 @@ All touch gestures share the same rules (`src/hooks/swipe.ts`):
 | Task actions | Leftward drag on a task row | `useStackGestures.ts` (`row`) | Past 50 px (or 20 px at 0.4 px/ms) the Pin / Delete buttons stay open; past 62% of the row it deletes | Reveals actions, or deletes with Undo | Fire during a page transition |
 | Task menu | Hold a task row 480 ms without moving 8 px | `useStackGestures.ts` → `views/taskMenus` | Timer | Opens the task menu (in the planner it starts with the seven days of the week, to plan the to-do with one tap) | Fire after the finger moved |
 | Checkbox | Tap on the round checkbox | Row click handler | Tap | Toggles done | Start a page-back swipe (the checkbox is excluded) |
-| Board to-do | Tap the ring of a to-do on the board's Today note (a 44 px target); tap again within 0.7 s to cancel | `components/home/BoardView.tsx` → `ui/tasks.ts` `toggleDone` | Tap | Ticks it off in place, with Undo | Open the to-do (only its title does) |
-| Board notes and buttons | Tap a note, *Message*, *Add a to-do*, Settings or To-dos | `BoardView.tsx` | Tap | Opens one screen or sheet; *Add a to-do* raises the task box with the keyboard in the same tap | Scroll-drags on the board never open a note (taps only) |
+| Home's cards | A sideways touch drag on the top card of the fan (horizontal travel at least 85% of vertical, decided after 6 px) | `components/home/HomeCards.tsx` | `flung` (30% of the card, or 24 px at a flick), either way | Sends the top card to the back; the next one comes up | Open a card after a swipe; start on a card waiting in the fan; stop a vertical scroll (that stays the page's) |
+| Home's buttons | Tap the top card, a card's dot, your picture (Settings), your partner's chip or character (the chat), *Change*, the bar's To-dos, Journal or Chat, or *Add a to-do* | `components/home/BoardView.tsx` | Tap | Opens one screen or sheet; a dot brings its card to the top; *Add a to-do* raises the task box with the keyboard in the same tap | Scroll-drags on Home never open anything (taps only) |
 | Message reply | Rightward drag on a message bubble that starts at least 32 px from the left edge (`atBackEdge`) | `components/chat/ChatView.tsx` (`useBubbleGestures`) | Past 48 px, or 24 px at 0.3 px/ms | Sets the reply, keeps the keyboard | Buzz more than once per swipe; start in the back strip; navigate |
 | Message menu / heart | Hold a bubble; double-tap a bubble | `ChatView.tsx` | Timer / second tap within 320 ms | Menu / ❤️ | Fire after a reply swipe (suppressed for 700 ms) |
 | Photo viewer | Rightward or downward drag on the photo | `hooks/swipe.ts` `useSwipeAway`, used by `overlays/PhotoViewer.tsx` | `flung` | Closes the photo | Reach the screen underneath |
@@ -54,6 +54,6 @@ All touch gestures share the same rules (`src/hooks/swipe.ts`):
 `tests/e2e/test_9_navigation_fullscreen.py` covers completed, cancelled and rapid swipes, rapid Back presses, Back
 after a swipe or the ‹ button, the system gesture racing ours in both orders, arriving Home by edge swipe with and
 without the system gesture, Back with a menu or sheet open, the chat's edge versus a reply swipe on the same message,
-To-dos over the chat, and asking for the chat from a deeper screen. `tests/e2e/test_13_board_home.py` covers the
-board's notes, buttons and ticking in place. `tests/e2e/test_7_native_regressions.py` covers the
+To-dos over the chat, and asking for the chat from a deeper screen. `tests/e2e/test_13_board_home.py` covers Home's
+cards (the swipe, the dots, each card's screen) and buttons. `tests/e2e/test_7_native_regressions.py` covers the
 overlay swipes and the reply swipe.

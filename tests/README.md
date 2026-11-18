@@ -27,12 +27,14 @@ Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome
 Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
 Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
 Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
-Test 13 covers Home: the character's greeting in its role's voice and what it says is on today, the cards against
-the To-dos screen, both characters and no message card, every door (your partner's character to the chat, Today, This week, Journal, Change), adding and ticking in place
-(and the partner's character telling them who ticked it off), picking a character and role (it reaches the partner
-and stands next to theirs; Settings leads there too), that nothing from a secret list is shown or said (unlocked,
-ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, and text contrast for
-every colour in light and dark.
+Test 13 covers Home: the hello and what today holds in your character's role, the four cards (only the top one
+reachable) against the To-dos screen, both characters (your partner's turned to you), every door (each card brought up
+by its dot, your partner's chip and character, Change, the bar's To-dos, Journal and Chat, Settings), the card swipe
+(either way; a held short drag, a scroll or opening nothing), adding a to-do from the bar, ticking off on Today with
+Undo (and the partner's character telling them who did it), picking a character's look, skin, hair and role (it
+reaches the partner and stands next to theirs; Settings leads there too), that nothing from a secret list is shown or
+said (unlocked, ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, and text
+contrast for every colour in light and dark.
 
 Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
 on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-dos left open from before, looking
