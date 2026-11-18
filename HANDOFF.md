@@ -117,3 +117,9 @@ All three are open and waiting for the owner to merge. If one was closed instead
     `jest.useFakeTimers({ now })`.
   - The splash plugin needs an image to use its colours (`assets/splash-blank.png`).
   - `expo prebuild` is only for checks: never commit `ios/` or `android/`.
+
+## 2026-11-18 web journal follow-up
+
+- User explicitly requested the date-wise journal on the **web app too**. Work started on `feat/web-journal-by-day`: week strip, native date input for older days, two pages, today's own editable page, earlier dates read-only. Existing `us-p…` post records remain encrypted and visible by date; the newest existing post of today acts as the editable page. No migration or storage key change.
+- User reported an iPhone black error page, “This page couldn’t load,” on one tap of the **top-right Home button**. The top-right partner chip invokes `toPartner` (chat when paired, invitation otherwise). Reproduction and root-cause identification are pending. Treat as a separate defect/PR; do not assert it is fixed.
+- Web journal implementation has **not** passed typecheck, build or browser/iPhone tests yet. Do not merge without these and regression coverage. The original feed-specific journal tests may need updating.
