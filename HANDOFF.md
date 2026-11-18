@@ -27,13 +27,13 @@ journal), #26 and #27 (the same characters and Home on the web app), #29 (Codex:
 **Open:**
 - #31 `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
   the end). Merge it first; it also fixes #30's note covering Home after Back.
-- `feat/web-journal-day` (Claude, built on #31): the web journal by day, designed like the app's, with test 15
+- #32 `feat/web-journal-day` (Claude, built on #31): the web journal by day, designed like the app's, with test 15
   rewritten. Merge after #31.
 - #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
   `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
 **Known broken on `main`:** browser test 15 (journal) still checks the old thread; #29 changed the screen without
-updating it. `feat/web-journal-day` fixes it.
+updating it. #32 fixes it.
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -58,7 +58,7 @@ updating it. `feat/web-journal-day` fixes it.
 1. **The crash on Home's top-right picture:** after #31 merges, the owner taps it again on
    his iPhone. If a note or the *Twodo stopped for a moment* page appears, its code line names the error: fix that
    cause with a test that reproduces it. Then decide with him whether to keep the notes as they are.
-2. **The web journal:** after `feat/web-journal-day` merges, check it on the owner's iPhone (its PR checklist).
+2. **The web journal:** after #32 merges, check it on the owner's iPhone (its PR checklist).
 3. **#28** (Supabase schema and RLS): Codex, or whoever continues it, works through the review comment, then the
    adversarial RLS tests, and checks it against `docs/architecture.md`, section 2, before it is merged.
 4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
