@@ -29,8 +29,8 @@ import { BusyButton } from '../ui/Busy';
 import { Icon } from '../ui/Icon';
 import { LearnMore } from '../ui/LearnMore';
 import { Segmented } from '../ui/Segmented';
-import { Character } from '../home/Character';
-import { charName, charOf, roleName, roleOf } from '@/lib/characters';
+import { Portrait } from '../home/Character';
+import { avatarOf, lookName, roleName, roleOf } from '@/lib/characters';
 import { openCharacter } from '@/ui/nav';
 import { VaultSettings } from '../vault/VaultUI';
 import { openAuthSheet, openInviteSheet, openUsernameSheet, openVapidSheet } from './AccountSheets';
@@ -58,8 +58,8 @@ function Profile() {
         }} />))}</div>
       <p className="me-hint">Your colour, on your messages and across the app.</p>
       <button className="cell me-char" type="button" onClick={() => { closeSheet(); setTimeout(() => openCharacter(), 350); }}>
-        <span className="me-char-ic" style={colorVar(p.color)}><Character kind={charOf(L.me)} size={34} /></span>
-        <span className="grow">Your character<span className="sub">{charName(charOf(L.me))} · {roleName(roleOf(L.me))}</span></span><Icon name="chevR" cls="chev" /></button>
+        <span className="me-char-ic" style={colorVar(p.color)}><Portrait look={avatarOf(L.me)} size={34} /></span>
+        <span className="grow">Your character<span className="sub">{lookName(avatarOf(L.me).look)} · {roleName(roleOf(L.me))}</span></span><Icon name="chevR" cls="chev" /></button>
     </div>
   );
 }

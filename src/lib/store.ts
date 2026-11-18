@@ -1,7 +1,7 @@
 /* Twodo · state, persistence and data helpers.
    D = synced data (tasks, lists, the two of you), L = this device only (settings, account, view prefs). */
 import { scheduleRender } from './render';
-import type { Data, Goal, JournalEntry, List, Local, Mood, PeopleRec, Person, PersonKey, Rec, Task } from './types';
+import type { AvatarLook, Data, Goal, JournalEntry, List, Local, Mood, PeopleRec, Person, PersonKey, Rec, Task } from './types';
 import { addDays, dayDiff, firstWord, fromYmd, PALETTE, REPEATS, todayStr, uid, ymd, type Color, type Repeat } from './util';
 
 const KD = 'twodo:data', KL = 'twodo:local';
@@ -35,6 +35,14 @@ export const cEmoji = (v: unknown): string => { // one emoji (a single character
 };
 type Loose = Record<string, unknown>;
 const CHAR_KINDS = ['bun', 'sprout', 'pebble', 'puff', 'bolt', 'drop'], ROLE_KINDS = ['cheer', 'calm', 'cheeky', 'poet'];
+const LOOKS = ['female', 'male'], SKINS = ['porcelain', 'peach', 'honey', 'caramel', 'cocoa', 'ebony'], HAIRS = ['black', 'espresso', 'chestnut', 'auburn', 'golden'];
+/** A character's look: kept only when every part is one of ours, and only those three parts */
+export function cleanAvatar(v: unknown): AvatarLook | undefined {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return undefined;
+  const q = v as Loose;
+  return LOOKS.includes(q.look as string) && SKINS.includes(q.skin as string) && HAIRS.includes(q.hair as string)
+    ? { look: q.look, skin: q.skin, hair: q.hair } as AvatarLook : undefined;
+}
 export function cleanPerson(p: unknown, d: Person): Person {
   if (!p || typeof p !== 'object') return { ...d };
   const q = p as Loose;
@@ -42,7 +50,8 @@ export function cleanPerson(p: unknown, d: Person): Person {
   if (!(typeof q.photo === 'string' && q.photo.length < 150000 && PHOTO_RE.test(q.photo))) delete o.photo;
   if (o.uid !== undefined && o.uid !== null && typeof o.uid !== 'string') delete o.uid;
   if (o.username !== undefined && typeof o.username !== 'string') delete o.username;
-  if (o.char !== undefined && !CHAR_KINDS.includes(o.char as string)) delete o.char;  // the character on Home (docs/characters.md)
+  if (o.avatar !== undefined) { const a = cleanAvatar(o.avatar); if (a) o.avatar = a; else delete o.avatar; } // the character (docs/characters.md)
+  if (o.char !== undefined && !CHAR_KINDS.includes(o.char as string)) delete o.char;  // the earlier characters, still read
   if (o.role !== undefined && !ROLE_KINDS.includes(o.role as string)) delete o.role;
   return o;
 }

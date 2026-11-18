@@ -1,7 +1,7 @@
 """Home when signed in: your character tells you about your day in its role's voice (tap it for the next thing), then
 your partner's character (the way into your chat), and today's to-dos with the week one tap away; its two buttons (message your partner, add a to-do)
-never move; to-dos are added and ticked off in place and your partner's Home follows; picking a character and a role
-(it reaches your partner too); nothing from a secret list ever appears or is said (unlocked or locked); "Waiting to
+never move; to-dos are added and ticked off in place and your partner's Home follows; picking a character's look, skin,
+hair and role (it reaches your partner too, and their character turns to you); nothing from a secret list ever appears or is said (unlocked or locked); "Waiting to
 send" while offline; what it says before a partner is connected and with nothing to do; a tip's "Open chat"; signing
 out; the chat stays mounted so opening it draws nothing new; text contrast for every colour, light and dark.
 Run test 1 first (it creates Abilash in /tmp/twodo-A.json and Deiva in /tmp/twodo-B.json). Needs the test build on 8003."""
@@ -103,7 +103,8 @@ async def main():
         await todos(A)
         hub = await q(HUB)
         assert board['today'] == hub['cards']['Today'] and len(board['rows']) == min(3, hub['cards']['Today']), (board, hub)
-        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.stage .cr').length") == 2, 'both of you are there, as your characters'
+        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.stage svg.cv').length") == 2, 'both of you are there, as your characters'
+        assert await q("document.querySelector('.stage .stage-char.pt svg.cv').classList.contains('flip')"), "your partner's character turns to you"
         assert not await q("document.querySelector('.board .n-msg, .board .tiles')"), "no message card, no row of extra doors"
         await back_home(A)
         print(f"PASS: your character greets you as a {board['role']} and says what's on today; the cards match the To-dos screen ({board['today']} today)")
@@ -256,23 +257,34 @@ async def main():
         # ---------- your character and its role: picked on its own screen, shown on Home, seen by your partner
         await A.click('.board .role-change'); await A.wait_for_timeout(1000)
         assert await q(TITLES) == ['Board', 'Your character']
-        await A.click('.chv-pick:has-text("Sprout")'); await A.wait_for_timeout(300)
+        before = await q("[document.querySelector('.chv-pick.on').dataset.look, ...[...document.querySelectorAll('.chv-dot.on')].map(d => d.getAttribute('aria-label'))]")
+        other = 'Male' if before[0] == 'female' else 'Female'
+        await A.click(f'.chv-pick[data-look="{other.lower()}"]'); await A.wait_for_timeout(300)
+        skin, hair = ('Peach', 'Golden') if before[1:] == ['Cocoa', 'Auburn'] else ('Cocoa', 'Auburn')
+        await A.click(f'.chv-dot[aria-label="{skin}"]'); await A.wait_for_timeout(200)
+        await A.click(f'.chv-dot[aria-label="{hair}"]'); await A.wait_for_timeout(200)
         await A.click('.chv-role:has-text("Calm friend")'); await A.wait_for_timeout(500)
-        assert await q("[document.querySelector('.chv-pick.on').textContent, document.querySelector('.chv-role.on b').textContent, !!document.querySelector('.chv-preview .cr-sprout')]") == ['Sprout', 'Calm friend', True]
+        look = other.lower()
+        assert await q("[document.querySelector('.chv-pick.on').textContent, [...document.querySelectorAll('.chv-dot.on')].map(d => d.getAttribute('aria-label')).join('/'), document.querySelector('.chv-role.on b').textContent, !!document.querySelector('.chv-preview svg.cv-" + look + "')]") == [other, f'{skin}/{hair}', 'Calm friend', True]
         assert (await q("document.querySelector('.chv-preview .say').textContent")).startswith(GREET['Calm friend'])
+        assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && document.querySelectorAll('.chv-dot').length === 11"), 'skin and hair are labelled radio buttons'
         await back_home(A)
         home = await q(BOARD)
-        assert await q("!!document.querySelector('.stage .cr-sprout')") and home['role'] == 'Calm friend' and home['say'].startswith(GREET['Calm friend']), home
+        assert await q(f"!!document.querySelector('.stage .stage-char.me svg.cv-{look}')") and home['role'] == 'Calm friend' and home['say'].startswith(GREET['Calm friend']), home
         mine = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
-        assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people; return p && p.{mine} && p.{mine}.char + '/' + p.{mine}.role; }})()", 'sprout/calm', 12000) == 'sprout/calm', 'it reaches your partner'
-        assert await until(B, "!!document.querySelector('.board .stage-char.pt .cr-sprout')", True), "your partner's Home shows your new character next to theirs"
+        want = f"{look}/{skin.lower()}/{hair.lower()}/calm"
+        assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people, m = p && p.{mine}; return m && m.avatar && [m.avatar.look, m.avatar.skin, m.avatar.hair, m.role].join('/'); }})()", want, 12000) == want, 'it reaches your partner'
+        assert await until(B, f"!!document.querySelector('.board .stage-char.pt svg.cv-{look}')", True), "your partner's Home shows your new character next to theirs"
         await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
-        assert await q("document.querySelector('.sheet.open .me-char .sub').textContent") == 'Sprout · Calm friend'
+        assert await q("document.querySelector('.sheet.open .me-char .sub').textContent") == f'{other} · Calm friend'
+        assert await q("!!document.querySelector('.sheet.open .me-char .cv-portrait svg')"), 'the row shows your character'
         await A.click('.sheet.open .me-char'); await A.wait_for_timeout(1300)
         assert await q(TITLES) == ['Board', 'Your character'], 'Settings leads to it too'
-        await A.click('.chv-pick:has-text("Bun")'); await A.wait_for_timeout(200); await A.click('.chv-role:has-text("Cheerleader")'); await A.wait_for_timeout(300)   # tidy up
+        await A.click(f'.chv-pick[data-look="{before[0]}"]'); await A.wait_for_timeout(200)   # tidy up
+        for label in before[1:]: await A.click(f'.chv-dot[aria-label="{label}"]'); await A.wait_for_timeout(150)
+        await A.click('.chv-role:has-text("Cheerleader")'); await A.wait_for_timeout(300)
         await back_home(A)
-        print("PASS: picking a character and a role changes Home at once and reaches your partner (it stands next to theirs); Settings leads there too")
+        print("PASS: picking a look, skin, hair and role changes Home at once and reaches your partner (it stands next to theirs, turned to them); Settings leads there too")
 
         # ---------- contrast: every piece of text on the board, for every colour two people can pick, light and dark
         # Deiva's board gets one of each kind of note first: something new, today, together, a list, a pin, something ticked off

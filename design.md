@@ -133,18 +133,19 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 
 ## 6. Characters
 
-Six small original characters (Bun, Sprout, Pebble, Puff, Bolt, Drop); each of you picks one, and a role (Cheerleader,
-Calm friend, Cheeky, Poet) for how it talks to you. `docs/characters.md`.
+Two original characters, female and male, in a soft 3D style; each of you picks a look, a skin tone and a hair colour,
+and a role (Cheerleader, Calm friend, Cheeky, Poet) for how it talks to you. The hoodie is your colour. The same
+characters as in the iPhone app (section 12). `docs/characters.md`.
 
 - **Original.** Drawn for Twodo. No resemblance to an existing character, mascot, game or brand.
-- **Readable small.** A clear silhouette at 44 px. Body in the person's colour, a light face or tummy, darker feet,
-  dark eyes, at most one accent (a leaf, an antenna).
-- **Placement.** Home: the two of you side by side (yours 108 px, your partner's 92 px, turned towards you). The
-  character screen and Settings. Never over a name, a status line or a button.
+- **Readable small.** A clear face at 44 px; below that (rows, Settings) use the portrait: head and shoulders in a
+  circle tinted with the person's colour.
+- **Placement.** Home: the two of you side by side, your partner's turned towards you. The character screen and
+  Settings; the journal. Never over a name, a status line or a button.
 - **Words.** Short, kind, specific: what is on today, the next thing with a time, what your partner did. Fixed
   sentences per role, written from your data; never a quote from a message; never anything from a secret list.
-- **Behaviour.** Still by default. A wave when Home appears and a hop when tapped, under 1.2 s, transform only.
-  No idle loops, no blinking on a timer. With Reduce Motion, none.
+- **Behaviour.** Still by default. Moments (wave, hop, happy, cheer, love) play once, under 1.5 s; states (thinking,
+  sleepy) last while true. Transform and opacity only. No idle loops, no blinking on a timer. With Reduce Motion, none.
 - **Fallback.** Plain SVG drawn with the page: nothing to load, nothing that can fail.
 - **Privacy.** A character never reacts to anything in a secret list.
 

@@ -4,14 +4,14 @@
    come in at the top for both of you. Double-tap (or tap the heart on) your partner's post to give it your heart.
    Your own posts: ⋯ to edit or delete. No prompts, no weather, no counts. Data: docs/journal-and-planner.md */
 import { useEffect, useRef, useState } from 'react';
-import { charOf } from '@/lib/characters';
+import { avatarOf } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
 import { POST_MAX, addPost, deletePost, editPost, heart, hearts, journalOpen, posts } from '@/lib/journal';
 import { L, partnerKey, person } from '@/lib/store';
 import type { JournalEntry, PersonKey } from '@/lib/types';
 import { dayDiff, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
 import { confirmDialog } from '@/ui/alert';
-import { Character } from '../home/Character';
+import { Portrait } from '../home/Character';
 import { colorVar, cssVars } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 
@@ -53,7 +53,7 @@ function Compose() {
   };
   return (
     <div className="jt-compose" style={colorVar(person(me).color)}>
-      <span className="jt-av" aria-hidden="true"><Character kind={charOf(me)} size={28} /></span>
+      <span className="jt-av" aria-hidden="true"><Portrait look={avatarOf(me)} size={28} /></span>
       <div className="jt-grow" data-v={text}>
         <textarea className="jt-ta" rows={1} value={text} maxLength={POST_MAX} aria-label="Write a post"
           placeholder="What’s on your mind?"
@@ -94,7 +94,7 @@ function Post({ e, love, next }: { e: JournalEntry; love: Set<PersonKey> | undef
     <article className={`jt-post${mine ? ' mine' : ''}${fresh ? ' fresh' : ''}`} data-id={e.id} onClick={tap} aria-label={`${nameOf(e.who)}, ${when(e.createdAt)}`}
       style={cssVars({ '--c': `var(--c-${person(e.who).color})`, '--cn': `var(--c-${person(next || e.who).color})` })}>
       <span className="jt-burst" ref={burst} aria-hidden="true"><HeartSvg on /></span>
-      <span className="jt-av" aria-hidden="true"><Character kind={charOf(e.who)} size={28} /></span>
+      <span className="jt-av" aria-hidden="true"><Portrait look={avatarOf(e.who)} size={28} /></span>
       {next ? <i className="jt-thread" aria-hidden="true"><HeartSvg on /></i> : null}
       <div className="jt-pbody">
         <header className="jt-meta">
@@ -143,8 +143,8 @@ export function JournalView() {
       <h1 className="large-title">Journal</h1>
       <div className="jt-pair">
         <span className="jt-duo" aria-hidden="true">
-          <span style={colorVar(person(L.me).color)}><Character kind={charOf(L.me)} size={22} /></span>
-          <span style={colorVar(person(pk).color)}><Character kind={charOf(pk)} size={22} /></span>
+          <span style={colorVar(person(L.me).color)}><Portrait look={avatarOf(L.me)} size={22} /></span>
+          <span style={colorVar(person(pk).color)}><Portrait look={avatarOf(pk)} size={22} /></span>
         </span>
         <span>You and {pt}</span><Icon name="lock" cls="xs" /><span className="jt-only">only you two</span>
       </div>

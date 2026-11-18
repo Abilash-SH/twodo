@@ -1,26 +1,42 @@
-/* Twodo · characters: each of you picks one of six original characters and its role. The character lives on Home and
-   tells you about your day in its role's voice. Everything it says is written here from data already on the phone
-   (to-dos without secret lists, the chat, the shared journal): no AI, nothing sent anywhere. docs/characters.md */
+/* Twodo · characters: each of you has one of two original characters, female or male, drawn in a soft 3D style, with a
+   skin tone and a hair colour you pick; the hoodie is your colour. Your character lives on Home and tells you about
+   your day in its role's voice. Everything it says is written here from data already on the phone (to-dos without
+   secret lists, the chat, the shared journal): no AI, nothing sent anywhere. docs/characters.md */
 import { D, L, commit, partnerKey, person } from './store';
-import type { CharKind, Person, PersonKey, RoleKind } from './types';
+import type { AvatarLook, Hair, Look, Person, PersonKey, RoleKind, Skin } from './types';
 import { firstWord } from './util';
 
-export const CHARS: [CharKind, string][] = [['bun', 'Bun'], ['sprout', 'Sprout'], ['pebble', 'Pebble'], ['puff', 'Puff'], ['bolt', 'Bolt'], ['drop', 'Drop']];
+export const LOOKS: [Look, string][] = [['female', 'Female'], ['male', 'Male']];
+/** Skin tones and hair colours: [key, name, colour]. The drawings shade each one (light from the top left). */
+export const SKINS: [Skin, string, string][] = [
+  ['porcelain', 'Porcelain', '#F8DCCB'], ['peach', 'Peach', '#F1C2A2'], ['honey', 'Honey', '#DDA57F'],
+  ['caramel', 'Caramel', '#C68558'], ['cocoa', 'Cocoa', '#9A6243'], ['ebony', 'Ebony', '#6A4130'],
+];
+export const HAIRS: [Hair, string, string][] = [
+  ['black', 'Black', '#231A1C'], ['espresso', 'Espresso', '#3D2A22'], ['chestnut', 'Chestnut', '#6E4431'],
+  ['auburn', 'Auburn', '#94402E'], ['golden', 'Golden', '#C99A55'],
+];
+export const DEFAULT_AVATAR: Record<Look, AvatarLook> = {
+  female: { look: 'female', skin: 'honey', hair: 'espresso' },
+  male: { look: 'male', skin: 'caramel', hair: 'black' },
+};
 export const ROLES: [RoleKind, string, string][] = [
   ['cheer', 'Cheerleader', 'Upbeat, always on your side'],
   ['calm', 'Calm friend', 'Gentle, no pressure'],
   ['cheeky', 'Cheeky', 'Teases you a little'],
   ['poet', 'Poet', 'Says it beautifully'],
 ];
-export const isChar = (v: unknown): v is CharKind => typeof v === 'string' && CHARS.some(c => c[0] === v);
 export const isRole = (v: unknown): v is RoleKind => typeof v === 'string' && ROLES.some(r => r[0] === v);
-export const charOf = (k: PersonKey): CharKind => { const c = person(k).char; return isChar(c) ? c : k === 'a' ? 'bun' : 'puff'; };
+/** Your character's look. Until you pick one, whoever started the space is male and the other female. */
+export const avatarOf = (k: PersonKey): AvatarLook => person(k).avatar || (k === 'a' ? DEFAULT_AVATAR.male : DEFAULT_AVATAR.female);
 export const roleOf = (k: PersonKey): RoleKind => { const r = person(k).role; return isRole(r) ? r : 'cheer'; };
-export const charName = (c: CharKind): string => (CHARS.find(x => x[0] === c) || CHARS[0])[1];
+export const lookName = (l: Look): string => (LOOKS.find(x => x[0] === l) || LOOKS[0])[1];
+export const skinColor = (s: Skin): string => (SKINS.find(x => x[0] === s) || SKINS[2])[2];
+export const hairColor = (h: Hair): string => (HAIRS.find(x => x[0] === h) || HAIRS[0])[2];
 export const roleName = (r: RoleKind): string => (ROLES.find(x => x[0] === r) || ROLES[0])[1];
 
 /** Change your own character or role (synced with the people record, like your name and colour) */
-export function setMine(patch: { char?: CharKind; role?: RoleKind }): void {
+export function setMine(patch: { avatar?: AvatarLook; role?: RoleKind }): void {
   const me: Person = { ...person(L.me), ...patch };
   if (!D.people) D.people = { kind: 'people', id: 'people', a: person('a'), b: person('b'), updatedAt: 0 };
   D.people[L.me] = me;
