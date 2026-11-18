@@ -119,13 +119,14 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   how full the day is in both of your colours, and a dot marks a busy day (six open to-dos or more). Goals are a short
   list of three at most, ticked in the colour of whoever ticked them. The look back (from Friday) shows what you did,
   never a score or a streak. Wide screens: seven columns.
-- **The journal.** One thread for the two of you, newest first, compact. At the top two small characters, "You and
-  Deiva" and a lock ("only you two"), then a one-line writing box (your character, "What's on your mind?", *Post* in
-  your colour) that grows as you write. Each post is a row: the writer's small character, name, time, the text (short
-  posts a little bigger, a few emoji alone bigger still, long ones fold after six lines). A love thread runs down from
-  each character to the next post's, shading from one writer's colour into the other's, with a small heart where they
-  meet. Your partner's posts have a heart (double-tap the post, or tap the heart; a heart blooms over it); yours say
-  who loved them and have ⋯ for Edit and Delete. No cards, prompts, weather or counts.
+- **The journal.** One page each per day, like the iPhone app (2026-11-18). A week strip under the title (the month,
+  arrows, seven day tiles: the chosen day inverted, today ringed in your colour, a dot in each person's colour for who
+  wrote, days to come shut) and a calendar sheet for older days (*Pick a day*, the same dots, *Go to today*). Below, a
+  stage washed from your colour into your partner's with both characters (yours thinks until you write) and a *Today*
+  or *Read only* badge, then a sheet over it with the day in big capitals and the two pages. Only today's page has a
+  writing box and *Save page* (*Saved* once it is); earlier days say so with a lock. Your partner's words have a heart
+  (double-tap them, or tap the heart; a heart blooms over them), always the love pink (`#D63F74`, `#F57AA6` in dark,
+  as in the app); your page says when they loved it. No prompts, weather, counts or private pages.
 - **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
   labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
 - **Launch and the first screen.** No app name is shown. Two hearts, one in each of your colours (yours on the

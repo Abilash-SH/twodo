@@ -106,3 +106,22 @@ person who did not write it (a double tap, or the heart button; the button also 
 - `posts()` never counts a heart as a post; your partner's heart shows a quiet note ("Deiva loved your post") when
   the journal is not open.
 - Older versions ignore heart records (they don't know the id). No change to keys, encryption, sync or CSP.
+
+## The journal by day (2026-11-18)
+
+Asked for: "I dont need it like a threads … only for the same day i need it to enter and for seeing previous days i
+need to select days". The iPhone app got it first (#25); the web app followed (#29 by Codex, then the design).
+
+- **No new record, id or key.** The web journal reads the thread's posts (`us-p…`) by the day they were written
+  (`date`). Your newest post from today is today's page: *Save page* edits it, or writes it if there is none yet.
+  Any older posts of yours from today, and every post from an earlier day, are read-only. Pages from before the thread
+  (`us-<date>-<who>`) show under their day like posts.
+- **Only today.** `editPost` refuses a post from another day, and the screen only offers a writing box for today. If
+  midnight passes while you type, your words stay and save to the new day; an untouched box starts the new day empty.
+- **Emptied, a page is deleted** (after a question): it is marked deleted and its words are removed, on both phones.
+- **Hearts** stay as they were (a record each, `us-h-<post>-<who>`), now given to your partner's words on a day.
+- **Why posts and not one record per day** (`us-<date>-<who>`, the app's shape): #29 had already written posts
+  today, and keeping them needs no migration. Two phones of the same person can each start today's page offline;
+  then the newer is the page and the older stays, read-only, above it. When the data moves to the app (phase 2), each
+  person's newest post of a day becomes that day's page.
+- Not stored: drafts (in memory only, until the app closes), streaks, counts, read receipts.
