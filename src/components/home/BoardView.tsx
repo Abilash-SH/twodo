@@ -105,8 +105,8 @@ function TodayCard({ b }: { b: Board }) {
   return (
     <button type="button" className="home-card" onClick={() => openSmart('today')} aria-label={`Today. ${title}. ${sub}. Opens Today`}>
       <span className="home-card-art" aria-hidden="true">
-        <span className="hc-who" style={colorVar(color(L.me))}><Character look={avatarOf(L.me)} size={132} /></span>
-        <span className="hc-who" style={colorVar(color(partnerKey()))}><Character look={avatarOf(partnerKey())} size={122} flip /></span>
+        <span className="hc-who" style={colorVar(color(L.me))}><Character look={avatarOf(L.me)} size={170} half /></span>
+        <span className="hc-who" style={colorVar(color(partnerKey()))}><Character look={avatarOf(partnerKey())} size={160} flip half /></span>
       </span>
       <span className="home-card-txt">
         <span className="home-card-badge">Today</span>

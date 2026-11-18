@@ -1,5 +1,5 @@
 'use client';
-/* Twodo · Your character: how it looks (female or male, a skin tone, a hair colour; the hoodie is your colour) and its
+/* Twodo · Your character: who it is (a woman or a man, then one of the realistic 3D people, lib/people.ts) and its
    role (how it tells you about your day). A choice applies at once and syncs with your partner, like your name and
    colour. docs/characters.md */
 import { HAIRS, LOOKS, ROLES, SKINS, avatarOf, lines, lookName, roleName, roleOf, setMine } from '@/lib/characters';
@@ -8,6 +8,7 @@ import { L, partnerKey, person } from '@/lib/store';
 import type { AvatarLook } from '@/lib/types';
 import { firstWord } from '@/lib/util';
 import { colorVar, cssVars } from '../ui/Avatar';
+import { faceUrl, PEOPLE, personFor } from '@/lib/people';
 import { Character } from './Character';
 import { boardData } from './BoardView';
 
@@ -32,21 +33,18 @@ export function CharacterView() {
           </button>
         ))}
       </div>
-      <h2 className="chv-h">Skin</h2>
-      <div className="chv-dots" role="radiogroup" aria-label="Skin tone">
-        {SKINS.map(([k, name, hex]) => (
-          <button key={k} type="button" role="radio" aria-checked={k === mine.skin} aria-label={name} className={`chv-dot${k === mine.skin ? ' on' : ''}`}
-            style={cssVars({ '--dot': hex })} onClick={() => { if (k !== mine.skin) pick({ skin: k }); }} />
-        ))}
+      <h2 className="chv-h">Pick your person</h2>
+      <div className="chv-faces" role="radiogroup" aria-label="Your person">
+        {PEOPLE.filter(p => p.look === mine.look).map(p => {
+          const on = personFor(mine).id === p.id, name = `${SKINS.find(x => x[0] === p.skin)![1]} skin, ${HAIRS.find(x => x[0] === p.hair)![1].toLowerCase()} hair`;
+          return (
+            <button key={p.id} type="button" role="radio" aria-checked={on} aria-label={name} data-person={p.id} className={`chv-face${on ? ' on' : ''}`}
+              onClick={() => { if (!on) pick({ skin: p.skin, hair: p.hair }); }}>
+              <img src={faceUrl(p)} alt="" width={72} height={72} decoding="async" draggable={false} />
+            </button>
+          );
+        })}
       </div>
-      <h2 className="chv-h">Hair</h2>
-      <div className="chv-dots" role="radiogroup" aria-label="Hair colour">
-        {HAIRS.map(([k, name, hex]) => (
-          <button key={k} type="button" role="radio" aria-checked={k === mine.hair} aria-label={name} className={`chv-dot${k === mine.hair ? ' on' : ''}`}
-            style={cssVars({ '--dot': hex })} onClick={() => { if (k !== mine.hair) pick({ hair: k }); }} />
-        ))}
-      </div>
-      <p className="chv-sub chv-note">The hoodie is your colour: change it in Settings, under your name.</p>
       <h2 className="chv-h">Their role</h2>
       <p className="chv-sub">How they tell you about your day. Same to-dos, a different voice.</p>
       <div className="chv-roles" role="radiogroup" aria-label="Their role">
