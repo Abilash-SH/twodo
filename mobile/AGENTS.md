@@ -4,6 +4,7 @@ The React Native rebuild of Twodo (Expo SDK 58, React Native 0.88, TypeScript). 
 folder is phase 1 so far: the design system, the six characters with their moods, the launch and the Playground.
 
 ## Read first
+- `../HANDOFF.md`: where things stand and what to do next. Update it before you end a session.
 - `../docs/architecture.md`: the plan (framework, database, sign-in, integrations, design system, security rules,
   phases). Schema, storage or security changes are written down there before they are built.
 - `../design.md`: the look, shared with the web app ("The app" section for what is specific to this app).

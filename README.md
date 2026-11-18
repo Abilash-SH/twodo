@@ -145,5 +145,6 @@ src/ui/                screen state: navigation stack, sheets, menus, toasts, al
 src/hooks/             gestures (swipes, long-press, swipe back), keyboard, buttons that keep the keyboard up
 src/components/        React components: chat, to-dos, composer, sheets, settings, sign-in gate, overlays
 src/styles/            the design system, one file per area (kept rule-for-rule from the original)
-PROMPT.md              the original prompt
+HANDOFF.md             where to continue (start here)
+docs/prompts.md        every prompt so far, kept as history
 ```

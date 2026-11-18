@@ -3,6 +3,7 @@
 Twodo is a private to-do list + chat PWA for two people. In tests the partner is "Deiva" (never use the name "Priya"). Next.js App Router with static export, React 19, strict TypeScript. Every push to `main` deploys to GitHub Pages, so always work on a branch and open a PR. Main target: the iPhone home-screen app; then Android and desktop.
 
 ## Read first
+- `HANDOFF.md`: where things stand and what to do next. Start there, and update it before you end a session.
 - `design.md`: the visual specification (colours for the two people, type, spacing, components, characters, motion, accessibility, a "never" list and a checklist). Read it before any visual change; if you must differ, change it in the same PR and say why.
 - `ROADMAP.md`: the plan, the state of every item, acceptance criteria and the decisions with their reasons. Take the first item marked next, and update the file in the PR that changes an item's state.
 - `docs/architecture.md`: the plan for the React Native app (Expo + Supabase, still end-to-end encrypted). Read it before any work in `mobile/`, `shared/` or `supabase/`. Until the app replaces the web app, every rule in this file still applies to the web app.
