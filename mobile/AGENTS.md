@@ -1,7 +1,8 @@
 # Twodo app (`mobile/`) — rules for coding agents
 
 The React Native rebuild of Twodo (Expo SDK 58, React Native 0.88, TypeScript). It is being built in phases; this
-folder is phase 1 so far: the design system, the six characters with their moods, the launch and the Playground.
+folder is phase 1 so far: the design system, the two characters (female and male) with their moods, the launch and
+the Playground.
 
 ## Read first
 - `../HANDOFF.md`: where things stand and what to do next. Update it before you end a session.
@@ -31,7 +32,8 @@ TestFlight (`.eas/workflows/testflight.yml`).
 - `src/app/`: screens (Expo Router). Only screens live here.
 - `src/ui/`: the design system. `tokens.ts` is the only place colours, type, space, corners, shadows and motion are
   defined; `theme.tsx` (light, dark, people's colours), `Text.tsx` (`<Txt>`), `components.tsx`, `haptics.ts`,
-  `color.ts` (mixing and contrast), `shapes.ts`, `characters/` (drawings, moods, `<Character>`, `<Stage>`), `launch/`.
+  `color.ts` (mixing and contrast), `shapes.ts`, `avatar/` (looks, drawings, moods, `<Avatar>`, `<Portrait>`,
+  `<Stage>`), `launch/`.
 - `src/features/`: one folder per feature (`playground/` for now).
 - `jest/`: test stand-ins (Reanimated runs as plain JavaScript in tests).
 

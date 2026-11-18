@@ -1,16 +1,17 @@
-/* Twodo · the two of you, side by side on a soft glow of both colours (design.md: yours 108, your partner's 92,
-   turned towards you). Each character sits in a button; the button carries what tapping does. */
+/* Twodo · the two of you, side by side on a soft glow of both colours (design.md: yours a little bigger, your
+   partner's turned towards you). Each character sits in a button; the button carries what tapping does. */
 import { useId } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Txt } from '../Text';
 import { useTheme } from '../theme';
 import { RADIUS, SPACE, type ColorName } from '../tokens';
-import { Character, type MomentKey } from './Character';
-import type { CharKind, CharState } from './moods';
+import { Avatar, type MomentKey } from './Avatar';
+import type { AvatarLook } from './looks';
+import type { CharState } from './moods';
 
 export interface StagePerson {
-  kind: CharKind;
+  avatar: AvatarLook;
   color: ColorName;
   name: string;
   state?: CharState;
@@ -20,7 +21,7 @@ export interface StagePerson {
   onPress?: () => void;
 }
 
-export function Stage({ me, partner }: { me: StagePerson; partner: StagePerson }) {
+export function Stage({ me, partner, height = 150 }: { me: StagePerson; partner: StagePerson; height?: number }) {
   const t = useTheme();
   const id = useId().replace(/[^a-zA-Z0-9]/g, '');
   return (
@@ -40,24 +41,24 @@ export function Stage({ me, partner }: { me: StagePerson; partner: StagePerson }
         <Rect width="100%" height="100%" fill={`url(#pt${id})`} />
       </Svg>
       <View style={styles.floor}>
-        <Who person={me} size={108} />
-        <Who person={partner} size={92} flip />
+        <Who person={me} height={height} />
+        <Who person={partner} height={height * 0.9} flip />
       </View>
     </View>
   );
 }
 
-function Who({ person, size, flip = false }: { person: StagePerson; size: number; flip?: boolean }) {
+function Who({ person, height, flip = false }: { person: StagePerson; height: number; flip?: boolean }) {
   return (
     <Pressable onPress={person.onPress} accessibilityRole="button" accessibilityLabel={person.name} accessibilityHint={person.hint} style={styles.who}>
-      <Character kind={person.kind} color={person.color} size={size} state={person.state} moment={person.moment} flip={flip} />
+      <Avatar avatar={person.avatar} color={person.color} size={height} state={person.state} moment={person.moment} flip={flip} />
       <Txt variant="footnote" tone="soft" style={styles.name} numberOfLines={1}>{person.name}</Txt>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  stage: { borderRadius: RADIUS.xl, overflow: 'hidden', paddingTop: SPACE.xxl + SPACE.xs, paddingBottom: SPACE.s },
+  stage: { borderRadius: RADIUS.xl, overflow: 'hidden', paddingTop: SPACE.xl, paddingBottom: SPACE.s },
   floor: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: SPACE.xl },
   who: { alignItems: 'center', minWidth: 96 },
   name: { marginTop: SPACE.xxs, fontWeight: '600' },

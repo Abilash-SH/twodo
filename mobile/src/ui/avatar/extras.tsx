@@ -40,33 +40,33 @@ function Pop({ x, y, w, delay, children }: { x: number; y: number; w: number; de
   return <Animated.View style={[styles.abs, { left: x, top: y, width: w, height: w }, style]}>{children}</Animated.View>;
 }
 
-export function Hearts({ size, color }: { size: number; color: ColorName }) {
-  const t = useTheme(), w = Math.max(12, size * 0.18);
+export function Hearts({ width, height, color }: { width: number; height: number; color: ColorName }) {
+  const t = useTheme(), w = Math.max(12, width * 0.2);
   return (<>
-    {[-0.2, 0.02, 0.22].map((dx, i) => (
-      <Drift key={i} x={size * (0.5 + dx) - w / 2} y={size * 0.08} w={w} delay={i * 170} rise={size * 0.36} loop={false} reduce={false}>
+    {[-0.24, 0.02, 0.26].map((dx, i) => (
+      <Drift key={i} x={width * (0.5 + dx) - w / 2} y={height * 0.02} w={w} delay={i * 170} rise={height * 0.28} loop={false} reduce={false}>
         <Svg width={w} height={w} viewBox="-40 -40 80 80"><Path d={HEART} fill={t.color(color)} stroke={WHITE} strokeWidth={6} strokeLinejoin="round" /></Svg>
       </Drift>
     ))}
   </>);
 }
 
-export function Sparkles({ size }: { size: number }) {
-  const w = Math.max(12, size * 0.16);
+export function Sparkles({ width, height }: { width: number; height: number }) {
+  const w = Math.max(12, width * 0.18);
   return (<>
-    {[[0.06, 0.12], [0.84, 0.04], [0.46, -0.1]].map(([x, y], i) => (
-      <Pop key={i} x={size * x} y={size * y} w={w} delay={i * 140}>
+    {[[0.02, 0.1], [0.86, 0.04], [0.44, -0.08]].map(([x, y], i) => (
+      <Pop key={i} x={width * x} y={height * y} w={w} delay={i * 140}>
         <Svg width={w} height={w} viewBox="-10 -10 20 20"><Path d={SPARKLE} fill={SPARK} /></Svg>
       </Pop>
     ))}
   </>);
 }
 
-export function Zs({ size, flip, reduce }: { size: number; flip: boolean; reduce: boolean }) {
-  const w = Math.max(14, size * 0.2), x = flip ? size * 0.06 : size * 0.74;
+export function Zs({ width, height, flip, reduce }: { width: number; height: number; flip: boolean; reduce: boolean }) {
+  const w = Math.max(14, width * 0.22), x = flip ? width * 0.02 : width * 0.76;
   return (<>
     {[0, 1].map(i => (
-      <Drift key={i} x={x + (flip ? -i : i) * w * 0.4} y={size * 0.1 - i * w * 0.5} w={w} delay={i * 800} rise={size * 0.22} loop reduce={reduce}>
+      <Drift key={i} x={x + (flip ? -i : i) * w * 0.4} y={height * 0.04 - i * w * 0.5} w={w} delay={i * 800} rise={height * 0.16} loop reduce={reduce}>
         <Txt variant={i ? 'headline' : 'callout'} tone="soft" allowFontScaling={false} align="center">z</Txt>
       </Drift>
     ))}
@@ -85,11 +85,11 @@ function Dot({ i, reduce }: { i: number; reduce: boolean }) {
 }
 
 /** "Thinking…": a small bubble with three dots, for when your partner is typing. */
-export function ThinkBubble({ size, flip, reduce }: { size: number; flip: boolean; reduce: boolean }) {
-  const t = useTheme(), w = Math.max(34, size * 0.42), h = w * 0.52;
-  const left = flip ? size * 0.3 - w : size * 0.7;
+export function ThinkBubble({ width, height, flip, reduce }: { width: number; height: number; flip: boolean; reduce: boolean }) {
+  const t = useTheme(), w = Math.max(34, width * 0.46), h = w * 0.52;
+  const left = flip ? width * 0.26 - w : width * 0.74, top = height * 0.02 - h * 0.6;
   return (
-    <View style={[styles.abs, { left, top: -h * 0.55, width: w, height: h }]} pointerEvents="none">
+    <View style={[styles.abs, { left, top, width: w, height: h }]} pointerEvents="none">
       <View style={[styles.bubble, { backgroundColor: t.n.raised, boxShadow: t.shadow[2], borderRadius: h / 2 }]}>
         {[0, 1, 2].map(i => <Dot key={i} i={i} reduce={reduce} />)}
       </View>

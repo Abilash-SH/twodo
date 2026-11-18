@@ -76,7 +76,7 @@ needs, which keeps third-party code to a minimum.
 | --- | --- | --- |
 | Screens and navigation | Expo Router | File-based screens on a native stack. Links from notifications and the widget open the right screen |
 | Animation and gestures | Reanimated 4, Gesture Handler | Animations and swipes run on the UI thread; only transform and opacity move |
-| Characters and drawings | react-native-svg | The six characters move over part by part, so a mood can move just an arm or the eyes |
+| Characters and drawings | react-native-svg | The two characters are drawn in parts with soft gradients, so a mood can move just an arm or the head |
 | Encryption | react-native-quick-crypto | Gives the WebCrypto API (AES-GCM, PBKDF2, HKDF, ECDH), so `crypto.ts` moves over with byte-identical formats |
 | Data on the phone | expo-sqlite with SQLCipher | The phone's copy is encrypted; its key is in the Keychain |
 | Keys and session | expo-secure-store | Keychain items that stay on this device |
@@ -314,8 +314,10 @@ hosting. Their rules move to section 6.
 
 ## 5. UI design: playful, character-first
 
-The characters you pick (bun, sprout, pebble, puff, bolt, drop) and their roles become the heart of every screen: they
-greet, cheer, react and keep each other company. One design system keeps it consistent and fast.
+Two original characters, female and male, drawn in a soft 3D style (big eyes, rounded shapes, light from the top left).
+Each of you picks a look, a skin tone and a hair colour, and your character wears your colour. They are the heart of
+every screen: they greet, cheer, react and keep each other company. One design system keeps it consistent and fast.
+(Chosen 2026-11-18 from the owner's reference of a 3D avatar app; they replace the six blob characters.)
 
 ### Principles
 
@@ -344,11 +346,15 @@ greet, cheer, react and keep each other company. One design system keeps it cons
 
 ### Characters
 
-- They're drawn in react-native-svg from the same shapes as today, split into parts (body, eyes, cheeks, arms, shadow)
-  so a mood can move one part.
+- They're drawn in react-native-svg, split into parts (back hair, legs, hoodie, head, arms, shadow) so a mood can move
+  one part. Each surface has a light-to-shade gradient, with highlights on the hair and eyes and soft shadows under
+  the fringe, the chin and the feet. Six skin tones and five hair colours; the hoodie is the person's colour.
+- **True 3D renders** (like the reference) would need a 3D artist or rendered images. The component's API stays the
+  same, so drawings could be swapped for images later without touching any screen.
 - **Moods:** idle, happy, wave, hop, cheer, love, think and sleepy. Each is a short animation built from the motion
   tokens.
-- **One component,** `<Character kind mood size />`, draws them all. Screens ask for a mood, and a small controller
+- **One component,** `<Avatar avatar color state moment size />`, draws them all (`<Portrait>` for head and
+  shoulders in a circle). Screens ask for a mood, and a small controller
   decides whether it plays (cool-down, Reduce Motion, app in the background).
 - **In long lists** (the journal, the week) characters stay still; only the host moves.
 
