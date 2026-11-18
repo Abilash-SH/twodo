@@ -53,6 +53,12 @@ All three are open and waiting for the owner to merge. If one was closed instead
   the owner's call: either wait for a fixed picomatch (then pin it with `overrides`), or audit only the packages
   inside the bundle. Don't change `.github/workflows/app.yml` without his yes.
 
+## 2026-11-18 continuation — Supabase foundation (draft)
+
+- PR #27 was already merged; no web PRs remain open.
+- Started `feat/supabase-rls-foundation` with an initial migration for spaces, membership, encrypted records/messages, reads/reactions and access policies. **Not ready to merge:** the remaining architecture tables (`profiles`, `key_backups`, `requests`, `push_tokens`), storage and Realtime policies, and local Supabase tests are still needed. SQL has not been run against Postgres.
+- The initial migration must be reviewed and exercised against local Supabase before deployment; do not apply it to production yet.
+
 ## What to do next, in order
 
 1. **After the three PRs merge:** check the TestFlight build on the owner's phone against each PR's iPhone checklist

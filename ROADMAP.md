@@ -167,7 +167,7 @@ and data checks, and a short iPhone checklist.
   as recommended. Then phase 1 (foundations) becomes ⏭.
 - **Phase 1 (#22):** `mobile/`, the design system (tokens, theme, text, components), the characters with eight
   moods, the launch, the Playground, checks on every PR (`.github/workflows/app.yml`) and builds to TestFlight
-  (`mobile/.eas/workflows/testflight.yml`). Next in phase 1: the Supabase schema with Row Level Security and its tests.
+  (`mobile/.eas/workflows/testflight.yml`). Next in phase 1: the Supabase schema with Row Level Security and its tests (initial migration drafted on `feat/supabase-rls-foundation`; not tested or complete).
 - **2026-11-18:** two original characters, female and male (#24); Home and the journal by day as designs with sample
   data (this PR), with four tabs and a floating tab bar.
 - **Needed before builds reach the phones:** the Apple Developer Program, an Expo account and a Supabase project (both
