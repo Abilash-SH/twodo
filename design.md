@@ -144,6 +144,10 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 
 ## 6. Characters
 
+> **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;
+> see `docs/characters.md`, "The 3D people". The drawings below remain as their stand-in while loading and without WebGL.
+
+
 Two original characters, female and male, in a soft 3D style; each of you picks a look, a skin tone and a hair colour,
 and a role (Cheerleader, Calm friend, Cheeky, Poet) for how it talks to you. The hoodie is your colour. The same
 characters as in the iPhone app (section 12). `docs/characters.md`.

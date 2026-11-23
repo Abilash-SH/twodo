@@ -163,5 +163,5 @@ updating it. #32 fixes it.
   receiving app plays each `at` once, only within a minute (`POKE_MS`), and only for the six known emoji
   (`isReaction`). It is never stored or shown in the chat. Older app versions ignore the extra field.
 - Limit: a reaction reaches your partner only if their app is open (or opens within a minute). No push for it.
-- Next, asked the same day: realistic 3D characters (option A, 3D models). The owner has none; find properly
-  licensed models (male and female) before building.
+- Realistic 3D characters (option A): built in `feat/realistic-3d-people` from Microsoft Rocketbox (MIT). See
+  `docs/characters.md`, "The 3D people". The iPhone app (`mobile/`) still has the drawn characters.
