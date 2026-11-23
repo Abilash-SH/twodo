@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { haptic } from '@/lib/feedback';
 import { useFlip } from '@/hooks/useFlip';
 import { renderNow } from '@/lib/render';
-import { D, L, SMART, fmtDate, liveTasks, listOf, lists, myName, partnerKey, ptName, save, sortTasks, whoMatch, type SmartKey } from '@/lib/store';
+import { D, L, SMART, fmtDate, liveTasks, listOf, lists, myName, partnerKey, ptName, save, sortTasks, whoMatch, defaultWho, type SmartKey } from '@/lib/store';
 import type { Task } from '@/lib/types';
 import { dayDiff, fromYmd, nowHM, pad, shortName, todayStr, ymd } from '@/lib/util';
 import { alertsOn, specKey, viewPrefs, viewTitle, type Spec } from '@/ui/nav';
@@ -79,7 +79,7 @@ const EMPTY: Record<SmartKey, [string, string, string]> = {
 export function TaskListView({ spec }: { spec: Spec }) {
   const key = specKey(spec), vp = viewPrefs(key), listRef = useRef<HTMLDivElement>(null);
   useFlip(listRef, key); // rows slide into place when one is added, completed, deleted or moved
-  const who = vp.who || 'all', showDone = !!vp.showDone, isDone = spec.key === 'done';
+  const who = vp.who || defaultWho(key), showDone = !!vp.showDone, isDone = spec.key === 'done';
   let color: string, heading: string, sub: React.ReactNode = '', base: Task[], doneSet: Task[] = [];
   if (spec.type === 'list' && vaultBlocks(spec.id)) return <VaultGate />;
   const live = liveTasks({ secret: spec.type === 'list' }).filter(t => isDone ? (who === 'all' || t.doneBy === (who === 'me' ? L.me : partnerKey()) || (who === 'both' && t.assignee === 'both')) : whoMatch(t, who));

@@ -110,7 +110,8 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   today holds in your character's voice (tap the line for the next thing). Then **one card** (2026-11-18: "just one
   card is enough"): Today, a wide wash of yellow into orange with a dark *Today* badge, how many to-dos are left in big
   rounded capitals and the next one with a time; the two characters lean in from its right edge, yours first, your
-  partner's turned to you. Tap it to open Today. Below, **Send Deiva a reaction**: six soft tiles in a 3 × 2 grid
+  partner's turned to you. Tap it to open Today. It counts your to-dos and the shared ones only (2026-11-23): under your name, for both of you,
+  or made by you for no one; your partner's own are left out, and Today opens on the same (its *All* shows theirs). Below, **Send Deiva a reaction**: six soft tiles in a 3 × 2 grid
   (Love ❤️, Hug 🤗, Kiss 😘, Miss you 🥺, Haha 😂, Proud ✨), each a big emoji with its name. One tap sends that emoji to
   your partner as a message (it lifts off the tile; a quiet line says "Love sent to Deiva"); Home stays where it is.
   Before pairing the tiles lead to *Add partner*. Your character and role are changed from Settings. A floating dark bar at the bottom: Home, To-dos, Journal (a dot

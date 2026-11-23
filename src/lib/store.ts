@@ -277,6 +277,11 @@ export const SMART: Record<SmartKey, SmartDef> = {
   done:      { title: 'Completed', color: 'gray',   icon: 'check', match: t => t.done, doneMatch: () => false },
 };
 
+/** Home and Today show your to-dos and the shared ones (asked for 2026-11-23): assigned to you or to both of you, or
+ *  made by you for no one in particular. Your partner's own stay in the lists, and Today's *All* shows them. */
+export const pairedNow = (): boolean => !!(L.pair && L.pair.status === 'paired');
+export const defaultWho = (key: string): string => (key === 's:today' && pairedNow() ? 'me' : 'all');
+export const mineOrShared = (t: Task): boolean => !pairedNow() || whoMatch(t, 'me');
 export function whoMatch(t: Task, w?: string): boolean {
   if (!w || w === 'all') return true;
   if (w === 'both') return t.assignee === 'both';

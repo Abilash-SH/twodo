@@ -1,7 +1,7 @@
 'use client';
 /* Twodo · To-dos & reminders: every list in one place */
 import { haptic } from '@/lib/feedback';
-import { L, SMART, calcStreak, listOf, liveTasks, lists, save, type SmartKey } from '@/lib/store';
+import { L, SMART, calcStreak, listOf, liveTasks, lists, mineOrShared, save, type SmartKey } from '@/lib/store';
 import type { List, Task } from '@/lib/types';
 import { Vault } from '@/lib/vault';
 import { island } from '@/ui/island';
@@ -45,7 +45,7 @@ function SecretLists({ all }: { all: Task[] }) {
 }
 
 export function HubView() {
-  const all = liveTasks(), withSecret = liveTasks({ secret: true }), cnt = (k: SmartKey) => all.filter(SMART[k].match).length;
+  const all = liveTasks(), withSecret = liveTasks({ secret: true }), cnt = (k: SmartKey) => all.filter(t => SMART[k].match(t) && (k !== 'today' || mineOrShared(t))).length; // Today: yours and shared, as on Home
   const doneWeek = all.filter(t => t.done && (t.doneAt || 0) > Date.now() - 7 * 864e5).length;
   const streak = calcStreak();
   const weekLeft = weekPlan(thisWeek()).days.reduce((n, d) => n + d.open.length, 0);
