@@ -176,14 +176,21 @@ async def main():
         errors[:] = [e for e in errors if 'broken on purpose' not in e and 'above error occurred' not in e]
         print('PASS: a part of Home or the chat that fails to draw shows a safe note (no quoted text); the bar still works, a failed chat parks on Back, both try again')
 
-        # ---------- reactions: one tap sends your partner an emoji, like a message (two quick taps send one)
-        HEARTS = "[...document.querySelectorAll('#stack > .chatview .msg-row.me .bwrap')].filter(b => b.textContent.trim().startsWith('❤️')).length"
-        before = await q(HEARTS)
-        await A.click('.react:has-text("Love")'); await A.wait_for_timeout(120); await A.click('.react:has-text("Love")')
-        assert await until(A, "document.querySelector('.home-react-sent').textContent", 'Love sent to Deiva') == 'Love sent to Deiva'
-        assert await q(TITLES) == ['Board'], 'sending stays on Home'
-        assert await until(A, HEARTS, before + 1) == before + 1, ('one ❤️ in the chat for two quick taps', before, await q(HEARTS))
-        print('PASS: a reaction goes to your partner as a message from Home (Home stays; two quick taps send one)')
+        # ---------- reactions: not a message. One tap bursts on your partner's screen (live, wherever they are) with a line
+        cr, R = await phone('/tmp/twodo-B.json')
+        await R.evaluate("window.__bursts = []; new MutationObserver(m => m.forEach(r => r.addedNodes.forEach(n => n.classList && n.classList.contains('react-burst') && window.__bursts.push(n.textContent.slice(0, 2))))).observe(document.body, { childList: true })")
+        HEARTS = "[...document.querySelectorAll('#stack > .chatview .msg-row .bwrap')].filter(b => b.textContent.trim().startsWith('🤗')).length"
+        before = [await q(HEARTS), await R.evaluate(HEARTS)]
+        await A.click('.react:has-text("Hug")'); await A.wait_for_timeout(120); await A.click('.react:has-text("Hug")')
+        assert await until(A, "document.querySelector('.home-react-sent').textContent", 'Hug sent to Deiva') == 'Hug sent to Deiva'
+        assert await q(TITLES) == ['Board'] and await q("!!document.querySelector('.react-burst')"), 'sending stays on Home, with a little burst from the tile'
+        got = await until(R, "window.__bursts.length", lambda n: n >= 1, 10000)
+        assert got == 1 and (await R.evaluate("window.__bursts[0]")).startswith('🤗'), ('one burst of 🤗 on the partner\'s screen for two quick taps', got)
+        assert await until(R, "(document.getElementById('isl') || {}).textContent?.includes('Abilash sent you a hug') || false", True), 'and a line saying who sent what'
+        await R.wait_for_timeout(1500)
+        assert [await q(HEARTS), await R.evaluate(HEARTS)] == before, 'never a chat message'
+        await cr.close()
+        print('PASS: a reaction bursts live on your partner\'s screen with "Abilash sent you a hug" (two quick taps, one burst); it is never a chat message')
 
         # ---------- the chat stays mounted while it is closed: opening it builds nothing new, and the board's notes stay as they are
         await q("window.__chat = document.querySelector('#stack > .chatview'); window.__row = window.__chat.querySelector('.msg-row[data-id]'); window.__note = document.querySelector('.board .home-card')")

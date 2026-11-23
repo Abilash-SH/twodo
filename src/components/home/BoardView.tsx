@@ -11,7 +11,8 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
 import { avatarOf, dayLine, lines, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { EASE, MS, calm } from '@/lib/motion';
+import { REACTIONS, playEmojiBurst } from '@/lib/reactions';
+import { island } from '@/ui/island';
 import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
@@ -97,12 +98,6 @@ const paired = () => !!(L.pair && L.pair.status === 'paired');
 const unreadNow = () => (paired() && Chat.ready() ? Chat.unread() : 0);
 const toPartner = () => (paired() ? ChatCtl.open() : openInviteSheet());
 
-/** The reactions you can send from Home: one emoji each, sent to your partner like a message */
-export const REACTIONS = [
-  { e: '❤️', label: 'Love' }, { e: '🤗', label: 'Hug' }, { e: '😘', label: 'Kiss' },
-  { e: '🥺', label: 'Miss you' }, { e: '😂', label: 'Haha' }, { e: '✨', label: 'Proud' },
-] as const;
-
 /** Home's one card: today, with the two of you on it. A tap opens Today. */
 function TodayCard({ b }: { b: Board }) {
   const title = b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today';
@@ -122,19 +117,18 @@ function TodayCard({ b }: { b: Board }) {
   );
 }
 
-/** Send your partner a reaction: one tap, it goes like a message (with a little lift-off on your side) */
+/** Send your partner a reaction: it bursts on their screen (never a message), and a little from your tile */
 function Reactions({ pt }: { pt: string }) {
   const ok = paired(), [sent, setSent] = useState(''), last = useRef(0);
-  const send = (e: string, label: string, el: HTMLElement) => {
+  const send = (r: typeof REACTIONS[number], el: HTMLElement) => {
     if (!ok) return openInviteSheet();
     const now = Date.now(); if (now - last.current < 700) return; // one at a time
+    if (!Chat.sendPoke(r.e)) { island({ e: '⚠️', text: 'Not connected yet', sub: 'Check you’re online' }); return; }
     last.current = now;
-    if (!ChatCtl.sendReaction(e)) return;
-    haptic('success'); setSent(`${label} sent to ${pt}`);
-    const fly = el.querySelector<HTMLElement>('.react-fly');
-    if (fly) fly.animate(calm() ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'translateY(0) scale(1)' }, { opacity: 0, transform: 'translateY(-64px) scale(1.6)' }],
-      { duration: MS.page + MS.standard, easing: EASE.out });
-    setTimeout(() => setSent(s => (s === `${label} sent to ${pt}` ? '' : s)), 2200);
+    const b = el.getBoundingClientRect();
+    playEmojiBurst(r.e, { from: { x: b.left + b.width / 2, y: b.top + b.height / 2 }, count: 9 });
+    const line = `${r.label} sent to ${pt}`;
+    setSent(line); setTimeout(() => setSent(s => (s === line ? '' : s)), 2200);
   };
   return (
     <section className="home-react" aria-label={ok ? `Send ${pt} a reaction` : 'Reactions'}>
@@ -142,8 +136,8 @@ function Reactions({ pt }: { pt: string }) {
       <div className="react-row">
         {REACTIONS.map(r => (
           <button key={r.label} type="button" className="react" aria-label={ok ? `Send ${pt} ${r.label.toLowerCase()} ${r.e}` : 'Add your partner'}
-            onClick={ev => send(r.e, r.label, ev.currentTarget)}>
-            <span className="react-e" aria-hidden="true">{r.e}<span className="react-fly">{r.e}</span></span>
+            onClick={ev => send(r, ev.currentTarget)}>
+            <span className="react-e" aria-hidden="true">{r.e}</span>
             <span className="react-l">{r.label}</span>
           </button>
         ))}

@@ -53,7 +53,6 @@
   transition: transform var(--dur-quick) var(--ease-bounce); -webkit-tap-highlight-color: transparent; }
 .react:active { transform: scale(.92); }
 .react-e { position: relative; font-size: 34px; line-height: 40px; }
-.react-fly { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
 .react-l { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--soft); }
 .home-line { width: 100%; padding: 0; border: 0; background: none; font: inherit; text-align: left; color: inherit; }
 
@@ -89,3 +88,7 @@
   padding: max(80px, calc(env(safe-area-inset-top) + 56px)) 24px 24px; }
 .chat-fail-in h2 { margin: 0; font: 700 22px/28px var(--round); color: var(--label); }
 .chat-fail-in p { margin: 0; font-size: 15px; line-height: 20px; color: var(--label); }
+
+/* ---------- a reaction's burst (lib/reactions.ts): emoji over the whole screen, never taking taps ---------- */
+.react-burst .rb-e { position: absolute; display: block; line-height: 1; will-change: transform, opacity; }
+.react-burst .rb-big { font-size: 120px; }
