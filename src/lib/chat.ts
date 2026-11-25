@@ -1,7 +1,7 @@
 /* Twodo · Messages (data layer)
    /spaces/{space}/c/m/{id}            = { f: authorUid, u: updatedAt, d: AES-GCM ciphertext }   (only the author can edit/unsend)
-   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at, on, poke? } }                (typing, read receipts, online,
-                                                                                                  a reaction from Home: lib/reactions.ts)
+   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at, on, poke? } }                (typing, read receipts, online;
+                                                                                                  poke: a reaction from an older Home)
    /spaces/{space}/c/e/rx/{msg}/{uid}  = { u, d: { r } }                                          (tapback reactions)
    Everything is encrypted with the space key; Firebase sees only who wrote and when. */
 import { CFG } from './config';
@@ -49,7 +49,7 @@ export const Chat = {
   chainM: Promise.resolve(), chainE: Promise.resolve(),
   typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0,
   lastPxD: null as string | null, lastMxD: null as string | null, typingT: undefined as ReturnType<typeof setTimeout> | undefined,
-  presence: null as Presence | null, xAt: 0, xPending: false, poke: null as { e: ReactionEmoji; at: number } | null, seenPoke: 0, saveT: undefined as ReturnType<typeof setTimeout> | undefined,
+  presence: null as Presence | null, xAt: 0, xPending: false, seenPoke: 0, saveT: undefined as ReturnType<typeof setTimeout> | undefined,
   readT: undefined as ReturnType<typeof setTimeout> | undefined,
 
   partnerUid(): string | null { const p = D.people && D.people[partnerKey()]; return (p && p.uid) || (L.pair && L.pair.uid) || null; },
@@ -188,7 +188,8 @@ export const Chat = {
         if (read !== this.partnerRead) { this.partnerRead = read; this.partnerReadAt = at || Date.now(); }
         clearTimeout(this.typingT);
         if (this.partnerTypingUntil) this.typingT = setTimeout(() => { this.partnerTypingUntil = 0; this.bump(); chatEvents.onState(); }, 6600);
-        // a reaction from Home: played once, only while it is fresh (it is never stored)
+        // a reaction from Home (2026-11-25: Home shares Moments now; this stays so a partner still on an older
+        // version can send one): played once, only while it is fresh (it is never stored)
         const pk = px.poke && typeof px.poke === 'object' ? px.poke : null, pat = pk ? cNum(pk.at) : 0;
         if (pk && isReaction(pk.e) && pat > this.seenPoke && Math.abs(Date.now() - pat) < POKE_MS) { this.seenPoke = pat; chatEvents.onPoke(pk.e); }
       }
@@ -305,17 +306,9 @@ export const Chat = {
     this.xAt = Date.now();
     const on = o.off || document.hidden ? 0 : 1;
     try {
-      const poke = this.poke && Date.now() - this.poke.at < POKE_MS ? this.poke : undefined; // kept a minute, so a later heartbeat doesn't drop it
-      const d = await encryptObj(Sync.key!, { typing: this.typingOn ? 1 : 0, read: this.read, at: Date.now(), on, ...(poke ? { poke } : {}) });
+      const d = await encryptObj(Sync.key!, { typing: this.typingOn ? 1 : 0, read: this.read, at: Date.now(), on });
       await dbPut(`${this.base()}/e/x/${L.auth!.uid}`, { u: Date.now(), d }, o.off ? { keepalive: true } : undefined);
     } catch { /* ignore */ }
-  },
-  /** Send your partner a reaction from Home: live, encrypted, never a message. False when not connected. */
-  sendPoke(e: ReactionEmoji): boolean {
-    if (!this.ready() || !isReaction(e)) return false;
-    this.poke = { e, at: Math.max(Date.now(), (this.poke?.at || 0) + 1) };
-    void this.writeX();
-    return true;
   },
   beat() { if (this.ready() && !document.hidden && Date.now() - this.xAt > 40e3) void this.writeX(); },
   lastPartnerTs(): number { const me = L.auth && L.auth.uid; let t = 0; for (const m of Object.values(this.msgs)) if (m.f !== me && m.ts > t) t = m.ts; return t; },

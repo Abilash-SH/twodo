@@ -39,12 +39,12 @@ here), so it checks the engine and the app's touch paths, not iOS itself.
 Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
 Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
 Test 13 covers Home: the hello and what today holds in your character's voice, the one Today card (against the
-To-dos screen, both characters on it, your partner's turned to you), six reactions (one tap bursts live on your
-partner's screen with a line saying who sent what, never a chat message; two quick taps send one), every door (the card, your partner's chip, the bar's
+To-dos screen, both characters on it, your partner's turned to you), Moments under it (the heading and the shutter;
+test 18 covers sharing), every door (the card, your partner's chip, the bar's
 To-dos, Journal and Chat, Settings), reopening the chat while it still slides away, a part of Home or the chat that
 fails to draw (a safe note; the bar still works), adding a to-do from the bar, ticking off on Today with Undo, picking
 a character's look, skin, hair and role from Settings (it reaches the partner's card), that nothing from a secret list
-is shown or said, offline and "Waiting to send", before pairing (the reactions lead to Add partner) and with nothing
+is shown or said, offline and "Waiting to send", before pairing (the moments card leads to Add partner) and with nothing
 to do, and text contrast for every colour in light and dark.
 
 Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
@@ -60,6 +60,16 @@ the other phone, a heart is its own record with no text), a draft kept when you 
 read-only (from the strip and the calendar sheet, which shuts days to come; *Go to today*), a page from an earlier day
 shown under it, an emptied page deleted after a question on both phones (its words gone from storage), text contrast
 for every colour in light and dark (the page and the calendar), and the wide layout.
+
+Test 18 covers Moments: the shutter opens the camera (`capture=environment`) and the other button your photos; the
+picture is shown once with a caption and sent; it is made small (re-encoded, at most 140,000 characters) and kept in
+IndexedDB `twodo-moments`, never in `twodo:data`; your partner sees it on Home within seconds (the photo, who, the
+caption) with a line on the island; a newer one replaces it on Home while the moments sheet keeps both, newest first;
+only the one who shared it can remove it, and removing takes it off both phones (the one before shows again); the
+sheet's text contrast for every colour, light and dark, and a 44 pt Remove; the worst case (a 14 MB photo of pure
+noise with an 80-character caption) stays under the database's 200,000-character limit. It needs `/tmp/mo/sunset.jpg`,
+`/tmp/mo/coffee.jpg` and `/tmp/mo/noise.jpg` (any two photos, and 4032 × 3024 random pixels saved as a JPEG at
+quality 95; the test's docstring has a one-line way to make them).
 
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,

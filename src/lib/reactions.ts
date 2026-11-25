@@ -1,6 +1,8 @@
 /* Twodo · reactions sent from Home (2026-11-18: "not in the chat, something reactive"). A reaction is never a message:
    it rides, encrypted, on your live presence record (/spaces/{space}/c/e/x/{uid}, field `poke`), plays on your
-   partner's screen as a burst of that emoji if their app is open (or opens within a minute), and is gone. */
+   partner's screen as a burst of that emoji if their app is open (or opens within a minute), and is gone.
+   2026-11-25: Home shares Moments instead (lib/moments.ts), so nothing here sends one any more. Receiving stays,
+   so a partner still on an older version can send one, and the burst is still used by the chat. */
 import { haptic } from './feedback';
 import { reducedMotion } from './util';
 

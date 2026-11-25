@@ -110,12 +110,15 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   today holds in your character's voice (tap the line for the next thing). Then **one card** (2026-11-18: "just one
   card is enough"): Today, a wide wash of yellow into orange with a dark *Today* badge, how many to-dos are left in big
   rounded capitals and the next one with a time; the two characters lean in from its right edge, yours first, your
-  partner's turned to you. Tap it to open Today. Below, **Send Deiva a reaction**: six soft tiles in a 3 × 2 grid
-  (Love ❤️, Hug 🤗, Kiss 😘, Miss you 🥺, Haha 😂, Proud ✨), each a big emoji with its name. One tap sends it live, never as a
-  message: a small burst of it leaves your tile and a quiet line says "Love sent to Deiva"; on your partner's phone a
-  burst of that emoji rises over whatever they are looking at, with "Abilash sent you love" on the island. With
-  Reduce Motion it is one big emoji that fades. Home stays where it is.
-  Before pairing the tiles lead to *Add partner*. Your character and role are changed from Settings. A floating dark bar at the bottom: Home, To-dos, Journal (a dot
+  partner's turned to you. Tap it to open Today. Below, **Moments with Deiva** (2026-11-25, in place of reactions:
+  "like Instagram's Instants or Locket, to share images at one tap"): her latest photo, big and rounded like a photo on
+  the fridge, with her picture, when and the caption on dark glass strips (the dock's colour). Under it a row: your
+  own last one (ringed in your colour, once you have shared one), a big shutter in the middle (a ring in `--label`
+  around your colour) and your photo library. The shutter opens the camera in one tap; you see the picture once with
+  an optional caption and *Send to Deiva*. It reaches her Home within seconds (a line on her island) or as a
+  notification. Tapping a photo opens the moments sheet: everything the phone has seen, newest first; only your latest
+  can be removed. With nothing yet, a dashed 16:9 card says where her moments will appear. `docs/moments.md`.
+  Before pairing the card and the shutter lead to *Add partner*. Your character and role are changed from Settings. A floating dark bar at the bottom: Home, To-dos, Journal (a dot
   when your partner wrote today) and Chat (a count), with *Add a to-do* beside it in your colour; it steps aside while
   the task box is up. Ticking to-dos happens on Today. Nothing from a secret list, ever. `docs/characters.md`.
 - **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
@@ -294,5 +297,7 @@ Places where the app does not yet meet this file. Fix them when touching the are
   header). Target: 12 px. Roadmap Phase 6.
 - Priority marks (`!`, `!!`, `!!!`) in task rows use the plain palette blue, orange and red: about 3:1 on a white row.
   Measured while building the planner (test 14 leaves task rows out of its own contrast check for this reason).
+- A sheet header's text button (*Done*) is drawn in your colour: about 2.1:1 for mint or yellow in the light theme.
+  Measured while building Moments (test 18 measures the moments sheet without its header for this reason).
 - Complete, pin and delete on a task are easiest to find by swiping or holding. Roadmap item 8.
 - Phone layouts are stretched on tablets in several screens. Roadmap item 10.

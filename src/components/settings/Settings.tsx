@@ -6,6 +6,7 @@ import { cloudReady } from '@/lib/config';
 import { KeyStore } from '@/lib/crypto';
 import { haptic } from '@/lib/feedback';
 import { Auth } from '@/lib/firebase';
+import { Moments } from '@/lib/moments';
 import { Pair } from '@/lib/pair';
 import { Push } from '@/lib/push';
 import { renderNow, scheduleRender } from '@/lib/render';
@@ -125,7 +126,8 @@ function DangerZone() {
       <button className="cell" type="button" onClick={async () => {
         if (!(await confirmDialog({ title: 'Erase everything?', message: 'This removes all tasks, secret lists and settings from this phone. Synced data stays in your shared space.', ok: 'Erase', destructive: true }))) return;
         Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {});
-        ['twodo:chat', 'twodo:data', 'twodo:local', 'twodo:vault'].forEach(k => localStorage.removeItem(k)); location.reload();
+        ['twodo:chat', 'twodo:data', 'twodo:local', 'twodo:vault'].forEach(k => localStorage.removeItem(k));
+        await Moments.clear(); location.reload();
       }}>Erase everything on this phone</button>
     </div>
   );
