@@ -16,6 +16,7 @@ import { scheduleRender } from './render';
 import { D, L, cleanRecord, hooks, partnerKey, ptName, recKey, save, setPeopleRec } from './store';
 import { isHeart, journalOpen } from './journal';
 import { Moments } from './moments';
+import { Avatars } from './avatar3d';
 import { applyTheme } from './theme';
 import type { JournalEntry, List, PeopleRec, Rec, Task } from './types';
 import { firstWord, todayStr } from './util';
@@ -71,7 +72,7 @@ export const Sync = {
       const map = (data && typeof data === 'object' ? data : {}) as Record<string, Enc>;
       if (map.people) await this.apply('people', map.people); // identity first, then everything else
       for (const [k, v] of Object.entries(map)) if (k !== 'people') await this.apply(k, v);
-      if (!this.ready) { this.ready = true; this.pushNewer(map); }
+      if (!this.ready) { this.ready = true; this.pushNewer(map); void Avatars.sync(); }
     } else {
       const parts = path.split('/').filter(Boolean);
       if (parts.length === 1) await this.apply(parts[0], data as Enc);
@@ -104,7 +105,7 @@ export const Sync = {
     if (local && this.isPrivate(local)) return; // never overwrite something that's private on this phone
     obj._s = 1;
     if (obj.kind === 'moment') { await Moments.receive(obj); return; } // kept in its own store, not in the saved data (docs/moments.md)
-    if (k === 'people') { setPeopleRec(obj as PeopleRec); fixIdentity(); applyTheme(); Chat.ensure(); }
+    if (k === 'people') { setPeopleRec(obj as PeopleRec); fixIdentity(); applyTheme(); Chat.ensure(); void Avatars.sync(); }
     else if (obj.kind === 'task') { this.noteTask(local as Task | undefined, obj); D.tasks[obj.id] = obj; }
     else if (obj.kind === 'list') D.lists[obj.id] = obj as List;
     else if (obj.kind === 'goal') D.goals[obj.id] = obj;

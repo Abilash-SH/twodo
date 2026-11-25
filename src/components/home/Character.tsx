@@ -9,7 +9,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { hairColor, skinColor } from '@/lib/characters';
 import { faceUrl, modelUrl, personFor } from '@/lib/people';
 import type { Handle } from '@/lib/people3d';
-import type { AvatarLook } from '@/lib/types';
+import type { AvatarLook, PersonKey } from '@/lib/types';
+import { Avatars } from '@/lib/avatar3d';
 
 export type CharState = 'idle' | 'think' | 'sleepy';
 export const CHAR_RATIO = 100 / 120;
@@ -260,19 +261,20 @@ export function CharacterSvg({ look, size, cls = '', state = 'idle', flip = fals
 /** One character: the realistic 3D person (lib/people.ts, drawn by lib/people3d.ts, loaded only when needed) over its
  *  drawing, which stays until the person is ready and is all there is without WebGL. A new `cls` (wave, hop, happy,
  *  cheer) plays that mood once; `state="think"` tilts the head. `still` stands still (lists and pickers). */
-export function Character({ look, size, cls = '', state = 'idle', flip = false, still = false, half = false }: {
-  look: AvatarLook; size: number; cls?: string; state?: CharState; flip?: boolean; still?: boolean; half?: boolean;
+export function Character({ look, size, cls = '', state = 'idle', flip = false, still = false, half = false, who: k }: {
+  look: AvatarLook; size: number; cls?: string; state?: CharState; flip?: boolean; still?: boolean; half?: boolean; who?: PersonKey;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null), handle = useRef<Handle | null>(null), [ready, setReady] = useState(false);
   const who = personFor(look), w = Math.round(size * (half ? .64 : CHAR_RATIO)); // from the hips up: shoulders are narrower than a whole body's frame
+  const url = (k && Avatars.url[k]) || modelUrl(who);                                // your own avatar, if you made one (docs/own-avatar.md)
   useEffect(() => {
     let gone = false; setReady(false);
     const el = canvas.current; if (!el) return;
-    import('@/lib/people3d').then(m => m.mount(el, modelUrl(who), { w, h: size, flip, half }))
+    import('@/lib/people3d').then(m => m.mount(el, url, { w, h: size, flip, half }))
       .then(h => { if (gone) { h.destroy(); return; } handle.current = h; setReady(true); })
       .catch(() => { /* no WebGL, or the model didn't load: the drawing stays */ });
     return () => { gone = true; handle.current?.destroy(); handle.current = null; };
-  }, [who.id, size, w, flip, half]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [url, size, w, flip, half]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!still && cls) handle.current?.mood(cls); }, [cls, still, ready]);
   useEffect(() => { handle.current?.think(state === 'think'); }, [state, ready]);
   return (
@@ -285,15 +287,15 @@ export function Character({ look, size, cls = '', state = 'idle', flip = false, 
 
 /** Head and shoulders in a circle tinted with the person's colour (--c on a parent), for rows and headers: a photo
  *  of the 3D person (made from the same model), over the drawing in case the photo can't load. */
-export function Portrait({ look, size }: { look: AvatarLook; size: number }) {
+export function Portrait({ look, size, who: k }: { look: AvatarLook; size: number; who?: PersonKey }) {
   const id = 'pt' + useId().replace(/[^a-zA-Z0-9]/g, '');
-  const p = paint(id, look), who = personFor(look);
+  const p = paint(id, look), who = personFor(look), own = k ? Avatars.face[k] : undefined;
   return (
-    <span className="cv-portrait" style={{ width: size, height: size }} aria-hidden="true" data-person={who.id}>
+    <span className="cv-portrait" style={{ width: size, height: size }} aria-hidden="true" data-person={own ? 'own' : who.id}>
       <svg width={size} height={size} viewBox="12 4 76 76" focusable="false">
         <Grads p={p} /><BackHair p={p} /><Torso p={p} /><Head p={p} still="open" />
       </svg>
-      <img className="pt-photo" src={faceUrl(who)} alt="" width={size} height={size} decoding="async" draggable={false}
+      <img className="pt-photo" src={own || faceUrl(who)} alt="" width={size} height={size} decoding="async" draggable={false}
         onError={e => { e.currentTarget.hidden = true; }} />
     </span>
   );

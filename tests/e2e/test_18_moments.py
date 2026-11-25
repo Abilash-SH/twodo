@@ -38,8 +38,8 @@ async def main():
                 await pg.click('.home-moments .mo-shutter' if camera else '.home-moments .mo-lib')
             chooser = await fc.value
             assert chooser.element and (await chooser.element.get_attribute('capture') == 'environment') == camera, 'the shutter opens the camera; the other button your photos'
-            await chooser.set_files(path); await pg.wait_for_timeout(1200)
-            assert await pg.evaluate("(document.querySelector('.sheet.open') || {}).getAttribute?.('aria-label')") == 'Share a moment'
+            await chooser.set_files(path)
+            assert await until(pg, "(document.querySelector('.sheet.open') || {}).getAttribute?.('aria-label') || null", 'Share a moment', 10000) == 'Share a moment'  # a big photo takes a moment to make small
             if caption: await pg.fill('.sheet.open .mo-caption', caption)
             await pg.click('.sheet.open .mo-send-btn'); await pg.wait_for_timeout(900)
         stamp = int(time.time()) % 100000

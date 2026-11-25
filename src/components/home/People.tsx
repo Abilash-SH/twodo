@@ -12,7 +12,8 @@ import { haptic } from '@/lib/feedback';
 import { modelUrl, personFor } from '@/lib/people';
 import type { Act, StageHandle, Vibe, Who } from '@/lib/stage3d';
 import { L, partnerKey, person } from '@/lib/store';
-import type { AvatarLook } from '@/lib/types';
+import type { AvatarLook, PersonKey } from '@/lib/types';
+import { Avatars } from '@/lib/avatar3d';
 import { firstWord } from '@/lib/util';
 import { navState } from '@/ui/nav';
 import { sheetStore } from '@/ui/sheet';
@@ -25,6 +26,12 @@ export const homePeople = { act: (_who: 'me' | 'pt', _a: Act): void => {} };
 
 const SLOP = 6;
 const whoFor = (id: string, look: AvatarLook): Who => { const p = personFor(look); return { id, url: modelUrl(p), g: p.look === 'female' ? 'f' : 'm' }; };
+/** someone as drawn: their own avatar if they've made one (docs/own-avatar.md), else the Twodo person they picked */
+const whoOf = (id: string, k: PersonKey, look = avatarOf(k)): Who => {
+  const own = Avatars.url[k];
+  return own ? { id, url: own, g: look.look === 'female' ? 'f' : 'm' } : whoFor(id, look);
+};
+const shownId = (k: PersonKey, look = avatarOf(k)) => (Avatars.url[k] ? 'own' : personFor(look).id);
 
 /** A stage in `box` (drawn into `cv`) with these people, and its gestures; `ready` once the 3D people are drawn */
 function useStage(who: Who[], { onReady, active = true }: { onReady?: (h: StageHandle) => void; active?: boolean } = {}) {
@@ -107,7 +114,7 @@ function useStage(who: Who[], { onReady, active = true }: { onReady?: (h: StageH
 /** Home: you on the left, your partner on the right */
 export function HomePeople({ vibe }: { vibe: Vibe }) {
   const me = L.me, pk = partnerKey(), mine = avatarOf(me), theirs = avatarOf(pk);
-  const who = [whoFor('me', mine), whoFor('pt', theirs)];
+  const who = [whoOf('me', me), whoOf('pt', pk)];
   // a screen or a sheet over Home: they wait, undrawn (battery, and nothing competes with that screen's gestures)
   const screens = useStore(navState).entries, sheets = useStore(sheetStore);
   const covered = screens.filter(e => e.phase !== 'out').length > 1 || sheets.some(e => !e.closing);
@@ -116,7 +123,7 @@ export function HomePeople({ vibe }: { vibe: Vibe }) {
   useEffect(() => { stage.current?.vibe({ free: vibe.free, unread: vibe.unread, ptDone: vibe.ptDone }); }, [vibe.free, vibe.unread, vibe.ptDone, ready, stage]);
   const names = [firstWord(person(me).name) || 'You', firstWord(person(pk).name) || 'Your partner'];
   return (
-    <section className={`home-people no-pan${ready ? ' ready' : ''}`} ref={box as RefObject<HTMLElement>} data-people={`${personFor(mine).id} ${personFor(theirs).id}`}
+    <section className={`home-people no-pan${ready ? ' ready' : ''}`} ref={box as RefObject<HTMLElement>} data-people={`${shownId(me)} ${shownId(pk)}`}
       aria-label={`${names[0]} and ${names[1]}, in 3D. Drag sideways on one of you to turn them round; tap to make them wave.`}>
       <span className="hp-draw" aria-hidden="true">
         <span style={colorVar(person(me).color)}><CharacterSvg look={mine} size={150} still /></span>
@@ -132,10 +139,11 @@ export function HomePeople({ vibe }: { vibe: Vibe }) {
 }
 
 /** Your character: the person you're picking, alone, to turn round and look at from every side */
-export function PersonPreview({ look, name }: { look: AvatarLook; name: string }) {
-  const { box, cv, stage, ready } = useStage([whoFor('me', look)]);
+export function PersonPreview({ look, name, who = L.me, size }: { look: AvatarLook; name: string; who?: PersonKey; size?: number }) {
+  const { box, cv, stage, ready } = useStage([whoOf('me', who, look)]);
   return (
-    <div className={`person-preview no-pan${ready ? ' ready' : ''}`} ref={box as RefObject<HTMLDivElement>} data-people={personFor(look).id}
+    <div className={`person-preview no-pan${ready ? ' ready' : ''}`} ref={box as RefObject<HTMLDivElement>} data-people={shownId(who, look)}
+      style={size ? { width: Math.round(size * .6), height: size } : undefined}
       aria-label={`${name}, in 3D. Drag sideways to turn them round; tap to make them wave.`}>
       <span className="hp-draw" aria-hidden="true"><CharacterSvg look={look} size={150} still /></span>
       <canvas ref={cv} className="hp-c" aria-hidden="true" />

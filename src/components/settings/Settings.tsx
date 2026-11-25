@@ -7,6 +7,7 @@ import { KeyStore } from '@/lib/crypto';
 import { haptic } from '@/lib/feedback';
 import { Auth } from '@/lib/firebase';
 import { Moments } from '@/lib/moments';
+import { Avatars } from '@/lib/avatar3d';
 import { Pair } from '@/lib/pair';
 import { Push } from '@/lib/push';
 import { renderNow, scheduleRender } from '@/lib/render';
@@ -59,7 +60,7 @@ function Profile() {
         }} />))}</div>
       <p className="me-hint">Your colour, on your messages and across the app.</p>
       <button className="cell me-char" type="button" onClick={() => { closeSheet(); setTimeout(() => openCharacter(), 350); }}>
-        <span className="me-char-ic" style={colorVar(p.color)}><Portrait look={avatarOf(L.me)} size={34} /></span>
+        <span className="me-char-ic" style={colorVar(p.color)}><Portrait look={avatarOf(L.me)} who={L.me} size={34} /></span>
         <span className="grow">Your character<span className="sub">{lookName(avatarOf(L.me).look)} · {roleName(roleOf(L.me))}</span></span><Icon name="chevR" cls="chev" /></button>
     </div>
   );
@@ -127,7 +128,7 @@ function DangerZone() {
         if (!(await confirmDialog({ title: 'Erase everything?', message: 'This removes all tasks, secret lists and settings from this phone. Synced data stays in your shared space.', ok: 'Erase', destructive: true }))) return;
         Sync.close(); Inbox.stop(); await KeyStore.clear().catch(() => {});
         ['twodo:chat', 'twodo:data', 'twodo:local', 'twodo:vault'].forEach(k => localStorage.removeItem(k));
-        await Moments.clear(); location.reload();
+        await Moments.clear(); await Avatars.clear(); location.reload();
       }}>Erase everything on this phone</button>
     </div>
   );

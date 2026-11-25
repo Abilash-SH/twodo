@@ -158,12 +158,12 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
         <h1 className="board-title">Home</h1>
         <AreaBoundary area="Home’s top" compact>
         <button className="fab-btn home-me" type="button" aria-label="Settings" onClick={() => openSettings()} style={colorVar(color(me))}>
-          <Portrait look={avatarOf(me)} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
+          <Portrait look={avatarOf(me)} who={me} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
         </button>
         <span className="home-me-txt"><b>{firstWord(person(me).name)}</b><span>{ok ? `with ${pt}` : 'Just you, for now'}</span></span>
         <button className="home-pt" type="button" style={colorVar(color(pk))} onClick={toPartner}
           aria-label={ok ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
-          <Portrait look={avatarOf(pk)} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
+          <Portrait look={avatarOf(pk)} who={pk} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
           {unread ? <b className="home-n" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
         </button>
         </AreaBoundary>

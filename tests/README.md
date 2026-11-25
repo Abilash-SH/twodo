@@ -79,6 +79,12 @@ scrolls Home; the character screen's person turns round too; without WebGL (`--d
 nothing fails. It reads where someone faces from `data-me-yaw` / `data-me-state` on `.home-people`. Needs
 `/tmp/mo/sunset.jpg` (see test 18).
 
+Test 20 covers your own 3D avatar (docs/own-avatar.md): a photo instead of an avatar is refused with a reason; an
+avatar .glb is checked, made small, shown at once, sent in encrypted pieces (only ciphertext in the database) and
+reaches your partner's Home and round picture by itself; "Use a Twodo person again" takes it off both phones and out
+of the database. Needs an avatar file: `AVATAR=/path/to/avatar.glb` (any Avaturn export; by default Avaturn's sample
+at `/tmp/avt/a/public/default_model.glb`, never committed) and `/tmp/mo/sunset.jpg`.
+
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
 1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be

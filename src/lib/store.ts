@@ -53,6 +53,7 @@ export function cleanPerson(p: unknown, d: Person): Person {
   if (o.avatar !== undefined) { const a = cleanAvatar(o.avatar); if (a) o.avatar = a; else delete o.avatar; } // the character (docs/characters.md)
   if (o.char !== undefined && !CHAR_KINDS.includes(o.char as string)) delete o.char;  // the earlier characters, still read
   if (o.role !== undefined && !ROLE_KINDS.includes(o.role as string)) delete o.role;
+  if (o.model !== undefined) { const m = o.model as Loose | null; if (m && typeof m === 'object' && typeof m.h === 'string' && /^[0-9a-f]{64}$/.test(m.h) && Number.isInteger(m.n) && (m.n as number) >= 1 && (m.n as number) <= 48) o.model = { h: m.h, n: m.n as number }; else delete o.model; } // your own avatar (docs/own-avatar.md)
   return o;
 }
 export function cleanRecord(r: unknown): Rec | null {

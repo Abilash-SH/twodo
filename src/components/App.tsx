@@ -6,6 +6,7 @@ import { ui } from '@/lib/bridge';
 import { asset, cloudReady } from '@/lib/config';
 import { Auth } from '@/lib/firebase';
 import { Moments } from '@/lib/moments';
+import { Avatars } from '@/lib/avatar3d';
 import { scheduleRender } from '@/lib/render';
 import { L, ensureBasics, load, save } from '@/lib/store';
 import { Sync } from '@/lib/sync';
@@ -71,6 +72,7 @@ function runBoot() {
 
 function init() {
   load(); applyTheme(); void Moments.load(); // the moments this phone has seen (IndexedDB, docs/moments.md)
+  void Avatars.sync();                     // your own 3D avatars kept on this phone (docs/own-avatar.md)
   if (L.sync && (L.sync.code || L.sync.url)) L.sync = {}; // retire the old invite-link pairing
   ui.island = island; ui.showGate = showGate; ui.closeSheet = () => closeSheet(); ui.seedTasks = seedTasks;
   boot.run = runBoot;
