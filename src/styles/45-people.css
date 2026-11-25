@@ -1,0 +1,23 @@
+/* Twodo · Home's two people (components/home/People.tsx, lib/stage3d.ts): realistic 3D people standing free on Home's
+   background (no card), moving. Their drawings stand in until the 3D people are ready, then fade out.
+   A sideways drag on a person turns them; up and down still scrolls Home (touch-action). Only opacity animates. */
+.home-people, .person-preview { position: relative; touch-action: pan-y; -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.home-people { height: 300px; margin: 2px 0 -4px; }
+@media (min-height: 800px) { .home-people { height: 322px; } }
+/* Your character: the person you're picking, beside what they'd say */
+.person-preview { flex: none; width: 150px; height: 250px; }
+.person-preview .hp-draw { padding-bottom: 6px; }
+.hp-c { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity var(--dur-standard) var(--ease-out); }
+.home-people.ready > .hp-c, .person-preview.ready > .hp-c { opacity: 1; }
+.hp-draw { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 14%; padding-bottom: 14px;
+  pointer-events: none; transition: opacity var(--dur-standard) var(--ease-out); }
+.home-people.ready > .hp-draw, .person-preview.ready > .hp-draw { opacity: 0; }
+.hp-draw > span { display: block; }
+/* two buttons for a keyboard or a screen reader ("Make Deiva wave"): hidden until focused */
+.hp-sr { position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: center; gap: 8px; pointer-events: none; }
+.hp-sr button { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.hp-sr button:focus-visible { position: static; width: auto; height: 44px; padding: 0 16px; clip-path: none; border-radius: 22px; pointer-events: auto;
+  background: var(--bg2); color: var(--label); font: inherit; font-weight: 700; box-shadow: 0 1px 2px rgba(27,23,48,.1), 0 10px 24px -14px rgba(27,23,48,.5);
+  outline: 3px solid var(--label); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .hp-c, .hp-draw { transition: opacity var(--dur-quick) linear; } }
