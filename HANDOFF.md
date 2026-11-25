@@ -28,8 +28,8 @@ day), #33 (the crash on reopening the chat), #34 (journal: a plain box and Post)
 - #38 `fix/home-my-tasks` (Claude): Home and Today show only your to-dos and the shared ones. Waiting for the owner.
 - #39 `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
   It touches `BoardView.tsx` and test 13 next to #38; whichever merges second needs a small rebase.
-- `feat/people-stage` (Claude, 2026-11-25, built on #39: merge after it): the two of you move on Home in 3D (see
-  "2026-11-25 The people move" at the end). Fixes test 6.
+- #40 merged into `feat/moments` by mistake (it was stacked on #39); #41 brings it to `main`.
+- `feat/own-avatar` (Claude): your own 3D avatar from a selfie, synced encrypted (needs a rules paste).
 - #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
   `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
@@ -57,12 +57,9 @@ WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a scree
 
 ## What to do next, in order
 
-1. **The 3D people from your selfies, the rest of the owner's ask (2026-11-25):** moving, turning people are built
-   (`feat/people-stage`); next, each of you makes a realistic avatar from a selfie in Avaturn (free, a GLB file with
-   Mixamo-style bones) and imports it in Settings → Your character. `lib/mocap.ts` already plays every movement on
-   that skeleton (checked on Avaturn's sample avatar, which is not in the repo). Still to decide and write down
-   (rule 13) before building: how your avatar reaches your partner's phone (encrypted, in chunks, on a new database
-   path that needs a rules change the owner pastes in, or each of you imports both files). Never in the public repo.
+1. **Your own avatar from a selfie:** built in `feat/own-avatar` (owner chose option 1: synced automatically). **The
+   owner must paste the updated `firebase.rules.json` into the Firebase console** (new `spaces/$space/av` path); until
+   then importing works on the importing phone only and the app says it couldn't send. See `docs/own-avatar.md`.
 2. **#38 and Moments:** the owner checks them on his iPhone (their PR checklists). The crash on reopening the chat
    (#33) and the journal by day (#32) are merged; if the *Twodo stopped for a moment* page ever appears again, its
    code line names the error.
@@ -199,3 +196,10 @@ WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a scree
 - The journal and the picker's cards still use the older single-person canvases (`lib/people3d.ts`).
 - To rebuild the clips you need the Rocketbox repo's `Assets/Animations` (a sparse clone of
   github.com/microsoft/Microsoft-Rocketbox) and Blender 4; the command is in the script's header.
+
+## 2026-11-25 Your own avatar (data decision, rule 13)
+
+- Owner's choice: "1)", the avatar reaches the partner's phone by itself. Full decision: `docs/own-avatar.md`.
+- New: people record field `model: { h, n }`; database path `spaces/{space}/av/{uid}/{h12}/{i}` (encrypted pieces,
+  needs the rules change); IndexedDB `twodo-people`. Test 20 (needs an Avaturn .glb; Avaturn's sample is not in the
+  repo: it has no license).

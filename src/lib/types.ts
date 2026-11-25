@@ -16,6 +16,8 @@ export interface AvatarLook { look: Look; skin: Skin; hair: Hair }
 /** avatar and role: the character each of you picked and the voice it speaks in (docs/characters.md) */
 export interface Person {
   name: string; color: Color; photo?: string; uid?: string | null; username?: string; avatar?: AvatarLook; char?: CharKind; role?: RoleKind;
+  /** your own 3D avatar (docs/own-avatar.md): the SHA-256 of the file and how many pieces it was sent in */
+  model?: { h: string; n: number };
 }
 export interface PeopleRec { kind: 'people'; id: 'people'; a: Person; b: Person; updatedAt: number; _s?: 1 }
 export interface List {

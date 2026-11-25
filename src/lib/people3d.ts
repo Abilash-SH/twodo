@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { makeRig } from './mocap';
 import { reducedMotion } from './util';
 
 let failed = false, probed = false;
@@ -116,18 +117,21 @@ export interface Handle { mood(m: string): void; think(on: boolean): void; destr
 /** Draw one person into `canvas` (w × h CSS pixels). Resolves once the first picture is there. */
 export async function mount(canvas: HTMLCanvasElement, url: string, { w, h, flip, half = false }: { w: number; h: number; flip: boolean; half?: boolean }): Promise<Handle> {
   const root = prepare(cloneSkinned(await model(url)));
-  const by = (n: string) => root.getObjectByName(n) || undefined;
-  const side = flip ? 'L' : 'R';                                                       // the arm away from your partner waves
-  const bones: Bones = { pelvis: by('Bip01_Pelvis'), spine: by('Bip01_Spine1'), neck: by('Bip01_Neck'), head: by('Bip01_Head'), up: by(`Bip01_${side}_UpperArm`), fore: by(`Bip01_${side}_Forearm`) };
+  // a Twodo person (Rocketbox's Bip01 bones), or your own avatar (any human skeleton: found by lib/mocap.ts)
+  const rig = makeRig(root); if (!rig) throw new Error('No person');
+  const bip = !!root.getObjectByName('Bip01_Pelvis'), b = (h: string) => rig.bone.get(h);
+  const side = flip ? 'l' : 'r';                                                       // the arm away from your partner waves
+  const bones: Bones = { pelvis: b('hips'), spine: b('spine1') || b('spine'), neck: b('neck'), head: b('head'), up: b(`${side}Arm`), fore: b(`${side}ForeArm`) };
   // arms down by the sides (the models come in a T pose), a little bent
-  for (const s of ['L', 'R']) {
-    const up = by(`Bip01_${s}_UpperArm`), fo = by(`Bip01_${s}_Forearm`); if (!up || !fo) continue;
+  for (const s of ['l', 'r']) {
+    const up = b(`${s}Arm`), fo = b(`${s}ForeArm`); if (!up || !fo) continue;
     root.updateMatrixWorld(true);
     const out = Math.sign(fo.getWorldPosition(V()).x - up.getWorldPosition(V()).x) || 1;
     aim(root, up, fo, new THREE.Vector3(.18 * out, -1, .05));
-    fo.rotateOnAxis(new THREE.Vector3(0, 0, 1), -.25);
+    if (bip) fo.rotateOnAxis(new THREE.Vector3(0, 0, 1), -.25);
   }
-  root.rotation.y = flip ? -.42 : .42;                                                 // turned to the other person
+  const faceYaw = new THREE.Euler().setFromQuaternion(rig.face, 'YXZ').y;
+  root.rotation.y = -faceYaw + (flip ? -.42 : .42);                                    // turned to the other person
   root.updateMatrixWorld(true);
   const base = new Map<THREE.Object3D, THREE.Quaternion>();
   for (const bn of [bones.pelvis, bones.spine, bones.neck, bones.head, bones.up, bones.fore]) if (bn) base.set(bn, bn.quaternion.clone());

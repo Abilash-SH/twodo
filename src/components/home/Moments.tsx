@@ -109,7 +109,7 @@ export function HomeMoments({ v }: { v: number }) {
         {theirs ? <img src={theirs.img} alt="" decoding="async" /> : <span className="mo-empty"><Icon name="camera" /><span>{ok ? `${pt}’s moments appear here` : 'Add your partner to share moments'}</span></span>}
         {theirs ? (
           <span className="mo-meta">
-            <span className="mo-who"><Portrait look={avatarOf(pk)} size={26} /><b>{pt}</b><span>{whenShared(theirs.at)}</span></span>
+            <span className="mo-who"><Portrait look={avatarOf(pk)} who={pk} size={26} /><b>{pt}</b><span>{whenShared(theirs.at)}</span></span>
             {theirs.caption ? <span className="mo-cap">{theirs.caption}</span> : null}
           </span>
         ) : null}

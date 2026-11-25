@@ -21,3 +21,13 @@
   background: var(--bg2); color: var(--label); font: inherit; font-weight: 700; box-shadow: 0 1px 2px rgba(27,23,48,.1), 0 10px 24px -14px rgba(27,23,48,.5);
   outline: 3px solid var(--label); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .hp-c, .hp-draw { transition: opacity var(--dur-quick) linear; } }
+
+/* Your own 3D you (character screen, docs/own-avatar.md): make one at Avaturn, import it, or go back to a Twodo person */
+.chv-own { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.chv-own .chv-sub { margin: 0; }
+.chv-own-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.chv-own-btn { flex: 1 1 150px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.chv-own-btn .i { width: 20px; height: 20px; }
+.chv-own-off { align-self: flex-start; min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--label); font: inherit; font-weight: 600; text-decoration: underline; }
+.chv-own-note { margin: 0; min-height: 20px; font-size: 15px; line-height: 20px; color: var(--soft); }
+.chv-own-note.failed { color: color-mix(in srgb, var(--c-red) 70%, var(--label)); font-weight: 600; }

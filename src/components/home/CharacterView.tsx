@@ -11,7 +11,32 @@ import { colorVar, cssVars } from '../ui/Avatar';
 import { faceUrl, PEOPLE, personFor } from '@/lib/people';
 import { Character } from './Character';
 import { PersonPreview } from './People';
+import { Avatars } from '@/lib/avatar3d';
+import { Icon } from '../ui/Icon';
 import { boardData } from './BoardView';
+
+/** Your own avatar from a selfie (docs/own-avatar.md): made at Avaturn, imported here, sent to your partner encrypted */
+function OwnAvatar({ pt }: { pt: string }) {
+  const own = !!Avatars.url[L.me], busy = Avatars.state === 'checking' || Avatars.state === 'sending';
+  const pick = () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.glb,model/gltf-binary,application/octet-stream';
+    inp.addEventListener('change', async () => { const f = inp.files && inp.files[0]; if (f) await Avatars.use(await f.arrayBuffer()); });
+    inp.click();
+  };
+  return (
+    <div className="chv-own">
+      <p className="chv-sub">Make a realistic avatar of yourself from a selfie at Avaturn (free), download it as a .glb file, then import it here.
+        {pt ? ` It reaches ${pt}’s phone by itself, encrypted.` : ' Once your partner is added, it reaches their phone too, encrypted.'} It moves like the others.</p>
+      <div className="chv-own-row">
+        <a className="btn chv-own-btn tint" href="https://avaturn.me" target="_blank" rel="noopener noreferrer"><Icon name="camera" />Make one at Avaturn</a>
+        <button type="button" className="btn chv-own-btn" disabled={busy} onClick={pick}><Icon name="upload" />{own ? 'Import a new one' : 'Import your avatar'}</button>
+      </div>
+      {own && !busy ? <button type="button" className="chv-own-off" onClick={() => { haptic('light'); void Avatars.remove(); }}>Use a Twodo person again</button> : null}
+      <p className={`chv-own-note ${Avatars.state}`} role="status">{Avatars.note}</p>
+    </div>
+  );
+}
 
 export function CharacterView() {
   const me = L.me, pk = partnerKey(), mine = avatarOf(me), role = roleOf(me);
@@ -46,6 +71,8 @@ export function CharacterView() {
           );
         })}
       </div>
+      <h2 className="chv-h">Your own 3D you</h2>
+      <OwnAvatar pt={paired ? firstWord(person(pk).name) : ''} />
       <h2 className="chv-h">Their role</h2>
       <p className="chv-sub">How they tell you about your day. Same to-dos, a different voice.</p>
       <div className="chv-roles" role="radiogroup" aria-label="Their role">

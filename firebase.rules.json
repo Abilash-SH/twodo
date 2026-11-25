@@ -65,6 +65,17 @@
               }
             }
           }
+        },
+        "av": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && root.child('spaces').child($space).child('members').child(auth.uid).exists()",
+            "$v": {
+              ".validate": "$v.matches(/^[0-9a-f]{12}$/)",
+              "$i": {
+                ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.isString() && newData.val().length <= 190000"
+              }
+            }
+          }
         }
       }
     },

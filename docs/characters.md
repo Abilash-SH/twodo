@@ -17,6 +17,9 @@ people come from **Microsoft Rocketbox** (115 rigged, realistic avatars, MIT lic
 like that. Don't stand on the card, I want them to have some animations, movements like that." The two of you now
 stand free on Home (no card), move by motion capture and turn all the way round under a finger (below, "Moving").
 
+**Your own avatar (2026-11-25):** "You two, from selfies": make one at Avaturn and import the .glb on the character
+screen; it replaces your Twodo person on both phones, encrypted (`docs/own-avatar.md`).
+
 ## Moving (web app, 2026-11-25)
 
 - **Where:** Home, under the hello: the two of you, full height, on Home's own background with a soft shadow at your
