@@ -15,6 +15,7 @@ import { Remind } from './push';
 import { scheduleRender } from './render';
 import { D, L, cleanRecord, hooks, partnerKey, ptName, recKey, save, setPeopleRec } from './store';
 import { isHeart, journalOpen } from './journal';
+import { Moments } from './moments';
 import { applyTheme } from './theme';
 import type { JournalEntry, List, PeopleRec, Rec, Task } from './types';
 import { firstWord, todayStr } from './util';
@@ -81,7 +82,7 @@ export const Sync = {
   getRec(k: string): Rec | null | undefined {
     if (k === 'people') return D.people;
     const id = k.slice(2);
-    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : k[0] === 'j' ? D.journal[id] : null;
+    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : k[0] === 'j' ? D.journal[id] : k[0] === 'o' ? Moments.rec(id) : null;
   },
   localU(k: string): number { const r = this.getRec(k); return r ? (r.updatedAt || 0) : 0; },
   isPrivate(r: Rec): boolean {
@@ -102,6 +103,7 @@ export const Sync = {
     const local = this.getRec(k);
     if (local && this.isPrivate(local)) return; // never overwrite something that's private on this phone
     obj._s = 1;
+    if (obj.kind === 'moment') { await Moments.receive(obj); return; } // kept in its own store, not in the saved data (docs/moments.md)
     if (k === 'people') { setPeopleRec(obj as PeopleRec); fixIdentity(); applyTheme(); Chat.ensure(); }
     else if (obj.kind === 'task') { this.noteTask(local as Task | undefined, obj); D.tasks[obj.id] = obj; }
     else if (obj.kind === 'list') D.lists[obj.id] = obj as List;
@@ -144,6 +146,7 @@ export const Sync = {
     for (const id in D.tasks) keys.push('t:' + id);
     for (const id in D.goals) keys.push('g:' + id);
     for (const id in D.journal) if (!D.journal[id].private) keys.push('j:' + id);
+    if (Moments.latest[L.me]) keys.push('o:' + L.me); // only your own moment: your partner sends theirs
     for (const k of keys) {
       const r = this.getRec(k); if (!r) continue;
       if ((r.updatedAt || 0) > ((map[k] && map[k].u) || 0)) this.q.add(k);

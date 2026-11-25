@@ -7,12 +7,10 @@
    Nothing is stored for Home itself; characters and roles live in the people record (docs/characters.md).
    Privacy: everything here comes from liveTasks(), the chat and the shared journal, so nothing from a secret list
    (content, titles, counts) can appear, and the character never mentions one. It never shows a message's text. */
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
 import { avatarOf, dayLine, lines, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { REACTIONS, playEmojiBurst } from '@/lib/reactions';
-import { island } from '@/ui/island';
 import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
@@ -31,6 +29,7 @@ import { AreaBoundary } from '../ui/AreaBoundary';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { Character, Portrait } from './Character';
+import { HomeMoments } from './Moments';
 
 /* ---------- what is on the board (plain data, so it is easy to check) ---------- */
 interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'waiting' | 'failed' | 'last'; who: PersonKey; text: string; n: number; when: string }
@@ -117,40 +116,10 @@ function TodayCard({ b }: { b: Board }) {
   );
 }
 
-/** Send your partner a reaction: it bursts on their screen (never a message), and a little from your tile */
-function Reactions({ pt }: { pt: string }) {
-  const ok = paired(), [sent, setSent] = useState(''), last = useRef(0);
-  const send = (r: typeof REACTIONS[number], el: HTMLElement) => {
-    if (!ok) return openInviteSheet();
-    const now = Date.now(); if (now - last.current < 700) return; // one at a time
-    if (!Chat.sendPoke(r.e)) { island({ e: '⚠️', text: 'Not connected yet', sub: 'Check you’re online' }); return; }
-    last.current = now;
-    const b = el.getBoundingClientRect();
-    playEmojiBurst(r.e, { from: { x: b.left + b.width / 2, y: b.top + b.height / 2 }, count: 9 });
-    const line = `${r.label} sent to ${pt}`;
-    setSent(line); setTimeout(() => setSent(s => (s === line ? '' : s)), 2200);
-  };
-  return (
-    <section className="home-react" aria-label={ok ? `Send ${pt} a reaction` : 'Reactions'}>
-      <h2 className="home-h">{ok ? `Send ${pt} a reaction` : 'Add your partner to send reactions'}</h2>
-      <div className="react-row">
-        {REACTIONS.map(r => (
-          <button key={r.label} type="button" className="react" aria-label={ok ? `Send ${pt} ${r.label.toLowerCase()} ${r.e}` : 'Add your partner'}
-            onClick={ev => send(r, ev.currentTarget)}>
-            <span className="react-e" aria-hidden="true">{r.e}</span>
-            <span className="react-l">{r.label}</span>
-          </button>
-        ))}
-      </div>
-      <p className="home-react-sent" role="status">{sent}</p>
-    </section>
-  );
-}
-
 /** Home's content only draws again when the data changes (or the connection does), never when a screen slides over it. */
 const Notes = memo(function Notes({ v, online }: { v: number; online: boolean }) {
   void v;
-  const b = boardData(), me = L.me, pk = partnerKey(), pt = firstWord(person(pk).name);
+  const b = boardData(), me = L.me;
   const role = roleOf(me), said = lines(b.facts, role);
   said[0] = dayLine(b.facts, role);
   const [i, setI] = useState(0);
@@ -165,7 +134,7 @@ const Notes = memo(function Notes({ v, online }: { v: number; online: boolean })
         </button>
       </div>
       <TodayCard b={b} />
-      <Reactions pt={pt} />
+      <HomeMoments v={v} />
     </main>
   );
 });

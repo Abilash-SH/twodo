@@ -153,3 +153,38 @@ character cards and a floating tab bar; a character detail screen; a dressing-ro
 
 Outcome: this file and `HANDOFF.md` (#23; the old `PROMPT.md` moved here), two new characters (#24), and a new Home
 with a day-by-day journal in the iPhone app (#25).
+
+**13.** (2026-11-18)
+> Continue where Codex left off. Did few changes with tha
+
+Then a screenshot of the new error page: *Twodo stopped for a moment*, `TypeError: undefined is not an object
+(evaluating 't.color')`.
+
+Outcome: containment and the error page (#31), the web journal by day (#32), and the cause found and fixed: the chat
+reopened while it was still closing (#33).
+
+**14.** (2026-11-18)
+> Few changes to be done, 1) Characters do not look attractive in 2D. Make it as a 3D character with a realistic look, like a perfect human-shaped one. 2) In Journal, don't have those prompts like how was today something like that. Just have a option like post button, and also do not have love like option for all the post. It looks clumsy when seen in the journal post. 3) Home screen is the same as the inspiration which I gave. I need something unique, and i don't want so many cards. Just one card is enough. Instead of two of you, have something like sending reactions instead of two of you.
+
+Asked which 3D route; answer:
+> A, I dont have any. And reactions I dont want it to be send in the chat, something reactive please
+
+Outcome: the journal's plain box and Post (#34), Home with one Today card and reactions (#35), reactions that burst
+live on your partner's screen (#36), realistic 3D people from Microsoft Rocketbox (#37).
+
+**15.** (2026-11-23)
+> In the to do list of home page I need to see only task under my name and common ones.
+
+Outcome: #38.
+
+**16.** (2026-11-25)
+> It is still in 2D. What are the possible things that can be implemented and it is not realistic as well and instead of reactions in the bottom what other things can be done, as the reactions is not great
+
+Answers to the questions that followed:
+> I am ok with anystyle but I want those to be realistic 3D where it turns 360 degree, like that. Don't stand on the card, I want them to have some animations, movements like that
+
+Realistic how: "You two, from selfies" (each makes a realistic avatar from a selfie in Avaturn and imports it in
+Settings). Instead of reactions:
+> May be something like instagrams instant or locket to share images at one tap.
+
+Outcome: Moments (`feat/moments`, `docs/moments.md`); the 3D people from your selfies are next (`HANDOFF.md`).

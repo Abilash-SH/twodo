@@ -3,6 +3,7 @@ import { ui } from './bridge';
 import { cloudReady } from './config';
 import { KeyStore, b64, decryptObj, derivePasswordKeys, encryptObj, importPriv, newKeyPair, randHex, unb64, type PubJwk, type SpaceKey } from './crypto';
 import { AppError, Auth, USERNAME_RE, dbGet, dbPatch, normUsername } from './firebase';
+import { Moments } from './moments';
 import { Push } from './push';
 import { scheduleRender } from './render';
 import { D, L, addSecretList, commit, ensureBasics, liveTasks, person, resetData, save, seedLists, setPeople, setPeopleRec, stamp } from './store';
@@ -33,7 +34,7 @@ function switchingAccount(): void {
   if (L.lastUid && L.lastUid !== L.auth!.uid) {
     resetData();
     L.view = {}; L.remSig = {}; L.focus = null; L.notified = {}; L.pair = null; L.me = 'a';
-    localStorage.removeItem('twodo:chat');
+    localStorage.removeItem('twodo:chat'); void Moments.clear();
     ensureBasics();
   }
   L.lastUid = L.auth!.uid; L.lastEmail = L.auth!.email;

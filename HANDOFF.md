@@ -3,7 +3,7 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-18.
+Last updated: 2026-11-25.
 
 ## The project in short
 
@@ -18,22 +18,23 @@ Last updated: 2026-11-18.
     `docs/architecture.md`; the rules are `mobile/AGENTS.md`. It replaces the web app at the end (phase 6).
 - Every prompt the owner has given is in `docs/prompts.md`, kept as history.
 
-## State on 2026-11-18 (evening)
+## State on 2026-11-25
 
-`main` is at `b3967a8`. **Merged:** #23 (this file), #24 and #25 (the iPhone app's characters, Home and day-page
-journal), #26 and #27 (the same characters and Home on the web app), #29 (Codex: the web journal by date) and #30
-(Codex: an error boundary around the chat).
+`main` is at `8c4f10a`. **Merged since 2026-11-18:** #31 (containment and the error page), #32 (the web journal by
+day), #33 (the crash on reopening the chat), #34 (journal: a plain box and Post), #35 (Home: one Today card), #36
+(reactions that burst live, never in the chat) and #37 (realistic 3D people from Microsoft Rocketbox).
 
 **Open:**
-- #31 `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
-  the end). Merge it first; it also fixes #30's note covering Home after Back.
-- #32 `feat/web-journal-day` (Claude, built on #31): the web journal by day, designed like the app's, with test 15
-  rewritten. Merge after #31.
+- #38 `fix/home-my-tasks` (Claude): Home and Today show only your to-dos and the shared ones. Waiting for the owner.
+- `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
+  It touches `BoardView.tsx` and test 13 next to #38; whichever merges second needs a small rebase.
 - #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
   `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
-**Known broken on `main`:** browser test 15 (journal) still checks the old thread; #29 changed the screen without
-updating it. #32 fixes it.
+**Known broken on `main`:** browser test 6's *short angled reply flick* (in the chat) fails since #37: it passes at
+`a705c8f` (before the 3D people) and fails at `8c4f10a`, with the same result with or without Moments. Likely the 3D
+people still drawing behind the chat (software WebGL in the test). To fix in the next 3D work: stop drawing them
+while Home is covered.
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -55,10 +56,13 @@ updating it. #32 fixes it.
 
 ## What to do next, in order
 
-1. **The crash on Home's top-right picture:** after #31 merges, the owner taps it again on
-   his iPhone. If a note or the *Twodo stopped for a moment* page appears, its code line names the error: fix that
-   cause with a test that reproduces it. Then decide with him whether to keep the notes as they are.
-2. **The web journal:** after #32 merges, check it on the owner's iPhone (its PR checklist).
+1. **The 3D people, the owner's latest ask (2026-11-25):** "realistic 3D where it turns 360 degree… Don't stand on
+   the card, I want them to have some animations, movements like that", made **from the two of you, from selfies**
+   (each makes a realistic avatar in Avaturn, free, and imports the file in Settings; it stays on your phones, never
+   in the public repo). Fix test 6 there too (above).
+2. **#38 and Moments:** the owner checks them on his iPhone (their PR checklists). The crash on reopening the chat
+   (#33) and the journal by day (#32) are merged; if the *Twodo stopped for a moment* page ever appears again, its
+   code line names the error.
 3. **#28** (Supabase schema and RLS): Codex, or whoever continues it, works through the review comment, then the
    adversarial RLS tests, and checks it against `docs/architecture.md`, section 2, before it is merged.
 4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
@@ -165,3 +169,19 @@ updating it. #32 fixes it.
 - Limit: a reaction reaches your partner only if their app is open (or opens within a minute). No push for it.
 - Realistic 3D characters (option A): built in `feat/realistic-3d-people` from Microsoft Rocketbox (MIT). See
   `docs/characters.md`, "The 3D people". The iPhone app (`mobile/`) still has the drawn characters.
+
+## 2026-11-25 Moments (data decision, rule 13)
+
+- Asked for, in place of Home's reactions ("the reactions is not great"): "something like Instagram's Instants or
+  Locket to share images at one tap". The full decision is `docs/moments.md`; in short:
+- **Server:** only the latest moment of each of you, as one more record in the encrypted records: `r/o:a` and
+  `r/o:b` (kind `moment`: a JPEG data URL of at most 140,000 characters, a caption of 80, `at`). A new one replaces
+  the last. Removing writes a `deleted` marker with the same `at`. The worst case is 144,008 characters encrypted,
+  under the 200,000 the rules allow, so **no Firebase rules change**. Older app versions ignore the record.
+- **Phone:** a new IndexedDB, `twodo-moments`, keeps the newest 60 moments the phone has seen (read back through
+  `cleanRecord`). Not in `twodo:data`. Cleared on unpair, another account, and erase. No existing store changes.
+- **Notification:** one more kind of encrypted push entry, `rem/{space}/moment_<uid>`, sent by the reminders job
+  ("📸 Abilash · Shared a moment"; nothing about the photo). Tapping it opens the moments sheet.
+- **Privacy:** the photo is re-drawn and saved as a new JPEG (long side 960 px or less), so location and camera
+  details never leave the phone.
+- **Reactions:** nothing sends one any more; receiving stays for a partner still on an older version.

@@ -1,0 +1,51 @@
+/* Twodo · Moments (components/home/Moments.tsx): your partner's latest photo, big, then your last one, the shutter
+   and your photos. Like a photo on the fridge: rounded, a soft shadow, who and when on a dark glass strip.
+   Only transform and opacity animate. */
+.home-moments { margin-top: 18px; }
+.mo-card { position: relative; display: block; width: 100%; aspect-ratio: 1; max-height: 380px; padding: 0; border: 0; border-radius: 30px;
+  overflow: hidden; background: var(--bg2); color: #FFFFFF; font: inherit; text-align: left;
+  box-shadow: 0 1px 2px rgba(27,23,48,.08), 0 22px 40px -24px rgba(27,23,48,.55); transition: transform var(--dur-quick) var(--ease-out); }
+.mo-card:active { transform: scale(.985); }
+.mo-card:focus-visible { outline: 3px solid var(--label); outline-offset: 3px; }
+.mo-card > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mo-card.empty { aspect-ratio: 16 / 9; border: 2px dashed color-mix(in srgb, var(--label) 18%, transparent); box-shadow: none; background: color-mix(in srgb, var(--c) 8%, var(--bg2)); }
+.mo-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px;
+  text-align: center; color: var(--soft); font-size: 15px; line-height: 20px; font-weight: 600; }
+.mo-empty .i { width: 40px; height: 40px; stroke-width: 1.6; color: color-mix(in srgb, var(--c) 60%, var(--label)); }
+.mo-meta { position: absolute; left: 12px; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.mo-who { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 4px 12px 4px 4px; border-radius: 999px;
+  background: rgba(27,23,48,.64); color: #FFFFFF; font-size: 14px; line-height: 18px; }
+.mo-who b { font-weight: 700; }
+.mo-who span { opacity: .86; white-space: nowrap; }
+.mo-cap { align-self: flex-start; max-width: 100%; padding: 8px 14px; border-radius: 18px; background: rgba(27,23,48,.64); color: #FFFFFF;
+  font-size: 16px; line-height: 21px; font-weight: 600; overflow-wrap: anywhere; }
+
+.mo-bar { display: flex; align-items: center; justify-content: center; gap: 34px; margin-top: 14px; }
+.mo-mine, .mo-lib { flex: none; width: 52px; height: 52px; padding: 0; border: 0; border-radius: 16px; overflow: hidden; display: grid; place-items: center;
+  background: var(--bg2); color: var(--label); box-shadow: 0 1px 2px rgba(27,23,48,.08); transition: transform var(--dur-quick) var(--ease-out); }
+.mo-mine { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--c, var(--me-c)); }
+.mo-mine img { width: 100%; height: 100%; object-fit: cover; }
+.mo-mine-none { flex: none; width: 52px; height: 52px; } /* keeps the shutter in the middle until you've shared one */
+.mo-mine .i, .mo-lib .i { width: 24px; height: 24px; }
+.mo-shutter { flex: none; width: 76px; height: 76px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: var(--label); box-shadow: 0 12px 24px -14px rgba(27,23,48,.6); transition: transform var(--dur-quick) var(--ease-bounce); -webkit-tap-highlight-color: transparent; }
+.mo-shutter-in { width: 60px; height: 60px; border-radius: 50%; background: var(--me-c); box-shadow: inset 0 0 0 4px var(--bg); }
+.mo-mine:active, .mo-lib:active { transform: scale(.92); }
+.mo-shutter:active { transform: scale(.9); }
+
+/* the sheets: sending one, and looking back */
+.mo-send { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 24px; }
+.mo-send-img { display: block; max-width: 100%; max-height: calc(var(--vvh, 100vh) * .5); width: auto; height: auto; margin: 0 auto; border-radius: 22px; }
+.mo-send .mo-caption { flex: none; width: 100%; min-height: 46px; padding: 12px 16px; border-radius: 23px; background: var(--fill); } /* a field of its own, not a list cell */
+.mo-send-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.mo-send-btn .i { width: 20px; height: 20px; }
+.mo-list { display: flex; flex-direction: column; gap: 18px; padding: 4px 16px 28px; }
+.mo-item { margin: 0; }
+.mo-item img { display: block; width: 100%; border-radius: 22px; background: var(--bg2); }
+.mo-item figcaption { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 8px 4px 0; font-size: 15px; line-height: 20px; color: var(--label); }
+.mo-item figcaption span { color: var(--soft); }
+.mo-item q { flex-basis: 100%; quotes: none; }
+.mo-remove { margin-left: auto; min-height: 44px; padding: 0 14px; border: 0; border-radius: 18px; background: color-mix(in srgb, var(--c-red) 12%, var(--bg2));
+  color: color-mix(in srgb, var(--c-red) 70%, var(--label)); font: inherit; font-weight: 700; }
+.mo-none { margin: 0; padding: 24px 20px; text-align: center; color: var(--soft); }
+@media (prefers-reduced-motion: reduce) { .mo-card, .mo-shutter, .mo-mine, .mo-lib { transition: opacity var(--dur-quick) linear; } }
