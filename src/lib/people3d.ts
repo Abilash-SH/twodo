@@ -10,9 +10,15 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { reducedMotion } from './util';
 
-let failed = false;
-function makeRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer | null {
+let failed = false, probed = false;
+export function makeRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer | null {
   if (failed) return null;
+  // no WebGL 2 here (switched off, or an old phone): found once, quietly, before three.js would complain in the console
+  if (!probed) {
+    probed = true;
+    try { const c = document.createElement('canvas'), gl = c.getContext('webgl2'); if (!gl) failed = true; else gl.getExtension('WEBGL_lose_context')?.loseContext(); } catch { failed = true; }
+    if (failed) return null;
+  }
   try {
     const r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
@@ -23,10 +29,23 @@ function makeRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer | null {
 
 const loader = new GLTFLoader();
 const models = new Map<string, Promise<THREE.Object3D>>();
-function model(url: string): Promise<THREE.Object3D> {
+export function model(url: string): Promise<THREE.Object3D> {
   let p = models.get(url);
   if (!p) { p = loader.loadAsync(url).then(g => g.scene); models.set(url, p); p.catch(() => models.delete(url)); }
   return p;
+}
+
+/** A person's copy ready to draw: never culled (the skinned shape moves outside its box), no metal look, and hair and
+ *  lashes cut out rather than blended (no sorting problems) */
+export function prepare<T extends THREE.Object3D>(root: T): T {
+  root.traverse(o => {
+    const m = o as THREE.Mesh; if (!m.isMesh) return;
+    m.frustumCulled = false;
+    for (const mt of (Array.isArray(m.material) ? m.material : [m.material]) as THREE.MeshStandardMaterial[]) {
+      mt.metalness = 0; if (mt.transparent) { mt.alphaTest = .5; mt.transparent = false; }
+    }
+  });
+  return root;
 }
 
 const V = () => new THREE.Vector3(), Q = () => new THREE.Quaternion();
@@ -48,7 +67,7 @@ interface Inst {
 }
 const insts = new Set<Inst>();
 
-function lights(s: THREE.Scene): void {
+export function lights(s: THREE.Scene): void {
   s.add(new THREE.HemisphereLight(0xFFF4EA, 0x8A7A70, 1.6));
   const key = new THREE.DirectionalLight(0xFFFFFF, 2.2); key.position.set(-1.2, 2.2, 2.4); s.add(key);
   const rim = new THREE.DirectionalLight(0xFFE2C8, 1.1); rim.position.set(1.6, 1.6, -1.6); s.add(rim);
@@ -96,15 +115,7 @@ const seen = typeof IntersectionObserver === 'function' ? new IntersectionObserv
 export interface Handle { mood(m: string): void; think(on: boolean): void; destroy(): void }
 /** Draw one person into `canvas` (w × h CSS pixels). Resolves once the first picture is there. */
 export async function mount(canvas: HTMLCanvasElement, url: string, { w, h, flip, half = false }: { w: number; h: number; flip: boolean; half?: boolean }): Promise<Handle> {
-  const src = await model(url);
-  const root = cloneSkinned(src);
-  root.traverse(o => {
-    const m = o as THREE.Mesh; if (!m.isMesh) return;
-    m.frustumCulled = false;
-    for (const mt of (Array.isArray(m.material) ? m.material : [m.material]) as THREE.MeshStandardMaterial[]) {
-      mt.metalness = 0; if (mt.transparent) { mt.alphaTest = .5; mt.transparent = false; }  // hair and lashes: cut out, no sorting
-    }
-  });
+  const root = prepare(cloneSkinned(await model(url)));
   const by = (n: string) => root.getObjectByName(n) || undefined;
   const side = flip ? 'L' : 'R';                                                       // the arm away from your partner waves
   const bones: Bones = { pelvis: by('Bip01_Pelvis'), spine: by('Bip01_Spine1'), neck: by('Bip01_Neck'), head: by('Bip01_Head'), up: by(`Bip01_${side}_UpperArm`), fore: by(`Bip01_${side}_Forearm`) };

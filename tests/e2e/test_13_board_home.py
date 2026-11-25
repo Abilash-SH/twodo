@@ -113,8 +113,9 @@ async def main():
         await todos(A)
         hub = await q(HUB)
         assert board['today'] == hub['cards']['Today'], (board, hub)
-        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.home-card svg.cv').length") == 2, 'both of you are on the card, as your characters'
-        assert await q("document.querySelectorAll('.home-card svg.cv')[1].classList.contains('flip')"), "your partner's character turns to you"
+        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.home-people .hp-draw svg.cv').length") == 2, 'both of you stand on Home, above the card'
+        assert await q("!document.querySelector('.home-card svg.cv, .home-card canvas')"), 'the card itself is only Today'
+        assert await q("document.querySelectorAll('.home-people .hp-draw svg.cv')[1].classList.contains('flip')"), "your partner's character turns to you"
         await back_home(A)
         print(f"PASS: Home says hello and what today holds; one card (Today, matching the To-dos screen: {board['today']}) and Moments with Deiva")
 
@@ -307,16 +308,16 @@ async def main():
         await A.click(f'.chv-face[data-person="{person}"]'); await A.wait_for_timeout(300)
         await A.click('.chv-role:has-text("Calm friend")'); await A.wait_for_timeout(500)
         look = other.lower()
-        assert await q("[document.querySelector('.chv-pick.on').textContent, document.querySelector('.chv-face.on').dataset.person, document.querySelector('.chv-role.on b').textContent, document.querySelector('.chv-preview .p3d').dataset.person]") == [other, person, 'Calm friend', person]
+        assert await q("[document.querySelector('.chv-pick.on').textContent, document.querySelector('.chv-face.on').dataset.person, document.querySelector('.chv-role.on b').textContent, document.querySelector('.chv-preview .person-preview').dataset.people]") == [other, person, 'Calm friend', person]
         assert (await q("document.querySelector('.chv-preview .say').textContent")).startswith(GREET['Calm friend'])
         assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && [...document.querySelectorAll('.chv-face')].every(f => f.getAttribute('aria-label'))"), 'the people are labelled radio buttons'
         await back_home(A)
         home = await q(BOARD)
-        assert await q("document.querySelectorAll('.home-card .p3d')[0].dataset.person") == person and any(w in home['say'] for w in CALM), home
+        assert await q("document.querySelector('.home-people').dataset.people.split(' ')[0]") == person and any(w in home['say'] for w in CALM), home
         mine = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
         want = f"{look}/{skin.lower()}/{hair.lower()}/calm"
         assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people, m = p && p.{mine}; return m && m.avatar && [m.avatar.look, m.avatar.skin, m.avatar.hair, m.role].join('/'); }})()", want, 12000) == want, 'it reaches your partner'
-        assert await until(B, "document.querySelectorAll('.home-card .p3d')[1].dataset.person", person) == person, "your partner's Home shows your new person next to theirs"
+        assert await until(B, "document.querySelector('.home-people').dataset.people.split(' ')[1]", person) == person, "your partner's Home shows your new person next to theirs"
         await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
         assert await q("document.querySelector('.sheet.open .me-char .sub').textContent") == f'{other} · Calm friend'
         assert await q(f"document.querySelector('.sheet.open .me-char .cv-portrait').dataset.person") == person and await q("!!document.querySelector('.sheet.open .me-char .cv-portrait img.pt-photo')"), 'the row shows a photo of your person'

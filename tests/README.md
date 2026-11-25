@@ -71,6 +71,14 @@ noise with an 80-character caption) stays under the database's 200,000-character
 `/tmp/mo/coffee.jpg` and `/tmp/mo/noise.jpg` (any two photos, and 4032 × 3024 random pixels saved as a JPEG at
 quality 95; the test's docstring has a one-line way to make them).
 
+Test 19 covers the two of you on Home in 3D: their drawings first, then the 3D people (WebGL), standing above the Today
+card and not on it; a flick on you turns you more than half a turn and you turn back to the front; a "Make Deiva wave"
+button (keyboard and screen readers) makes her wave; when Deiva shares a moment her person takes a photo on your Home;
+with Reduce Motion a slow drag turns you exactly with the finger and you stay, and up and down over the people still
+scrolls Home; the character screen's person turns round too; without WebGL (`--disable-3d-apis`) the drawings stay and
+nothing fails. It reads where someone faces from `data-me-yaw` / `data-me-state` on `.home-people`. Needs
+`/tmp/mo/sunset.jpg` (see test 18).
+
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
 1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be

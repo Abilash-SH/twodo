@@ -231,7 +231,7 @@ function Extras({ flip }: { flip: boolean }) {
 }
 
 /** One character as a drawing: the picture shown until the 3D person is ready, and wherever WebGL isn't there. */
-function CharacterSvg({ look, size, cls = '', state = 'idle', flip = false, still = false }: {
+export function CharacterSvg({ look, size, cls = '', state = 'idle', flip = false, still = false }: {
   look: AvatarLook; size: number; cls?: string; state?: CharState; flip?: boolean; still?: boolean;
 }) {
   const id = 'cv' + useId().replace(/[^a-zA-Z0-9]/g, '');
