@@ -109,8 +109,11 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   count of what's new, never a message's text; it opens your chat). A big rounded "Hello, name!" and, under it, what
   today holds in your character's voice (tap the line for the next thing). Then **one card** (2026-11-18: "just one
   card is enough"): Today, a wide wash of yellow into orange with a dark *Today* badge, how many to-dos are left in big
-  rounded capitals and the next one with a time; the two characters lean in from its right edge, yours first, your
-  partner's turned to you. Tap it to open Today. Below, **Moments with Deiva** (2026-11-25, in place of reactions:
+  rounded capitals and the next one with a time, and a sun in a soft circle. Tap it to open Today. **Above it, the two
+  of you** (2026-11-25: "Don't stand on the card… animations, movements"): realistic 3D people, full height, standing
+  free on Home's background with a soft shadow at your feet, yours on the left; they move by motion capture (look
+  around, stretch, walk somewhere and turn back, turn to each other and wave). A sideways drag on one of you turns
+  them all the way round; a tap and they wave. `docs/characters.md`, "Moving". Below, **Moments with Deiva** (2026-11-25, in place of reactions:
   "like Instagram's Instants or Locket, to share images at one tap"): her latest photo, big and rounded like a photo on
   the fridge, with her picture, when and the caption on dark glass strips (the dock's colour). Under it a row: your
   own last one (ringed in your colour, once you have shared one), a big shutter in the middle (a ring in `--label`
@@ -149,6 +152,10 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;
 > see `docs/characters.md`, "The 3D people". The drawings below remain as their stand-in while loading and without WebGL.
+> **2026-11-25:** on Home and the character screen they move (motion capture, also Rocketbox) and turn round under a
+> finger; that replaces "still by default" and "no idle loops" there, for the 3D people only. They stop when Home is
+> covered or hidden, rest two minutes after the last touch, and stand still with Reduce Motion (`docs/characters.md`,
+> "Moving").
 
 
 Two original characters, female and male, in a soft 3D style; each of you picks a look, a skin tone and a hair colour,

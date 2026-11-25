@@ -15,6 +15,7 @@ import { openInviteSheet } from '../settings/AccountSheets';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import { Portrait } from './Character';
+import { homePeople } from './People';
 import { avatarOf } from '@/lib/characters';
 
 const paired = () => !!(L.pair && L.pair.status === 'paired');
@@ -50,7 +51,7 @@ function SendMoment({ img }: { img: string }) {
     if (busy) return; setBusy(true);
     const m = await Moments.send(img, caption);
     if (!m) { setBusy(false); island({ e: '⚠️', text: 'That photo couldn’t be sent', sub: 'Try another one' }); return; }
-    haptic('success'); closeSheet();
+    haptic('success'); closeSheet(); homePeople.act('me', 'photo'); // on Home, you take a photo
     island(navigator.onLine ? { e: '📸', text: `Sent to ${pt}`, ms: 2200 } : { e: '📸', text: `${pt} gets it when you’re online`, ms: 2600 });
   };
   return (
@@ -91,7 +92,7 @@ export const openMoments = () => openSheet({ title: 'Moments', right: 'Done', ta
 
 // your partner's moment arrives while the app is open: a line on the island
 momentEvents.onArrive = (m: Moment) => {
-  haptic('light');
+  haptic('light'); homePeople.act('pt', 'photo');
   island({ e: '📸', text: `${firstWord(person(m.who).name)} shared a moment`, sub: m.caption || '', btn: 'See', onBtn: openMoments, ms: 4200 });
 };
 

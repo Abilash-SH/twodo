@@ -28,8 +28,9 @@ import { openSettings } from '../settings/Settings';
 import { AreaBoundary } from '../ui/AreaBoundary';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
-import { Character, Portrait } from './Character';
+import { Portrait } from './Character';
 import { HomeMoments } from './Moments';
+import { HomePeople } from './People';
 
 /* ---------- what is on the board (plain data, so it is easy to check) ---------- */
 interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'waiting' | 'failed' | 'last'; who: PersonKey; text: string; n: number; when: string }
@@ -97,16 +98,13 @@ const paired = () => !!(L.pair && L.pair.status === 'paired');
 const unreadNow = () => (paired() && Chat.ready() ? Chat.unread() : 0);
 const toPartner = () => (paired() ? ChatCtl.open() : openInviteSheet());
 
-/** Home's one card: today, with the two of you on it. A tap opens Today. */
+/** Home's one card: today. A tap opens Today. (The two of you stand above it, free: People.tsx.) */
 function TodayCard({ b }: { b: Board }) {
   const title = b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today';
   const sub = b.next ? `${b.next.time} · ${b.next.title}` : b.overdue ? `${b.overdue} left from before` : b.today ? 'Tap to see them' : 'Enjoy it, or add something';
   return (
     <button type="button" className="home-card" onClick={() => openSmart('today')} aria-label={`Today. ${title}. ${sub}. Opens Today`}>
-      <span className="home-card-art" aria-hidden="true">
-        <span className="hc-who" style={colorVar(color(L.me))}><Character look={avatarOf(L.me)} size={170} half /></span>
-        <span className="hc-who" style={colorVar(color(partnerKey()))}><Character look={avatarOf(partnerKey())} size={160} flip half /></span>
-      </span>
+      <span className="home-card-ic" aria-hidden="true"><Icon name="sun" /></span>
       <span className="home-card-txt">
         <span className="home-card-badge">Today</span>
         <b className="home-card-title">{title}</b>
@@ -133,6 +131,9 @@ const Notes = memo(function Notes({ v, online }: { v: number; online: boolean })
           {said.length > 1 ? <span className="say-n" aria-hidden="true">{(i % said.length) + 1}/{said.length}</span> : null}
         </button>
       </div>
+      <AreaBoundary area="Home’s people" compact>
+        <HomePeople vibe={{ free: !b.today && !b.overdue, unread: b.facts.unread > 0, ptDone: !!b.facts.doneByPt }} />
+      </AreaBoundary>
       <TodayCard b={b} />
       <HomeMoments v={v} />
     </main>

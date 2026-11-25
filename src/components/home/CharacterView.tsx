@@ -10,6 +10,7 @@ import { firstWord } from '@/lib/util';
 import { colorVar, cssVars } from '../ui/Avatar';
 import { faceUrl, PEOPLE, personFor } from '@/lib/people';
 import { Character } from './Character';
+import { PersonPreview } from './People';
 import { boardData } from './BoardView';
 
 export function CharacterView() {
@@ -21,7 +22,7 @@ export function CharacterView() {
     <div className="chv" style={colorVar(person(me).color)}>
       <h1 className="large-title">Your character</h1>
       <div className="chv-preview">
-        <Character key={`${mine.look}${mine.skin}${mine.hair}${role}`} look={mine} size={150} cls="wave" />
+        <PersonPreview look={mine} name={firstWord(person(me).name) || 'You'} />
         <p className="say" aria-live="polite">{sample}</p>
       </div>
       <h2 className="chv-h">Who you are</h2>

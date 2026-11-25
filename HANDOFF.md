@@ -26,15 +26,16 @@ day), #33 (the crash on reopening the chat), #34 (journal: a plain box and Post)
 
 **Open:**
 - #38 `fix/home-my-tasks` (Claude): Home and Today show only your to-dos and the shared ones. Waiting for the owner.
-- `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
+- #39 `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
   It touches `BoardView.tsx` and test 13 next to #38; whichever merges second needs a small rebase.
+- `feat/people-stage` (Claude, 2026-11-25, built on #39: merge after it): the two of you move on Home in 3D (see
+  "2026-11-25 The people move" at the end). Fixes test 6.
 - #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
   `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
 **Known broken on `main`:** browser test 6's *short angled reply flick* (in the chat) fails since #37: it passes at
-`a705c8f` (before the 3D people) and fails at `8c4f10a`, with the same result with or without Moments. Likely the 3D
-people still drawing behind the chat (software WebGL in the test). To fix in the next 3D work: stop drawing them
-while Home is covered.
+`a705c8f` (before the 3D people) and fails at `8c4f10a`. Cause: the 3D people kept drawing behind the chat (software
+WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a screen or sheet covers Home).
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -56,10 +57,12 @@ while Home is covered.
 
 ## What to do next, in order
 
-1. **The 3D people, the owner's latest ask (2026-11-25):** "realistic 3D where it turns 360 degree… Don't stand on
-   the card, I want them to have some animations, movements like that", made **from the two of you, from selfies**
-   (each makes a realistic avatar in Avaturn, free, and imports the file in Settings; it stays on your phones, never
-   in the public repo). Fix test 6 there too (above).
+1. **The 3D people from your selfies, the rest of the owner's ask (2026-11-25):** moving, turning people are built
+   (`feat/people-stage`); next, each of you makes a realistic avatar from a selfie in Avaturn (free, a GLB file with
+   Mixamo-style bones) and imports it in Settings → Your character. `lib/mocap.ts` already plays every movement on
+   that skeleton (checked on Avaturn's sample avatar, which is not in the repo). Still to decide and write down
+   (rule 13) before building: how your avatar reaches your partner's phone (encrypted, in chunks, on a new database
+   path that needs a rules change the owner pastes in, or each of you imports both files). Never in the public repo.
 2. **#38 and Moments:** the owner checks them on his iPhone (their PR checklists). The crash on reopening the chat
    (#33) and the journal by day (#32) are merged; if the *Twodo stopped for a moment* page ever appears again, its
    code line names the error.
@@ -185,3 +188,14 @@ while Home is covered.
 - **Privacy:** the photo is re-drawn and saved as a new JPEG (long side 960 px or less), so location and camera
   details never leave the phone.
 - **Reactions:** nothing sends one any more; receiving stays for a partner still on an older version.
+
+## 2026-11-25 The people move
+
+- Asked for: "realistic 3D where it turns 360 degree… Don't stand on the card, I want them to have some animations,
+  movements like that". Built in `feat/people-stage`: `components/home/People.tsx`, `lib/stage3d.ts`, `lib/mocap.ts`,
+  `public/people/motion/` (Rocketbox motion capture, MIT, made with `scripts/people/motions_blender.py`). The Today card
+  is text only now. Details: `docs/characters.md`, "Moving".
+- No new data, storage key, origin, rule or CSP change. `sw.js` also keeps `people/motion/*.json` once downloaded.
+- The journal and the picker's cards still use the older single-person canvases (`lib/people3d.ts`).
+- To rebuild the clips you need the Rocketbox repo's `Assets/Animations` (a sparse clone of
+  github.com/microsoft/Microsoft-Rocketbox) and Blender 4; the command is in the script's header.

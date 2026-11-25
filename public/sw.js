@@ -29,8 +29,9 @@ self.addEventListener('fetch', e => {
     // this version's own files, as downloaded together; anything else (not part of the app shell) from the network
     const hit = await cache.match(e.request, { ignoreSearch: true });
     if (hit) return hit;
-    // a 3D person (people/*.glb, *.jpg) is downloaded once, when first shown, and kept for this version
-    if (/\/people\/[a-z0-9]+\.(glb|jpg)$/.test(url.pathname)) {
+    // a 3D person (people/*.glb, *.jpg) and their movements (people/motion/*.json) are downloaded once, when first
+    // shown, and kept for this version
+    if (/\/people\/(?:[a-z0-9]+\.(?:glb|jpg)|motion\/[fm]_[a-z0-9]+\.json)$/.test(url.pathname)) {
       const r = await fetch(e.request);
       if (r.ok) await cache.put(e.request, r.clone());
       return r;

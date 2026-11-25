@@ -115,7 +115,7 @@ q("""(() => { const set = (id, v) => { const el = document.querySelector('.ob-pa
 pump(lambda: q("!!document.querySelector('.home-hi')"), 40); wait(1500)
 assert q("document.querySelector('.home-hi').textContent") == 'Hello, Abilash!'
 assert q("[matchMedia('(hover: none)').matches, matchMedia('(prefers-color-scheme: dark)').matches, typeof navigator.vibrate]") == [True, True, 'undefined']
-pump(lambda: q("document.querySelectorAll('.home-card .p3d.ready').length") == 2, 40)   # the two realistic 3D people are drawn (WebGL)
+pump(lambda: q("!!document.querySelector('.home-people.ready')"), 40)   # the two realistic 3D people are drawn (WebGL)
 healthy('signed in'); shot('home')
 print('PASS: signed in on a new phone in WebKit (iPhone, touch, dark mode, no vibration); both 3D people are drawn')
 
