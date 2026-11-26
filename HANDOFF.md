@@ -3,7 +3,7 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-25.
+Last updated: 2026-11-26.
 
 ## The project in short
 
@@ -26,12 +26,11 @@ day), #33 (the crash on reopening the chat), #34 (journal: a plain box and Post)
 
 **Open:**
 - #38 `fix/home-my-tasks` (Claude): Home and Today show only your to-dos and the shared ones. Waiting for the owner.
-- #39 `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
-  It touches `BoardView.tsx` and test 13 next to #38; whichever merges second needs a small rebase.
-- #40 merged into `feat/moments` by mistake (it was stacked on #39); #41 brings it to `main`.
-- `feat/own-avatar` (Claude): your own 3D avatar from a selfie, synced encrypted (needs a rules paste).
-- #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
-  `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
+- Merged 2026-11-25: Moments (#39), the people moving in 3D (#40 via #41) and your own avatar (#42; the owner pasted
+  the new Firebase rules).
+- #28 (Codex started it, Claude continued 2026-11-26): the Supabase schema with Row Level Security, now complete for
+  the tables in `docs/architecture.md` §2 and tested on Postgres 16 (`sh supabase/tests/run.sh`, 60 checks). Still
+  missing before the app can use it: Realtime and Storage policies (they need a real Supabase project).
 
 **Known broken on `main`:** browser test 6's *short angled reply flick* (in the chat) fails since #37: it passes at
 `a705c8f` (before the 3D people) and fails at `8c4f10a`. Cause: the 3D people kept drawing behind the chat (software
@@ -55,6 +54,15 @@ WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a scree
   the owner's call: either wait for a fixed picomatch (then pin it with `overrides`), or audit only the packages
   inside the bundle. Don't change `.github/workflows/app.yml` without his yes.
 
+## 2026-11-18 continuation — Supabase foundation (draft)
+
+- PR #27 was already merged; no web PRs remain open.
+- Started `feat/supabase-rls-foundation` with an initial migration for spaces, membership, encrypted records/messages, reads/reactions and access policies.
+- **2026-11-26 (Claude):** every finding of the review fixed, the remaining tables added (`profiles`, `key_backups`,
+  `requests`, `push_tokens`), leaving and inviting again (`leave_space`, `renew_invite`), unsending, and adversarial
+  tests on a throwaway Postgres (`supabase/tests/`: outsiders, another space, both slots, anon, forged columns,
+  stale and future writes, TRUNCATE, an expired or reused invitation, a join race). Not applied to any project yet.
+
 ## What to do next, in order
 
 1. **Your own avatar from a selfie:** built in `feat/own-avatar` (owner chose option 1: synced automatically). **The
@@ -63,8 +71,9 @@ WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a scree
 2. **#38 and Moments:** the owner checks them on his iPhone (their PR checklists). The crash on reopening the chat
    (#33) and the journal by day (#32) are merged; if the *Twodo stopped for a moment* page ever appears again, its
    code line names the error.
-3. **#28** (Supabase schema and RLS): Codex, or whoever continues it, works through the review comment, then the
-   adversarial RLS tests, and checks it against `docs/architecture.md`, section 2, before it is merged.
+3. **#28** (Supabase schema and RLS): ready for review. Next on it: Realtime Broadcast (a private channel per space,
+   a policy on `realtime.messages`) and the `photos` Storage bucket's policies, tested on a local Supabase
+   (`supabase start`, needs Docker) or a test project; then the app's client against it (phase 2).
 4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
    reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar sheet).
 5. **Phase 2, data:** move pure logic to `shared/`; port the encryption with test vectors that match the web app
