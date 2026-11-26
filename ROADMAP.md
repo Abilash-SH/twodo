@@ -217,6 +217,24 @@ and data checks, and a short iPhone checklist.
 | 2026-11-18 | The web app gets the iPhone app's two characters too, stored as `avatar` (look, skin, hair) on each person; `char` is still read, no longer drawn | Asked to have the new Home and journal in the web app as well; both are built around these characters. One optional field, kept by older versions |
 | 2026-11-18 | The web app's Home becomes the iPhone app's: a hello, a fanned stack of cards, the two of you, and a floating bar with Add a to-do beside it; ticking moves to Today | Asked for the reference's Home in the web app too; one card at a time keeps it calm, and Today is one tap away |
 
+### 18. Roaming 3D Home preview — 🚧 2026-11-26
+
+- **Owner decision:** web app first; a realistic third-person simulation world rather than cards. Art direction
+  approved; live movement together online, a marked resting avatar offline. Original courtyard, not copied art.
+- **Built on `feat/courtyard-preview`:** opt-in entry on the existing Home, human models/own avatars, retargeted
+  walking/waving and seated pose, collision-safe walking/Find partner, independent two-finger stick/look,
+  following camera, ordinary feature shortcuts and a contained WebGL fallback. Existing Home remains available.
+- **New data decision first:** `docs/courtyard.md`; separate latest-only encrypted presence, owner-only writes,
+  twelve-second display lease, no movement history or offline replay. Existing records/keys/crypto unchanged.
+- **Files:** `components/home/CourtyardHome.tsx`, `lib/courtyard/`, `styles/46-courtyard.css`, Firebase rules,
+  `tests/courtyard.cjs`, `tests/test_courtyard_rules.py`, browser test 21.
+- **Acceptance:** both browsers move and see one another; input cancels reliably; stop drawing behind Chat,
+  sheets, the keyboard and hidden app; sane offline/denied/context-loss fallbacks; navigation and privacy pass.
+- **Before replacing Home:** physical iPhone rendering/thermal/battery checks and further environment art refinement.
+  The generated target image is not the current scene's fidelity. Publishing the new Firebase rules is a manual
+  owner step; until then the courtyard works locally and labels live movement unavailable. No production change
+  or native migration is made by this preview.
+
 ## How to pick up work
 
 1. Read `AGENTS.md`, `design.md` and this file.

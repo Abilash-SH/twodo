@@ -29,7 +29,7 @@ export function whenShared(at: number): string {
 }
 
 /** Pick a picture: the camera (one tap) or your photos. The input is made inside the tap, as iOS requires. */
-function pick(camera: boolean): void {
+export function pickMoment(camera: boolean): void {
   if (!paired()) { openInviteSheet(); return; }
   document.querySelectorAll('input.mo-pick').forEach(x => x.remove()); // one left from a picker that was cancelled
   const inp = document.createElement('input');
@@ -120,10 +120,10 @@ export function HomeMoments({ v }: { v: number }) {
             <img src={mine.img} alt="" decoding="async" />
           </button>
         ) : <span className="mo-mine-none" aria-hidden="true" />}
-        <button type="button" className="mo-shutter" onClick={() => { haptic('light'); pick(true); }} aria-label={ok ? `Take a photo for ${pt}` : 'Add your partner to share moments'}>
+        <button type="button" className="mo-shutter" onClick={() => { haptic('light'); pickMoment(true); }} aria-label={ok ? `Take a photo for ${pt}` : 'Add your partner to share moments'}>
           <span className="mo-shutter-in" aria-hidden="true" />
         </button>
-        <button type="button" className="mo-lib" onClick={() => pick(false)} aria-label="Share one of your photos"><Icon name="images" /></button>
+        <button type="button" className="mo-lib" onClick={() => pickMoment(false)} aria-label="Share one of your photos"><Icon name="images" /></button>
       </div>
     </section>
   );

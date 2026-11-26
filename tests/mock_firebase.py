@@ -78,6 +78,13 @@ def can_write(ps, uid, before, after):
             if ps[3] == 'e' and ps[4] == 'x' and len(ps) == 6: return ps[5] == uid and (new is None or ('u' in new and isinstance(new.get('d'), str)))
             if ps[3] == 'e' and ps[4] == 'rx' and len(ps) == 7: return ps[6] == uid and (new is None or ('u' in new and isinstance(new.get('d'), str)))
             return False
+        if ps[2] == 'world' and len(ps) == 4:
+            if uid not in mem or ps[3] != uid: return False
+            if new is None: return True
+            now = time.time() * 1000
+            return (isinstance(new, dict) and set(new) == {'u', 'd'} and isinstance(new.get('u'), (int, float))
+                    and now - 15000 <= new['u'] <= now + 5000 and (old is None or new['u'] >= old.get('u', 0))
+                    and isinstance(new.get('d'), str) and 40 <= len(new['d']) <= 1024)
         if ps[2] == 'av' and len(ps) >= 4:   # your own 3D avatar, in pieces (docs/own-avatar.md)
             if uid not in mem or ps[3] != uid: return False
             for v, pieces in (get(after, ['spaces', b, 'av', uid]) or {}).items():
@@ -217,6 +224,13 @@ class H(BaseHTTPRequestHandler):
         global DB
         STATS['writes'] += 1
         ps, qs = self.parse(); body = None if method == 'DELETE' else json.loads(self.raw() or b'null')
+        def timestamps(value):
+            if isinstance(value, dict):
+                if value == {'.sv': 'timestamp'}: return int(time.time() * 1000)
+                return {k: timestamps(v) for k, v in value.items()}
+            if isinstance(value, list): return [timestamps(v) for v in value]
+            return value
+        body = timestamps(body)
         if method == 'DELETE': self.raw(); method = 'PUT'
         uid, err = uid_of(qs)
         if err == 'expired': return self.reply({'error': 'Auth token is expired'}, 401)

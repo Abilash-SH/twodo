@@ -41,6 +41,8 @@ async function main() {
     './crypto': { encryptObj: async (_key, obj) => JSON.stringify(obj), decryptObj: async (_key, text) => { decrypts++; if (decryptGate) await decryptGate.promise; return JSON.parse(text); } },
     './firebase': { dbGet: () => { gets++; throw Error('No record GET expected'); }, dbPatch: async () => {}, dbPut: async (path, value) => { writes.push({ path, value }); const gate = gates.shift(); if (gate) await gate.promise; } },
     './fx': { FX: { valid: () => false } }, './live': { Live: { close: () => {} } },
+    // Chat gained legacy reaction reception on main; these tests do not exercise that UI.
+    './reactions': { POKE_MS: 60000, isReaction: () => false },
     './render': { scheduleRender: () => {} }, './sync': { Sync: sync }, './util': { firstWord: x => x },
     './store': { D: { people: null }, L: { auth: { uid: 'a' }, pair: { status: 'paired', uid: 'b' } }, partnerKey: () => 'b', myName: () => 'Abilash',
       cNum: v => typeof v === 'number' && Number.isFinite(v) ? v : 0, cStr: (v, n) => typeof v === 'string' ? v.slice(0, n) : '', DAY_RE: /^$/, TIME_RE: /^$/ }
