@@ -181,6 +181,9 @@ Today a Firebase invite lets your partner add themselves to your space. In Supab
 2. When a space is created, the server stores only the token's SHA-256 hash.
 3. `join_space(space, token, slot)`, a database function, adds the caller if the hash matches and the slot is free. A
    space never has more than two members.
+4. An invitation lasts 24 hours. Once the second person is in, the stored hash is replaced by a random one, so the
+   token never works again. `leave_space` is unpairing (the last one to leave takes the space away);
+   `renew_invite` lets the one who stayed invite again. (`supabase/migrations/`, tested by `supabase/tests/run.sh`.)
 
 Only phones that hold the space key can make the token. Pairing (the @username request and the safety code, as today)
 still decides who gets the key; the token only proves it to the server. It also lets the two of you move to the new
