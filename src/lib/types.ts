@@ -16,6 +16,8 @@ export interface AvatarLook { look: Look; skin: Skin; hair: Hair }
 /** avatar and role: the character each of you picked and the voice it speaks in (docs/characters.md) */
 export interface Person {
   name: string; color: Color; photo?: string; uid?: string | null; username?: string; avatar?: AvatarLook; char?: CharKind; role?: RoleKind;
+  /** your own 3D avatar (docs/own-avatar.md): the SHA-256 of the file and how many pieces it was sent in */
+  model?: { h: string; n: number };
 }
 export interface PeopleRec { kind: 'people'; id: 'people'; a: Person; b: Person; updatedAt: number; _s?: 1 }
 export interface List {
@@ -42,7 +44,12 @@ export interface JournalEntry {
   kind: 'journal'; id: string; date: string; who: PersonKey; private: boolean; text: string; mood: Mood; prompt: string;
   createdAt: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
 }
-export type Rec = Task | List | PeopleRec | Goal | JournalEntry;
+/** A moment (docs/moments.md): the latest photo one of you shared from Home, one record per person (id = who).
+ *  Earlier moments stay only on the phones that saw them (IndexedDB `twodo-moments`), never on the server. */
+export interface Moment {
+  kind: 'moment'; id: PersonKey; who: PersonKey; img: string; caption: string; at: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
+}
+export type Rec = Task | List | PeopleRec | Goal | JournalEntry | Moment;
 export interface Data { tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null; goals: Record<string, Goal>; journal: Record<string, JournalEntry> }
 
 export interface Settings { theme: 'auto' | 'light' | 'dark'; accent: string; haptics: boolean; sounds: boolean; confetti: boolean; notify: boolean; dmy: boolean }

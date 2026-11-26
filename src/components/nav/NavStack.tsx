@@ -8,6 +8,7 @@ import { Nav, boardHome, navState, popView, viewTitle, type Entry } from '@/ui/n
 import { useStore } from '@/ui/store';
 import { toggleDone, togglePin, deleteTask } from '@/ui/tasks';
 import { ChatView } from '../chat/ChatView';
+import { ChatErrorBoundary } from '../chat/ChatErrorBoundary';
 import { BoardView } from '../home/BoardView';
 import { CharacterView } from '../home/CharacterView';
 import { openTaskSheet } from '../sheets/TaskSheet';
@@ -145,14 +146,14 @@ export function NavStack() {
         openTaskSheet(row.dataset.id!);
       }}>
       {entries.flatMap((e, i) => {
-        if (e === chatEntry) return []; // drawn once, right above Home (below)
+        if (e.spec.type === 'chat') return []; // drawn once, right above Home (below); never as a list page
         const liveIdx = live.indexOf(e);
         const prev = liveIdx > 0 ? live[liveIdx - 1] : e.phase === 'out' && live.length ? live[live.length - 1] : null;
         const view = e.spec.type === 'home' && board ? <BoardView entry={e} cls={clsOf(e, i)} /> : <PageView entry={e} prev={prev} cls={clsOf(e, i)} v={v} />;
         const kids = [<Fragment key={e.id}>{shadeFor(e)}{view}</Fragment>];
         // The chat stays mounted, parked off to the right, so opening it is only a slide: no first draw of the whole
         // conversation inside the tap. It is always the screen directly above Home (navTo guarantees that).
-        if (i === 0 && board) kids.push(<Fragment key="chat">{chatEntry ? shadeFor(chatEntry) : null}<ChatView entry={chatEntry} cls={chatCls} /></Fragment>);
+        if (i === 0 && board) kids.push(<Fragment key="chat">{chatEntry ? shadeFor(chatEntry) : null}<ChatErrorBoundary cls={chatCls} vid={chatEntry ? chatEntry.id : undefined} open={!!chatEntry}><ChatView entry={chatEntry} cls={chatCls} /></ChatErrorBoundary></Fragment>);
         return kids;
       })}
     </div>

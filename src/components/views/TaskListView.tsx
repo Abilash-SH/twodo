@@ -92,6 +92,7 @@ export function TaskListView({ spec }: { spec: Spec }) {
     sub = l.private ? <><Icon name="lock" cls="xs" /> Secret · only on this phone, never synced</> : `${base.length} to do`;
   } else {
     const sm = SMART[spec.key!];
+    if (!sm) return <Empty e="🤷" h="Nothing here" p="This page doesn’t exist." />;
     color = sm.color; heading = viewTitle(spec);
     base = live.filter(sm.match); doneSet = live.filter(sm.doneMatch);
     if (spec.key === 'today') sub = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });

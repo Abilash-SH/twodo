@@ -25,29 +25,65 @@ after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
 
 Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
+
+**Safari's engine.** Playwright's WebKit can't be downloaded in every workspace, so `tests/webkit/` drives WebKitGTK
+from Ubuntu's own packages (the engine Safari uses) through the system Python:
+```sh
+sudo apt-get install libwebkit2gtk-4.1-0 gir1.2-webkit2-4.1 python3-gi python3-gi-cairo xvfb xauth
+xvfb-run -a /usr/bin/python3.12 tests/webkit/test_home_webkit.py     # after test 1, with the mock and 8003 running
+```
+It signs in as Abilash like a new iPhone (iPhone user agent, `(hover: none)`, dark mode, no vibration) and taps every
+door on Home with a finger: the partner chip, the partner, the bar's chat, Journal, To-dos and Settings. Nothing may
+fail. Set `SHOTS=/some/folder` to save screenshots. The touch events are stand-ins (WebKitGTK has no touch screen
+here), so it checks the engine and the app's touch paths, not iOS itself.
 Test 16 holds task/message writes to verify local-first feedback and keyboard focus, checks atomic and nested
 Firebase updates without per-record GETs, and checks lazy history photos with eager header/viewer photos.
-Test 13 covers Home: the hello and what today holds in your character's role, the four cards (only the top one
-reachable) against the To-dos screen, both characters (your partner's turned to you), every door (each card brought up
-by its dot, your partner's chip and character, Change, the bar's To-dos, Journal and Chat, Settings), the card swipe
-(either way; a held short drag, a scroll or opening nothing), adding a to-do from the bar, ticking off on Today with
-Undo (and the partner's character telling them who did it), picking a character's look, skin, hair and role (it
-reaches the partner and stands next to theirs; Settings leads there too), that nothing from a secret list is shown or
-said (unlocked, ticked off, locked), offline and "Waiting to send", before pairing and with nothing to do, and text
-contrast for every colour in light and dark.
+Test 13 covers Home: the hello and what today holds in your character's voice, the one Today card (against the
+To-dos screen, both characters on it, your partner's turned to you), Moments under it (the heading and the shutter;
+test 18 covers sharing), every door (the card, your partner's chip, the bar's
+To-dos, Journal and Chat, Settings), reopening the chat while it still slides away, a part of Home or the chat that
+fails to draw (a safe note; the bar still works), adding a to-do from the bar, ticking off on Today with Undo, picking
+a character's look, skin, hair and role from Settings (it reaches the partner's card), that nothing from a secret list
+is shown or said, offline and "Waiting to send", before pairing (the moments card leads to Add partner) and with nothing
+to do, and text contrast for every colour in light and dark.
 
 Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
 on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-dos left open from before, looking
 back, a secret to-do never showing (it creates a passcode in its own browser only), seven columns on wide screens,
 and contrast.
 
-Test 15 covers the journal thread: posting (the box empties, the post is at the top with your name and the time),
-your partner seeing it live and Home's journal button saying so, with no way to edit it, newest first, compact rows on a
-love thread (from each character to the next, in both colours, none after the last), hearts (a
-double tap gives one and a second double tap keeps it, the heart button takes it back, "Deiva loved this" on the
-other phone, a heart is its own record with no text), a draft kept when you leave and come back, editing and
-deleting your own post (deleted on both phones, its text gone from storage), nothing private anywhere, text contrast
-for every colour in light and dark, and the wide layout.
+Test 15 covers the journal by day: it opens on today (a week strip with days to come shut, both characters, an empty
+page, no tabs, prompts or private pages), *Save page* (Saved, a dot on today) and saving again into the same record,
+your partner seeing your page live (and Home's journal button saying so) with no way to edit it while theirs arrives
+on yours, hearts (a double tap gives one and a second keeps it, the button takes it back, "Deiva loved your page" on
+the other phone, a heart is its own record with no text), a draft kept when you leave and come back, an earlier day
+read-only (from the strip and the calendar sheet, which shuts days to come; *Go to today*), a page from an earlier day
+shown under it, an emptied page deleted after a question on both phones (its words gone from storage), text contrast
+for every colour in light and dark (the page and the calendar), and the wide layout.
+
+Test 18 covers Moments: the shutter opens the camera (`capture=environment`) and the other button your photos; the
+picture is shown once with a caption and sent; it is made small (re-encoded, at most 140,000 characters) and kept in
+IndexedDB `twodo-moments`, never in `twodo:data`; your partner sees it on Home within seconds (the photo, who, the
+caption) with a line on the island; a newer one replaces it on Home while the moments sheet keeps both, newest first;
+only the one who shared it can remove it, and removing takes it off both phones (the one before shows again); the
+sheet's text contrast for every colour, light and dark, and a 44 pt Remove; the worst case (a 14 MB photo of pure
+noise with an 80-character caption) stays under the database's 200,000-character limit. It needs `/tmp/mo/sunset.jpg`,
+`/tmp/mo/coffee.jpg` and `/tmp/mo/noise.jpg` (any two photos, and 4032 × 3024 random pixels saved as a JPEG at
+quality 95; the test's docstring has a one-line way to make them).
+
+Test 19 covers the two of you on Home in 3D: their drawings first, then the 3D people (WebGL), standing above the Today
+card and not on it; a flick on you turns you more than half a turn and you turn back to the front; a "Make Deiva wave"
+button (keyboard and screen readers) makes her wave; when Deiva shares a moment her person takes a photo on your Home;
+with Reduce Motion a slow drag turns you exactly with the finger and you stay, and up and down over the people still
+scrolls Home; the character screen's person turns round too; without WebGL (`--disable-3d-apis`) the drawings stay and
+nothing fails. It reads where someone faces from `data-me-yaw` / `data-me-state` on `.home-people`. Needs
+`/tmp/mo/sunset.jpg` (see test 18).
+
+Test 20 covers your own 3D avatar (docs/own-avatar.md): a photo instead of an avatar is refused with a reason; an
+avatar .glb is checked, made small, shown at once, sent in encrypted pieces (only ciphertext in the database) and
+reaches your partner's Home and round picture by itself; "Use a Twodo person again" takes it off both phones and out
+of the database. Needs an avatar file: `AVATAR=/path/to/avatar.glb` (any Avaturn export; by default Avaturn's sample
+at `/tmp/avt/a/public/default_model.glb`, never committed) and `/tmp/mo/sunset.jpg`.
 
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,

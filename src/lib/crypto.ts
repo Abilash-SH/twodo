@@ -22,6 +22,18 @@ export async function decryptObj<T = unknown>(key: CryptoKey, s: string): Promis
   const b = unb64(s);
   return JSON.parse(td.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(0, 12) }, key, b.slice(12))));
 }
+/** The same scheme as encryptObj (AES-GCM, a fresh 12-byte IV first), for a file's bytes (your own 3D avatar) */
+export async function encryptBytes(key: CryptoKey, data: Uint8Array<ArrayBuffer>): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+  return b64(out);
+}
+export async function decryptBytes(key: CryptoKey, s: string): Promise<Uint8Array<ArrayBuffer>> {
+  const b = unb64(s);
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.slice(0, 12) }, key, b.slice(12)));
+}
+export const sha256Hex = async (data: Uint8Array<ArrayBuffer>): Promise<string> => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', data)));
 
 const PBKDF2_ITER = 600000;
 export async function derivePasswordKeys(password: string, email: string): Promise<{ authPass: string; wrap: CryptoKey }> {

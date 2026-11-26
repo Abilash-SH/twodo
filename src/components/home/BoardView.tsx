@@ -9,26 +9,28 @@
    (content, titles, counts) can appear, and the character never mentions one. It never shows a message's text. */
 import { memo, useEffect, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
-import { avatarOf, dayLine, lines, roleName, roleOf, type Facts } from '@/lib/characters';
+import { avatarOf, dayLine, lines, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { posts } from '@/lib/journal';
+import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
 import type { PersonKey } from '@/lib/types';
-import { dayDiff, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
+import { dayDiff, firstWord, todayStr, ymd } from '@/lib/util';
 import { thisWeek, weekPlan } from '@/lib/week';
 import { useApp } from '@/hooks/useApp';
-import { boardAdd, navTo, openBoardAdd, openCharacter, openJournal, openSmart, openWeek, type Entry } from '@/ui/nav';
+import { boardAdd, navTo, openBoardAdd, openJournal, openSmart, type Entry } from '@/ui/nav';
 import { useStore } from '@/ui/store';
 import { updateStore } from '@/ui/update';
 import { ChatCtl } from '../chat/chatCtl';
 import { openInviteSheet } from '../settings/AccountSheets';
 import { openSettings } from '../settings/Settings';
+import { AreaBoundary } from '../ui/AreaBoundary';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
-import { Character, Portrait } from './Character';
-import { HomeCards, useArrival, type HomeCard } from './HomeCards';
+import { Portrait } from './Character';
+import { HomeMoments } from './Moments';
+import { HomePeople } from './People';
 
 /* ---------- what is on the board (plain data, so it is easy to check) ---------- */
 interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'waiting' | 'failed' | 'last'; who: PersonKey; text: string; n: number; when: string }
@@ -80,12 +82,12 @@ export function boardData(): Board {
     unread, today: dueToday.length, next: timed.length ? { title: timed[0].title, time: fmtTime(timed[0].time) } : null,
     overdue: open.filter(t => t.due && t.due < t0).length,
     pinned: pins[0] ? { title: pins[0].title, when: pins[0].due ? fmtDue(pins[0].due, pins[0].time) : '' } : null,
-    doneByPt: doneByPt ? doneByPt.title : null, together, ptPosted: !!posts().find(e => e.date === t0 && e.who === pk),
+    doneByPt: doneByPt ? doneByPt.title : null, together, ptPosted: wroteOn(t0, pk),
   };
   return {
     msg, today: today.length, next: facts.next, overdue: facts.overdue, together,
     weekOpen: plan.days.reduce((n, d) => n + d.open.length, 0), weekDone: plan.days.reduce((n, d) => n + d.done.length, 0),
-    wrote: posts().some(e => e.date === t0 && e.who === L.me), ptWrote: facts.ptPosted, facts,
+    wrote: wroteOn(t0, L.me), ptWrote: facts.ptPosted, facts,
   };
 }
 
@@ -96,94 +98,44 @@ const paired = () => !!(L.pair && L.pair.status === 'paired');
 const unreadNow = () => (paired() && Chat.ready() ? Chat.unread() : 0);
 const toPartner = () => (paired() ? ChatCtl.open() : openInviteSheet());
 
-/** One person on a card: still while the card waits in the fan; a moment each time the card comes to the top */
-function One({ k, top, mood, size, flip = false, think = false }: { k: PersonKey; top: boolean; mood: string; size: number; flip?: boolean; think?: boolean }) {
-  const cls = useArrival(top, mood);
-  return <span className="hc-who" style={colorVar(color(k))}><Character look={avatarOf(k)} size={size} cls={cls} flip={flip} still={!top} state={think ? 'think' : 'idle'} /></span>;
-}
-function Pair({ top, mood }: { top: boolean; mood: string }) {
-  return (<span className="hc-pair"><One k={L.me} top={top} mood={mood} size={150} /><One k={partnerKey()} top={top} mood={mood} size={138} flip /></span>);
-}
-
-function cardsFor(b: Board, pt: string): HomeCard[] {
-  const ok = paired(), unread = unreadNow(), m = b.msg;
-  const ptTitle = !ok ? (m.kind === 'request' ? `${m.text} wants to join` : m.kind === 'sent' ? 'Asked to join' : 'Add your partner')
-    : unread ? plural(unread, 'new message') : 'Say hello';
-  const ptSub = !ok ? (m.kind === 'request' ? 'Tap to answer' : m.kind === 'sent' ? 'Waiting for them' : 'Share your space with them')
-    : m.kind === 'failed' ? 'A message didn’t send' : m.kind === 'waiting' ? 'Waiting to send' : m.when ? `Last message ${m.when === 'Yesterday' ? 'yesterday' : m.when}` : 'Start your chat';
-  return [
-    {
-      id: 'today', badge: 'Today', tone: 'hc-today',
-      title: b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today',
-      sub: b.next ? `${b.next.time} · ${b.next.title}` : b.overdue ? `${b.overdue} left from before` : b.today ? 'Tap to see them' : 'Enjoy it, or add something',
-      art: top => <Pair top={top} mood="happy" />, label: 'Show Today', hint: 'Opens Today', onOpen: () => openSmart('today'),
-    },
-    {
-      id: 'partner', badge: ok ? pt : 'Your partner', tone: 'hc-partner',
-      title: ptTitle, sub: ptSub,
-      art: top => <One k={partnerKey()} top={top} mood="wave" size={196} flip />,
-      label: ok ? `Show ${pt}` : 'Show your partner', hint: ok ? 'Opens your chat' : 'Add your partner', onOpen: toPartner,
-    },
-    {
-      id: 'journal', badge: 'Journal', tone: 'hc-journal',
-      title: b.wrote ? 'Today’s page is done' : 'Write today’s page',
-      sub: !ok ? 'Just for the two of you' : b.ptWrote ? `${pt} wrote today` : `${pt} hasn’t written yet`,
-      art: top => <One k={L.me} top={top} mood="happy" size={196} think={!b.wrote} />, label: 'Show the journal', hint: 'Opens the journal', onOpen: openJournal,
-    },
-    {
-      id: 'week', badge: 'This week', tone: 'hc-week',
-      title: b.weekOpen + b.weekDone ? `${b.weekDone} of ${b.weekOpen + b.weekDone} done` : 'Plan your week',
-      sub: b.weekOpen ? `${plural(b.weekOpen, 'thing')} still to do` : b.weekDone ? 'All done. Lovely' : 'Nothing planned yet',
-      art: top => <Pair top={top} mood="cheer" />, label: 'Show this week', hint: 'Opens the planner', onOpen: openWeek,
-    },
-  ];
+/** Home's one card: today. A tap opens Today. (The two of you stand above it, free: People.tsx.) */
+function TodayCard({ b }: { b: Board }) {
+  const title = b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today';
+  const sub = b.next ? `${b.next.time} · ${b.next.title}` : b.overdue ? `${b.overdue} left from before` : b.today ? 'Tap to see them' : 'Enjoy it, or add something';
+  return (
+    <button type="button" className="home-card" onClick={() => openSmart('today')} aria-label={`Today. ${title}. ${sub}. Opens Today`}>
+      <span className="home-card-ic" aria-hidden="true"><Icon name="sun" /></span>
+      <span className="home-card-txt">
+        <span className="home-card-badge">Today</span>
+        <b className="home-card-title">{title}</b>
+        <span className="home-card-sub">{sub}</span>
+      </span>
+    </button>
+  );
 }
 
 /** Home's content only draws again when the data changes (or the connection does), never when a screen slides over it. */
 const Notes = memo(function Notes({ v, online }: { v: number; online: boolean }) {
   void v;
-  const b = boardData(), me = L.me, pk = partnerKey(), ok = paired(), pt = firstWord(person(pk).name), unread = unreadNow();
+  const b = boardData(), me = L.me;
   const role = roleOf(me), said = lines(b.facts, role);
   said[0] = dayLine(b.facts, role);
-  const [i, setI] = useState(0), [play, setPlay] = useState(''), [ptPlay, setPtPlay] = useState('');
-  const still = reducedMotion.matches;
-  const next = () => {
-    setI(n => n + 1); haptic('light');
-    if (!still) { setPlay(''); requestAnimationFrame(() => setPlay('hop')); }
-  };
-  const partner = () => {
-    if (!still) { setPtPlay(''); requestAnimationFrame(() => setPtPlay('wave')); }
-    toPartner();
-  };
+  const [i, setI] = useState(0);
   return (
     <main className="board home">
       {online ? null : <div className="tape" role="status"><Icon name="cloud" cls="xs" />Offline. Everything is saved here.</div>}
       <div className="home-hello">
         <p className="home-hi">Hello, {firstWord(person(me).name)}!</p>
-        <div className="home-line">
-          <p className="say" aria-live="polite">{said[i % said.length]}</p>
+        <button type="button" className="home-line" onClick={() => { setI(n => n + 1); haptic('light'); }} aria-label={`${said[i % said.length]}${said.length > 1 ? '. Tap for the next' : ''}`}>
+          <span className="say" aria-live="polite">{said[i % said.length]}</span>
           {said.length > 1 ? <span className="say-n" aria-hidden="true">{(i % said.length) + 1}/{said.length}</span> : null}
-        </div>
+        </button>
       </div>
-      <HomeCards cards={cardsFor(b, pt)} />
-      <section className="stage home-two" aria-label="The two of you">
-        <div className="home-two-top">
-          <h2 className="home-h">The two of you</h2>
-          <span className="role" style={colorVar(color(me))}>{roleName(role)}</span>
-          <button className="role-change" type="button" onClick={openCharacter}>Change</button>
-        </div>
-        <div className="stage-floor">
-          <button className="stage-char me" type="button" style={colorVar(color(me))} onClick={next} aria-label="Your character. Tap for what’s next">
-            <Character look={avatarOf(me)} size={118} cls={still ? '' : play} /><span className="stage-name">You</span>
-          </button>
-          <button className="stage-char pt" type="button" style={colorVar(color(pk))} onClick={partner}
-            aria-label={ok ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
-            <Character look={avatarOf(pk)} size={110} cls={still ? '' : ptPlay} flip />
-            {unread ? <b className="pt-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
-            <span className="stage-name">{ok ? pt : 'Add partner'}</span>
-          </button>
-        </div>
-      </section>
+      <AreaBoundary area="Home’s people" compact>
+        <HomePeople vibe={{ free: !b.today && !b.overdue, unread: b.facts.unread > 0, ptDone: !!b.facts.doneByPt }} />
+      </AreaBoundary>
+      <TodayCard b={b} />
+      <HomeMoments v={v} />
     </main>
   );
 });
@@ -194,7 +146,7 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
   const ok = paired(), me = L.me, pk = partnerKey();
   const warn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
   const unread = unreadNow(), pt = firstWord(person(pk).name);
-  const posted = posts().some(e => e.date === todayStr() && e.who === pk); // your partner wrote in the journal today
+  const posted = wroteOn(todayStr(), pk); // your partner wrote in the journal today
   useEffect(() => { // the offline note and "Waiting to send" follow the connection
     const net = () => renderNow();
     addEventListener('online', net); addEventListener('offline', net);
@@ -204,17 +156,19 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
     <section className={`${cls} boardview home-v2${adding ? ' adding' : ''}`} data-vid={entry.id}>
       <header className="home-top">
         <h1 className="board-title">Home</h1>
+        <AreaBoundary area="Home’s top" compact>
         <button className="fab-btn home-me" type="button" aria-label="Settings" onClick={() => openSettings()} style={colorVar(color(me))}>
-          <Portrait look={avatarOf(me)} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
+          <Portrait look={avatarOf(me)} who={me} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
         </button>
         <span className="home-me-txt"><b>{firstWord(person(me).name)}</b><span>{ok ? `with ${pt}` : 'Just you, for now'}</span></span>
         <button className="home-pt" type="button" style={colorVar(color(pk))} onClick={toPartner}
           aria-label={ok ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
-          <Portrait look={avatarOf(pk)} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
+          <Portrait look={avatarOf(pk)} who={pk} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
           {unread ? <b className="home-n" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
         </button>
+        </AreaBoundary>
       </header>
-      <Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} />
+      <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
       <nav className="board-tray home-dock" aria-label="Main">
         <div className="dock-pill">
           <button className="dock-tab on" type="button" aria-label="Home" aria-current="page"><Icon name="home" /></button>

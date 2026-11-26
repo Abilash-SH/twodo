@@ -1,165 +1,206 @@
 'use client';
-/* Twodo · the journal: one thread for the two of you, compact. Each post hangs on a love thread that runs from its
-   writer's character to the next post's, in both colours, with a small heart where they meet. Write and Post; posts
-   come in at the top for both of you. Double-tap (or tap the heart on) your partner's post to give it your heart.
-   Your own posts: ⋯ to edit or delete. No prompts, no weather, no counts. Data: docs/journal-and-planner.md */
+/* Twodo · the journal, one page each per day (asked for on 2026-11-18, like the iPhone app): "only for the same day i
+   need it to enter and for seeing previous days i need to select days". A week strip (and a calendar for any earlier
+   day) picks the day; both characters stand on a stage washed in your two colours; a sheet over it holds the day and
+   both pages. Only today's page can be written (a plain box and Post); earlier days are read-only; days to come
+   can't be picked. No prompts, no hearts, nothing private, no counts (asked for 2026-11-18: "clumsy").
+   Records are the thread's posts, by the day they were written (lib/journal.ts). Data: docs/journal-and-planner.md */
 import { useEffect, useRef, useState } from 'react';
 import { avatarOf } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { POST_MAX, addPost, deletePost, editPost, heart, hearts, journalOpen, posts } from '@/lib/journal';
+import { POST_MAX, entriesOn, journalOpen, todayPage, writeToday, writtenDays } from '@/lib/journal';
+import { calm } from '@/lib/motion';
 import { L, partnerKey, person } from '@/lib/store';
-import type { JournalEntry, PersonKey } from '@/lib/types';
-import { dayDiff, firstWord, reducedMotion, todayStr, ymd } from '@/lib/util';
+import type { JournalEntry } from '@/lib/types';
+import { addDays, firstWord, fromYmd, todayStr, ymd } from '@/lib/util';
+import { weekDays, weekOf } from '@/lib/week';
 import { confirmDialog } from '@/ui/alert';
-import { Portrait } from '../home/Character';
+import { closeSheet, openSheet } from '@/ui/sheet';
+import { createStore, useStore } from '@/ui/store';
+import { Character, Portrait } from '../home/Character';
 import { colorVar, cssVars } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 
-const FMT: Record<string, Intl.DateTimeFormat> = {};
-const fmt = (k: string, o: Intl.DateTimeFormatOptions) => (FMT[k] ||= new Intl.DateTimeFormat([], o));
-/** "now", "5m", else the time (the day is in the line above) */
-function when(ts: number): string {
-  const ago = Date.now() - ts;
-  if (ago < 60e3) return 'now';
-  if (ago < 3600e3) return `${Math.floor(ago / 60e3)}m`;
-  return fmt('t', { hour: 'numeric', minute: '2-digit' }).format(new Date(ts));
-}
-function dayLabel(day: string): string {
-  const diff = dayDiff(todayStr(), day), d = new Date(`${day}T12:00`);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  if (diff > 1 && diff < 7) return fmt('wd', { weekday: 'long' }).format(d);
-  return d.getFullYear() === new Date().getFullYear() ? fmt('dm', { weekday: 'short', day: 'numeric', month: 'short' }).format(d)
-    : fmt('dmy', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);
-}
-const nameOf = (k: PersonKey) => (k === L.me ? 'You' : firstWord(person(k).name));
-const EMOJI_ONLY = /^(?:\p{Extended_Pictographic}|\p{Emoji_Component}|‍|️|\s){1,12}$/u;
-/** short posts read a little bigger; a few emoji alone, bigger still */
-const size = (t: string) => (EMOJI_ONLY.test(t) && !/[0-9#*]/.test(t) ? ' emoji' : t.length <= 48 && !t.includes('\n') ? ' big' : '');
+/** The day on screen: null is today (and follows midnight); otherwise an earlier day. Back to today on leaving. */
+export const journalDay = createStore<string | null>(null);
 
-const HeartSvg = ({ on }: { on: boolean }) => (
-  <svg className="jt-hs" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.3A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.6c0 5.7-7.5 10.3-7.5 10.3z" className={on ? 'on' : ''} /></svg>
+const FMT: Record<string, Intl.DateTimeFormat> = {};
+const fmt = (d: string, k: string, o: Intl.DateTimeFormatOptions) => (FMT[k] ||= new Intl.DateTimeFormat([], o)).format(fromYmd(d));
+const shift = (d: string, n: number) => ymd(addDays(fromYmd(d), n));
+const monthStart = (d: string, n = 0) => { const x = fromYmd(d); return ymd(new Date(x.getFullYear(), x.getMonth() + n, 1)); };
+type Wrote = { mine: boolean; theirs: boolean } | undefined;
+/** "Monday, 16 November 2026, today. You and Deiva wrote." */
+function dayLabel(d: string, today: string, w: Wrote, pt: string): string {
+  const who = w?.mine && w.theirs ? `You and ${pt} wrote.` : w?.mine ? 'You wrote.' : w?.theirs ? `${pt} wrote.` : 'Nothing written.';
+  return `${fmt(d, 'full', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${d === today ? ', today' : ''}. ${who}`;
+}
+
+/** today's date, changing at midnight while the screen is open */
+function useToday(): string {
+  const [t, setT] = useState(todayStr);
+  useEffect(() => {
+    const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+    const id = setTimeout(() => setT(todayStr()), next.getTime() - now.getTime());
+    return () => clearTimeout(id);
+  }, [t]);
+  return t;
+}
+
+const Dots = ({ w }: { w: Wrote }) => (
+  <span className="jd-dots" aria-hidden="true">
+    {w?.mine ? <i style={colorVar(person(L.me).color)} /> : null}{w?.theirs ? <i style={colorVar(person(partnerKey()).color)} /> : null}
+  </span>
 );
 
-/** what you are writing survives leaving the screen (in memory only, until the app closes) */
-let draft = '';
-
-function Compose() {
-  const [text, setText] = useState(draft);
-  const me = L.me;
-  const post = () => {
-    if (!addPost(text)) return;
-    draft = ''; setText(''); haptic('success');
-  };
+function WeekStrip({ monday, date, today, onWeek }: { monday: string; date: string; today: string; onWeek: (m: string) => void }) {
+  const days = writtenDays(), pt = firstWord(person(partnerKey()).name);
   return (
-    <div className="jt-compose" style={colorVar(person(me).color)}>
-      <span className="jt-av" aria-hidden="true"><Portrait look={avatarOf(me)} size={28} /></span>
-      <div className="jt-grow" data-v={text}>
-        <textarea className="jt-ta" rows={1} value={text} maxLength={POST_MAX} aria-label="Write a post"
-          placeholder="What’s on your mind?"
-          onChange={ev => { draft = ev.currentTarget.value; setText(draft); }} />
+    <div className="jd-week">
+      <div className="jd-month">
+        <h2>{fmt(shift(monday, 3), 'my', { month: 'long', year: 'numeric' })}</h2>
+        <span className="jd-arrows">
+          <button type="button" className="jd-arrow" aria-label="Previous week" onClick={() => { haptic('light'); onWeek(shift(monday, -7)); }}><Icon name="chevL" cls="sm" /></button>
+          <button type="button" className="jd-arrow" aria-label="Next week" disabled={monday >= weekOf(today)} onClick={() => { haptic('light'); onWeek(shift(monday, 7)); }}><Icon name="chevR" cls="sm" /></button>
+        </span>
       </div>
-      <button className="jt-post-btn" type="button" disabled={!text.trim()} onClick={post}>Post</button>
+      <div className="jd-days" role="group" aria-label="Days">
+        {weekDays(monday).map(d => {
+          const future = d > today, on = d === date;
+          return (
+            <button key={d} type="button" data-day={d} className={`jd-day${on ? ' on' : ''}${d === today ? ' today' : ''}${future ? ' future' : ''}`}
+              disabled={future} aria-pressed={on} aria-label={future ? `${fmt(d, 'full', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}. Not here yet.` : dayLabel(d, today, days.get(d), pt)}
+              style={colorVar(person(L.me).color)} onClick={() => { if (!on) { haptic('light'); journalDay.set(d === today ? null : d); } }}>
+              <span className="jd-wd">{fmt(d, 'wd', { weekday: 'short' })}</span>
+              <b>{fromYmd(d).getDate()}</b>
+              <Dots w={days.get(d)} />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
 
-/** One post. `next`: whose post comes after it, so the love thread can run from this colour into that one. */
-function Post({ e, love, next }: { e: JournalEntry; love: Set<PersonKey> | undefined; next: PersonKey | null }) {
-  const mine = e.who === L.me, pk = partnerKey();
-  const [menu, setMenu] = useState(false), [edit, setEdit] = useState<string | null>(null), [open, setOpen] = useState(false);
-  const burst = useRef<HTMLSpanElement>(null), lastTap = useRef(0);
-  const loved = !!love && love.has(L.me), ptLoved = !!love && love.has(pk);
-  const long = e.text.length > 420 || e.text.split('\n').length > 8;
-  const fresh = Date.now() - e.createdAt < 2500;
-  const pop = () => {
-    haptic('light');
-    if (!reducedMotion.matches && burst.current) burst.current.animate(
-      [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1.15)', offset: .35 }, { opacity: 1, transform: 'scale(1)', offset: .6 }, { opacity: 0, transform: 'scale(1.3)' }],
-      { duration: 720, easing: 'cubic-bezier(.2,.8,.2,1)' });
-  };
-  const toggle = () => { if (heart(e.id)) pop(); else haptic('light'); };
-  // a double tap on your partner's post gives it your heart (never takes it away)
-  const tap = (ev: React.MouseEvent) => {
-    if (mine || edit !== null || (ev.target as HTMLElement).closest('button, a, textarea')) return;
-    const now = Date.now();
-    if (now - lastTap.current < 320) { heart(e.id, true); pop(); lastTap.current = 0; } else lastTap.current = now;
-  };
-  const save = () => { if (edit !== null) editPost(e.id, edit); setEdit(null); setMenu(false); };
-  const del = async () => {
-    setMenu(false);
-    if (await confirmDialog({ title: 'Delete this post?', message: `It goes for ${firstWord(person(pk).name)} too.`, ok: 'Delete', destructive: true })) { deletePost(e.id); haptic('light'); }
-  };
+/** A month at a time, for any earlier day (in a sheet) */
+function Calendar({ start }: { start: string }) {
+  const today = todayStr(), [first, setFirst] = useState(() => monthStart(start));
+  const days = writtenDays(), pt = firstWord(person(partnerKey()).name);
+  const lead = (fromYmd(first).getDay() + 6) % 7, x = fromYmd(first), count = new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate();
+  const cells: (string | null)[] = [...Array.from({ length: lead }, () => null), ...Array.from({ length: count }, (_, i) => shift(first, i))];
+  while (cells.length % 7) cells.push(null);
+  const pick = (d: string) => { haptic('light'); journalDay.set(d >= today ? null : d); closeSheet(); };
+  const written = cells.filter(d => d && days.has(d)).length;
   return (
-    <article className={`jt-post${mine ? ' mine' : ''}${fresh ? ' fresh' : ''}`} data-id={e.id} onClick={tap} aria-label={`${nameOf(e.who)}, ${when(e.createdAt)}`}
-      style={cssVars({ '--c': `var(--c-${person(e.who).color})`, '--cn': `var(--c-${person(next || e.who).color})` })}>
-      <span className="jt-burst" ref={burst} aria-hidden="true"><HeartSvg on /></span>
-      <span className="jt-av" aria-hidden="true"><Portrait look={avatarOf(e.who)} size={28} /></span>
-      {next ? <i className="jt-thread" aria-hidden="true"><HeartSvg on /></i> : null}
-      <div className="jt-pbody">
-        <header className="jt-meta">
-          <b>{nameOf(e.who)}</b><time dateTime={new Date(e.createdAt).toISOString()}>{when(e.createdAt)}</time>
-          {e.updatedAt - e.createdAt > 60e3 ? <span className="jt-edited">edited</span> : null}
-          {edit === null ? (
-            <span className="jt-side">
-              {mine ? <button className="jt-dots" type="button" aria-label="Edit or delete this post" aria-expanded={menu} onClick={() => setMenu(m => !m)}><Icon name="more" cls="sm" /></button>
-                : <button className={`jt-heart${loved ? ' on' : ''}`} type="button" aria-pressed={loved} aria-label={loved ? 'Take back your heart' : 'Give it your heart'}
-                    style={colorVar(person(L.me).color)} onClick={toggle}><HeartSvg on={loved} /></button>}
-            </span>) : null}
-        </header>
-        {edit !== null ? (
-          <div className="jt-edit">
-            <div className="jt-grow" data-v={edit}>
-              <textarea className="jt-ta" value={edit} maxLength={POST_MAX} aria-label="Edit your post" onChange={ev => setEdit(ev.currentTarget.value)} />
-            </div>
-            <div className="jt-cacts">
-              <button className="jt-link" type="button" onClick={() => { setEdit(null); setMenu(false); }}>Cancel</button>
-              <button className="jt-post-btn" type="button" disabled={!edit.trim()} onClick={save}>Save</button>
-            </div>
-          </div>
-        ) : <>
-          <p className={`jt-text${size(e.text)}${long && !open ? ' clamp' : ''}`}>{e.text}</p>
-          {long ? <button className="jt-link more" type="button" onClick={() => setOpen(o => !o)}>{open ? 'Show less' : 'Show more'}</button> : null}
-        </>}
-        {mine && ptLoved && edit === null ? <span className="jt-loved" style={colorVar(person(pk).color)}><HeartSvg on />{firstWord(person(pk).name)} loved this</span> : null}
-        {menu && edit === null ? (
-          <div className="jt-menu">
-            <button type="button" onClick={() => setEdit(e.text)}><Icon name="edit" cls="xs" />Edit</button>
-            <button type="button" className="red" onClick={() => void del()}><Icon name="trash" cls="xs" />Delete</button>
-          </div>) : null}
+    <div className="jd-cal">
+      <div className="jd-month">
+        <span><h2>{fmt(first, 'my', { month: 'long', year: 'numeric' })}</h2><span className="jd-count">{written ? `${written} day${written === 1 ? '' : 's'} with a page` : 'No pages this month'}</span></span>
+        <span className="jd-arrows">
+          <button type="button" className="jd-arrow" aria-label="Previous month" onClick={() => setFirst(monthStart(first, -1))}><Icon name="chevL" cls="sm" /></button>
+          <button type="button" className="jd-arrow" aria-label="Next month" disabled={first >= monthStart(today)} onClick={() => setFirst(monthStart(first, 1))}><Icon name="chevR" cls="sm" /></button>
+        </span>
       </div>
-    </article>
+      <div className="jd-grid" aria-hidden="true">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((h, i) => <span key={i} className="jd-h">{h}</span>)}</div>
+      <div className="jd-grid">
+        {cells.map((d, i) => d === null ? <span key={'b' + i} /> : (
+          <button key={d} type="button" data-day={d} className={`jd-cd${d === start ? ' on' : ''}${d === today ? ' today' : ''}`} disabled={d > today}
+            aria-label={dayLabel(d, today, days.get(d), pt)} aria-pressed={d === start} style={colorVar(person(L.me).color)} onClick={() => pick(d)}>
+            <b>{fromYmd(d).getDate()}</b><Dots w={days.get(d)} />
+          </button>
+        ))}
+      </div>
+      <div className="jd-legend"><span><i style={colorVar(person(L.me).color)} />You wrote</span><span><i style={colorVar(person(partnerKey()).color)} />{pt} wrote</span></div>
+      <button type="button" className="jd-go" onClick={() => pick(today)}>Go to today</button>
+    </div>
   );
 }
+const openCalendar = (date: string) => openSheet({ title: 'Pick a day', right: '', body: <Calendar start={date} /> });
 
-const PAGE = 30;
+/** what you are writing survives leaving the screen (in memory only, until the app closes) */
+let draft = { day: '', text: '' };
+
+/** Today's page: the box keeps what you type; Save writes it. If midnight passes while you type, the words stay and
+    save to the new day; an untouched box starts the new day empty. */
+function TodayPage({ today, earlier, onSaved }: { today: string; earlier: JournalEntry[]; onSaved: () => void }) {
+  const saved = todayPage()?.text ?? '';
+  const [text, setTextState] = useState(() => (draft.day === today ? draft.text : saved));
+  const last = useRef(saved);
+  const setText = (t: string) => { draft = { day: today, text: t }; setTextState(t); };
+  if (last.current !== saved) { // saved on the other phone, or a new day: an untouched box follows it
+    if (text.trim() === last.current) { draft = { day: today, text: saved }; setTextState(saved); }
+    last.current = saved;
+  }
+  useEffect(() => { if (draft.day !== today) draft = { day: today, text }; }, [today, text]);
+  const dirty = text.trim() !== saved;
+  const save = async () => {
+    if (!dirty) return;
+    if (!text.trim() && !(await confirmDialog({ title: 'Clear today’s page?', message: `It goes for ${firstWord(person(partnerKey()).name)} too.`, ok: 'Clear', destructive: true }))) return;
+    const r = writeToday(text);
+    const now = r && !r.deleted ? r.text : '';
+    setText(now); last.current = now;
+    haptic('success'); onSaved();
+  };
+  return (<>
+    {earlier.length ? <div className="jd-earlier">{earlier.map(e => <p key={e.id} className="jd-text">{e.text}</p>)}</div> : null}
+    <div className="jt-grow jd-grow" data-v={text}>
+      <textarea className="jt-ta jd-ta" value={text} maxLength={POST_MAX} aria-label="Your page for today"
+        onChange={ev => setText(ev.currentTarget.value)} />
+    </div>
+    <div className="jd-save">
+      <span className="jd-note">{text.length > POST_MAX - 500 ? `${POST_MAX - text.length} characters left` : ''}</span>
+      <button type="button" className="jd-btn" disabled={!dirty} onClick={() => void save()}>{!dirty && saved ? 'Posted' : saved ? 'Update' : 'Post'}</button>
+    </div>
+  </>);
+}
+
 export function JournalView() {
-  const [shown, setShown] = useState(PAGE);
-  useEffect(() => { journalOpen.now = true; return () => { journalOpen.now = false; }; }, []);
-  const all = posts(), list = all.slice(0, shown), love = hearts(), pk = partnerKey(), pt = firstWord(person(pk).name);
-  let day = '';
+  useEffect(() => { journalOpen.now = true; return () => { journalOpen.now = false; journalDay.set(null); }; }, []);
+  const today = useToday(), picked = useStore(journalDay);
+  const date = picked && picked < today ? picked : today, isToday = date === today;
+  const [monday, setMonday] = useState(() => weekOf(date));
+  useEffect(() => setMonday(weekOf(date)), [date]);
+  const [wave, setWave] = useState<{ me: string; pt: string }>({ me: '', pt: '' });
+  const [said, setSaid] = useState(false);
+  const me = L.me, pk = partnerKey(), pt = firstWord(person(pk).name);
+  const mine = entriesOn(date, me), theirs = entriesOn(date, pk), page = isToday ? todayPage() : undefined;
+  const play = (who: 'me' | 'pt', mood: string) => {
+    if (calm()) return;
+    setWave(w => ({ ...w, [who]: '' })); requestAnimationFrame(() => setWave(w => ({ ...w, [who]: mood })));
+  };
   return (
-    <div className="jt">
-      <h1 className="large-title">Journal</h1>
-      <div className="jt-pair">
-        <span className="jt-duo" aria-hidden="true">
-          <span style={colorVar(person(L.me).color)}><Portrait look={avatarOf(L.me)} size={22} /></span>
-          <span style={colorVar(person(pk).color)}><Portrait look={avatarOf(pk)} size={22} /></span>
+    <div className="jd">
+      <div className="jd-top">
+        <h1 className="large-title">Journal</h1>
+        <button type="button" className="jd-calbtn" aria-label="Pick a day" onClick={() => { haptic('light'); openCalendar(date); }}><Icon name="week" /></button>
+      </div>
+      <WeekStrip monday={monday} date={date} today={today} onWeek={setMonday} />
+      <section className="jd-stage" aria-label="The two of you" style={cssVars({ '--a': `var(--c-${person(me).color})`, '--b': `var(--c-${person(pk).color})` })}>
+        <span className="jd-badge">{isToday ? null : <Icon name="lock" cls="xs" />}{isToday ? 'Today' : 'Read only'}</span>
+        <span className="jd-floor">
+          <button type="button" className="jd-char" style={colorVar(person(me).color)} aria-label="You. Waves" onClick={() => play('me', 'wave')}>
+            <Character look={avatarOf(me)} who={me} size={150} state={isToday && !mine.length ? 'think' : 'idle'} cls={wave.me} />
+          </button>
+          <button type="button" className="jd-char" style={colorVar(person(pk).color)} aria-label={`${pt}. Waves`} onClick={() => play('pt', 'wave')}>
+            <Character look={avatarOf(pk)} who={pk} size={138} flip cls={wave.pt} />
+          </button>
         </span>
-        <span>You and {pt}</span><Icon name="lock" cls="xs" /><span className="jt-only">only you two</span>
-      </div>
-      <Compose />
-      {all.length ? null : <p className="jt-empty">Your first post starts your story. Only you and {pt} will ever see it.</p>}
-      <div className="jt-feed">
-        {list.map((e, i) => {
-          const d = ymd(new Date(e.createdAt)), head = d !== day;
-          day = d;
-          const next = list[i + 1] ? list[i + 1].who : null;
-          return [head ? <h2 key={'d' + d} className={`jt-day${i ? ' on-thread' : ''}`}><span>{dayLabel(d)}</span></h2> : null,
-            <Post key={e.id} e={e} love={love.get(e.id)} next={next} />];
-        })}
-      </div>
-      {all.length > shown ? <button className="jt-older" type="button" onClick={() => setShown(n => n + PAGE)}>Show earlier posts</button> : null}
+      </section>
+      <section className="jd-sheet" aria-label={fmt(date, 'full', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
+        <span className="jd-label">{isToday ? 'Today' : fmt(date, 'wdl', { weekday: 'long' })}</span>
+        <h2 className="jd-date">{fmt(date, 'dm', { day: 'numeric', month: 'long' })}</h2>
+        <div className="jd-block" style={colorVar(person(me).color)}>
+          <div className="jd-who"><Portrait look={avatarOf(me)} who={me} size={32} /><b>Your page</b>{said ? <span className="jd-saved" role="status">Posted</span> : null}</div>
+          {isToday ? <TodayPage today={today} earlier={mine.filter(e => e.id !== page?.id)} onSaved={() => { setSaid(true); play('me', 'happy'); setTimeout(() => setSaid(false), 1800); }} />
+            : (<>
+              {mine.length ? mine.map(e => <p key={e.id} className="jd-text">{e.text}</p>) : <p className="jd-none">You didn’t write this day.</p>}
+              <p className="jd-lock"><Icon name="lock" cls="xs" />Only today’s page can be written.</p>
+            </>)}
+        </div>
+        <div className="jd-block theirs" style={colorVar(person(pk).color)}>
+          <div className="jd-who"><Portrait look={avatarOf(pk)} who={pk} size={32} /><b>{pt}’s page</b></div>
+          {theirs.length ? theirs.map(e => <p key={e.id} className="jd-text">{e.text}</p>)
+            : <p className="jd-none">{isToday ? `${pt} hasn’t written today yet.` : `${pt} didn’t write this day.`}</p>}
+        </div>
+      </section>
     </div>
   );
 }

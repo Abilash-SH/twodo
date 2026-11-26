@@ -1,7 +1,7 @@
 /* Twodo · state, persistence and data helpers.
    D = synced data (tasks, lists, the two of you), L = this device only (settings, account, view prefs). */
 import { scheduleRender } from './render';
-import type { AvatarLook, Data, Goal, JournalEntry, List, Local, Mood, PeopleRec, Person, PersonKey, Rec, Task } from './types';
+import type { AvatarLook, Data, Goal, JournalEntry, List, Local, Moment, Mood, PeopleRec, Person, PersonKey, Rec, Task } from './types';
 import { addDays, dayDiff, firstWord, fromYmd, PALETTE, REPEATS, todayStr, uid, ymd, type Color, type Repeat } from './util';
 
 const KD = 'twodo:data', KL = 'twodo:local';
@@ -53,6 +53,7 @@ export function cleanPerson(p: unknown, d: Person): Person {
   if (o.avatar !== undefined) { const a = cleanAvatar(o.avatar); if (a) o.avatar = a; else delete o.avatar; } // the character (docs/characters.md)
   if (o.char !== undefined && !CHAR_KINDS.includes(o.char as string)) delete o.char;  // the earlier characters, still read
   if (o.role !== undefined && !ROLE_KINDS.includes(o.role as string)) delete o.role;
+  if (o.model !== undefined) { const m = o.model as Loose | null; if (m && typeof m === 'object' && typeof m.h === 'string' && /^[0-9a-f]{64}$/.test(m.h) && Number.isInteger(m.n) && (m.n as number) >= 1 && (m.n as number) <= 48) o.model = { h: m.h, n: m.n as number }; else delete o.model; } // your own avatar (docs/own-avatar.md)
   return o;
 }
 export function cleanRecord(r: unknown): Rec | null {
@@ -97,8 +98,18 @@ export function cleanRecord(r: unknown): Rec | null {
     return { ...q, kind: 'journal', id, date, who, private: priv, text: heart ? '' : cStr(q.text, 20000), prompt: heart ? '' : cStr(q.prompt, 200),
       mood: (mood >= 0 && mood <= 5 ? mood : 0) as Mood, createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as JournalEntry;
   }
+  if (q.kind === 'moment') { // a photo shared from Home: one per person, the newest replaces the last (docs/moments.md)
+    const who = q.who === 'a' || q.who === 'b' ? q.who : null;
+    if (!who || q.id !== who) return null; // a moment can't pretend to be the other person's
+    const deleted = !!q.deleted, img = typeof q.img === 'string' && q.img.length <= MOMENT_MAX && MOMENT_RE.test(q.img) ? q.img : '';
+    if (!deleted && !img) return null;
+    return { kind: 'moment', id: who, who, img: deleted ? '' : img, caption: deleted ? '' : cStr(q.caption, 80), at: cNum(q.at), updatedAt: cNum(q.updatedAt), deleted } as Moment;
+  }
   return null;
 }
+/** a moment's photo: a JPEG, small enough that the encrypted record stays under the database's 200 000 characters */
+export const MOMENT_MAX = 140000;
+const MOMENT_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
 export const journalId = (priv: boolean, date: string, who: PersonKey): string => `${priv ? 'me' : 'us'}-${date}-${who}`;
 const POST_RE = /^us-p[0-9a-z]{10,24}$/;
 /** a heart on a post: `us-h-<the post's id>-<who gave it>` (docs/journal-and-planner.md, "Hearts") */
@@ -148,7 +159,7 @@ if (typeof window !== 'undefined') {
 }
 
 /* ---------- Records ---------- */
-export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : r.kind === 'journal' ? 'j:' + r.id : 'people';
+export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : r.kind === 'journal' ? 'j:' + r.id : r.kind === 'moment' ? 'o:' + r.id : 'people';
 export function stamp(rec: Rec): void { rec.updatedAt = Math.max(Date.now(), (rec.updatedAt || 0) + 1); }
 /** Sync registers itself here, so the data layer has no import cycle */
 export const hooks = { queue: (_k: string): void => {} };

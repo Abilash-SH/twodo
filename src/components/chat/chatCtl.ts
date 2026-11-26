@@ -1,5 +1,6 @@
 /* Twodo · chat controller: what happens when you send, when messages arrive, replies, effects and scrolling.
    The ChatView component renders; this keeps the bits of state that outlive a render. */
+import { playEmojiBurst, reactionOf } from '@/lib/reactions';
 import { Chat, chatEvents, isLove, type Msg, type ReplyRef, type TaskRef } from '@/lib/chat';
 import { cloudReady } from '@/lib/config';
 import { chatSound, haptic } from '@/lib/feedback';
@@ -325,4 +326,6 @@ chatEvents.onMessages = (f, i) => ChatCtl.onMessages(f, i);
 chatEvents.onState = () => ChatCtl.onState();
 chatEvents.onPartnerReaction = (m, r) => ChatCtl.onPartnerReaction(m, r);
 chatEvents.onReadElsewhere = () => ChatCtl.onReadElsewhere();
+// a reaction from your partner's Home: a burst of it over whatever you are looking at, and a quiet line
+chatEvents.onPoke = e => { playEmojiBurst(e); island({ e, text: `${firstWord(ptName())} ${reactionOf(e).verb}`, ms: 3200 }); };
 sheetEvents.onClosed = () => ChatCtl.onState();

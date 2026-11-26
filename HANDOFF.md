@@ -3,7 +3,7 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-18.
+Last updated: 2026-11-25.
 
 ## The project in short
 
@@ -18,22 +18,24 @@ Last updated: 2026-11-18.
     `docs/architecture.md`; the rules are `mobile/AGENTS.md`. It replaces the web app at the end (phase 6).
 - Every prompt the owner has given is in `docs/prompts.md`, kept as history.
 
-## State on 2026-11-18
+## State on 2026-11-25
 
-**Merged:** the web app through #20 (two-hearts launch, Home with both characters, the journal on love threads); the
-architecture doc (#21); phase 1 of the iPhone app: design system, characters, launch, Playground, CI and TestFlight
-workflow (#22).
+`main` is at `8c4f10a`. **Merged since 2026-11-18:** #31 (containment and the error page), #32 (the web journal by
+day), #33 (the crash on reopening the chat), #34 (journal: a plain box and Post), #35 (Home: one Today card), #36
+(reactions that burst live, never in the chat) and #37 (realistic 3D people from Microsoft Rocketbox).
 
-**This session, as PRs to `main`, merged in this order** (each later branch includes the earlier ones):
+**Open:**
+- #38 `fix/home-my-tasks` (Claude): Home and Today show only your to-dos and the shared ones. Waiting for the owner.
+- #39 `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
+  It touches `BoardView.tsx` and test 13 next to #38; whichever merges second needs a small rebase.
+- #40 merged into `feat/moments` by mistake (it was stacked on #39); #41 brings it to `main`.
+- `feat/own-avatar` (Claude): your own 3D avatar from a selfie, synced encrypted (needs a rules paste).
+- #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
+  `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
-1. #23 `docs/handoff`: this file and `docs/prompts.md` (the old `PROMPT.md` moved there).
-2. #24 `feat/app-avatars`: two original human characters, male and female, in a soft 3D style, replacing the six
-   blob characters in the iPhone app.
-3. #25 `feat/app-home-journal`: a new Home like the owner's reference (greeting, a fanned stack of cards, a floating
-   tab bar) and the journal as one page per person per day, written only on the day, with earlier days chosen
-   from a week strip or a calendar. Four tabs: Home, To-dos and Chat (placeholders), Journal.
-
-All three are open and waiting for the owner to merge. If one was closed instead, ask before rebuilding it.
+**Known broken on `main`:** browser test 6's *short angled reply flick* (in the chat) fails since #37: it passes at
+`a705c8f` (before the 3D people) and fails at `8c4f10a`. Cause: the 3D people kept drawing behind the chat (software
+WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a screen or sheet covers Home).
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -61,19 +63,23 @@ All three are open and waiting for the owner to merge. If one was closed instead
 
 ## What to do next, in order
 
-1. **After the three PRs merge:** check the TestFlight build on the owner's phone against each PR's iPhone checklist
-   and fix what he reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar
-   sheet).
-2. **Phase 1, the rest:** the Supabase schema with Row Level Security and its tests (`docs/architecture.md`,
-   section 2): tables, policies, `create_space` and `join_space`, Realtime Broadcast policies, the photos bucket.
-   Tests run against a local Supabase in GitHub Actions (`supabase start` needs Docker; this workspace has none).
-3. **Phase 2, data:** move pure logic to `shared/`; port the encryption with test vectors that match the web app
+1. **Your own avatar from a selfie:** built in `feat/own-avatar` (owner chose option 1: synced automatically). **The
+   owner must paste the updated `firebase.rules.json` into the Firebase console** (new `spaces/$space/av` path); until
+   then importing works on the importing phone only and the app says it couldn't send. See `docs/own-avatar.md`.
+2. **#38 and Moments:** the owner checks them on his iPhone (their PR checklists). The crash on reopening the chat
+   (#33) and the journal by day (#32) are merged; if the *Twodo stopped for a moment* page ever appears again, its
+   code line names the error.
+3. **#28** (Supabase schema and RLS): Codex, or whoever continues it, works through the review comment, then the
+   adversarial RLS tests, and checks it against `docs/architecture.md`, section 2, before it is merged.
+4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
+   reports (Home's swipe inside the scroll, the keyboard over the journal's writing box, the calendar sheet).
+5. **Phase 2, data:** move pure logic to `shared/`; port the encryption with test vectors that match the web app
    byte for byte; the SQLite store, sync and Realtime; sign-up and sign-in; pairing; the join token. Save the
    avatar choices and the journal's day pages (see "Data decisions" below). Before the first build with
    encryption, answer Apple's export-compliance question again (`mobile/app.json` says none today; a test checks).
-4. **Phase 3, screens:** To-dos and Today, the week, chat, Settings, the secret-list vault (Home and Journal exist
-   from this session as designs with sample data; connect them).
-5. **Phases 4 to 6:** integrations (reminders, notifications, photos, widget), the move from Firebase, retiring the
+6. **Phase 3, screens:** To-dos and Today, the week, chat, Settings, the secret-list vault (Home and Journal exist
+   as designs with sample data; connect them).
+7. **Phases 4 to 6:** integrations (reminders, notifications, photos, widget), the move from Firebase, retiring the
    web app. Open decisions are in `docs/architecture.md`, section 11.
 
 ## Data decisions from this session (written down before building, as rule 13 asks)
@@ -82,9 +88,10 @@ All three are open and waiting for the owner to merge. If one was closed instead
   is their own colour. Stored with the person, like name and colour. The web app's six characters (`char`) map to
   a default avatar during the move.
 - **Journal:** one page per person per day. You can write only today's page; earlier days are read-only and chosen
-  from a day strip or a calendar; future days can't be chosen. Stored as `journal` records with ids
-  `us-<date>-<who>` (the format the web app used before the thread). Posts from the web app's thread (`us-p…`) show
-  under the day they were written, read-only. Hearts stay: one per person per page.
+  from a day strip or a calendar; future days can't be chosen. The iPhone app stores day pages (`us-<date>-<who>`,
+  the format the web app used before the thread). The web app keeps the thread's posts (`us-p…`) by their day: your
+  newest post from today is today's page (decided 2026-11-18; why in `docs/journal-and-planner.md`). When the data
+  moves, each person's newest post of a day becomes that day's page. Hearts stay.
 
 ## How to work here
 
@@ -104,7 +111,8 @@ All three are open and waiting for the owner to merge. If one was closed instead
 ## Checks and tools
 
 - **Web app:** `npm ci --ignore-scripts && npm run typecheck && npm run build`. The browser tests in `tests/e2e/`
-  use a fake Firebase (`tests/README.md`); run test 1 first.
+  use a fake Firebase (`tests/README.md`); run test 1 first. Safari's engine: `tests/webkit/` (WebKitGTK from
+  Ubuntu's packages, because Playwright's WebKit download is blocked here).
 - **iPhone app:** `cd mobile && npm ci && npm run typecheck && npm test && npm run bundle:ios`.
   - To see screens without a Mac: `npm run preview:web`, serve `.web-preview/` with a fallback to `index.html`, and
     screenshot it with Playwright and Chrome at 390 x 844 in light and dark.
@@ -123,3 +131,81 @@ All three are open and waiting for the owner to merge. If one was closed instead
     `jest.useFakeTimers({ now })`.
   - The splash plugin needs an image to use its colours (`assets/splash-blank.png`).
   - `expo prebuild` is only for checks: never commit `ios/` or `android/`.
+
+## 2026-11-18 web journal follow-up
+
+- User explicitly requested the date-wise journal on the **web app too**. Work started on `feat/web-journal-by-day`: week strip, native date input for older days, two pages, today's own editable page, earlier dates read-only. Existing `us-p…` post records remain encrypted and visible by date; the newest existing post of today acts as the editable page. No migration or storage key change.
+- User reported an iPhone black error page, “This page couldn’t load,” on one tap of the **top-right Home button**. The top-right partner chip invokes `toPartner` (chat when paired, invitation otherwise). Reproduction and root-cause identification are pending. Treat as a separate defect/PR; do not assert it is fixed.
+- Web journal implementation has **not** passed typecheck, build or browser/iPhone tests yet. Do not merge without these and regression coverage. The original feed-specific journal tests may need updating.
+
+## 2026-11-18 Safari and installed-app Chat crash
+
+- User confirmed tapping the top-right partner picture crashes **both** Safari and the installed Home Screen web app
+  (Next's black *This page couldn't load*). Do not assume a service-worker-only issue.
+- The chip, the partner's character on Home and the bar's chat button all call the same `toPartner` (the chat when
+  paired, the invitation otherwise). Not reproduced in Chrome with an iPhone screen, touch, no vibration, Home
+  Screen mode and unread messages; WebKit can't be downloaded in this workspace, so Safari itself wasn't tried.
+- #30 (merged) put the chat in an error boundary. Its note always drew as an open screen, so after Back it stayed
+  over Home and took every tap.
+- #31 (open): the chat's note now slides and parks with the chat and tries again when the
+  chat opens; Home's top and Home's content each have their own boundary (`ui/AreaBoundary.tsx`), so the bar keeps
+  working; `app/global-error.tsx` replaces the framework's blank page with *Twodo stopped for a moment*, a Reload
+  button and one line safe to screenshot (`lib/errors.ts` `errorSummary`: the error's type and a short message with
+  anything quoted removed; never a stack or a component stack, and nothing is sent anywhere). Test 13 breaks date formatting on
+  purpose to check all of it. **This is containment and diagnosis, not the fix:** the cause is still unknown.
+- Also not reproduced in WebKit itself: `tests/webkit/test_home_webkit.py` (WebKitGTK 2.52 from Ubuntu's packages)
+  signs in like a new iPhone (touch, dark mode, unread messages tried too) and taps every door on Home: nothing fails
+  with the test data. So the cause likely needs the owner's real data or iOS itself; the code line on his screen is
+  the next clue.
+- **Cause found (2026-11-18), from the owner's screenshot of the new error page:** `undefined is not an object
+  (evaluating 't.color')`. Mapped with a source-mapped build to `TaskListView` (`SMART[spec.key].color`). Tapping your
+  partner again within half a second of closing the chat (while it still slides away) pushed a second chat entry;
+  NavStack only drew the first as the chat, so the new one fell through to the list page with no key. Fix
+  (`fix/chat-reopen-crash`): pushing the chat first removes a chat that is still leaving; NavStack never draws a chat
+  entry as a page; an unknown list page shows "Nothing here" instead of failing. Test 13 checks it (it fails without
+  the fix).
+
+## 2026-11-18 Home reactions (data decision, rule 13)
+
+- Asked for: reactions on Home that are "not sent in the chat, something reactive".
+- No new path, key or rule: a reaction rides on your live presence record (`/spaces/{space}/c/e/x/{uid}`, the one
+  that already carries typing, read and online), as `poke: { e, at }` inside the same AES-GCM ciphertext. The
+  receiving app plays each `at` once, only within a minute (`POKE_MS`), and only for the six known emoji
+  (`isReaction`). It is never stored or shown in the chat. Older app versions ignore the extra field.
+- Limit: a reaction reaches your partner only if their app is open (or opens within a minute). No push for it.
+- Realistic 3D characters (option A): built in `feat/realistic-3d-people` from Microsoft Rocketbox (MIT). See
+  `docs/characters.md`, "The 3D people". The iPhone app (`mobile/`) still has the drawn characters.
+
+## 2026-11-25 Moments (data decision, rule 13)
+
+- Asked for, in place of Home's reactions ("the reactions is not great"): "something like Instagram's Instants or
+  Locket to share images at one tap". The full decision is `docs/moments.md`; in short:
+- **Server:** only the latest moment of each of you, as one more record in the encrypted records: `r/o:a` and
+  `r/o:b` (kind `moment`: a JPEG data URL of at most 140,000 characters, a caption of 80, `at`). A new one replaces
+  the last. Removing writes a `deleted` marker with the same `at`. The worst case is 144,008 characters encrypted,
+  under the 200,000 the rules allow, so **no Firebase rules change**. Older app versions ignore the record.
+- **Phone:** a new IndexedDB, `twodo-moments`, keeps the newest 60 moments the phone has seen (read back through
+  `cleanRecord`). Not in `twodo:data`. Cleared on unpair, another account, and erase. No existing store changes.
+- **Notification:** one more kind of encrypted push entry, `rem/{space}/moment_<uid>`, sent by the reminders job
+  ("📸 Abilash · Shared a moment"; nothing about the photo). Tapping it opens the moments sheet.
+- **Privacy:** the photo is re-drawn and saved as a new JPEG (long side 960 px or less), so location and camera
+  details never leave the phone.
+- **Reactions:** nothing sends one any more; receiving stays for a partner still on an older version.
+
+## 2026-11-25 The people move
+
+- Asked for: "realistic 3D where it turns 360 degree… Don't stand on the card, I want them to have some animations,
+  movements like that". Built in `feat/people-stage`: `components/home/People.tsx`, `lib/stage3d.ts`, `lib/mocap.ts`,
+  `public/people/motion/` (Rocketbox motion capture, MIT, made with `scripts/people/motions_blender.py`). The Today card
+  is text only now. Details: `docs/characters.md`, "Moving".
+- No new data, storage key, origin, rule or CSP change. `sw.js` also keeps `people/motion/*.json` once downloaded.
+- The journal and the picker's cards still use the older single-person canvases (`lib/people3d.ts`).
+- To rebuild the clips you need the Rocketbox repo's `Assets/Animations` (a sparse clone of
+  github.com/microsoft/Microsoft-Rocketbox) and Blender 4; the command is in the script's header.
+
+## 2026-11-25 Your own avatar (data decision, rule 13)
+
+- Owner's choice: "1)", the avatar reaches the partner's phone by itself. Full decision: `docs/own-avatar.md`.
+- New: people record field `model: { h, n }`; database path `spaces/{space}/av/{uid}/{h12}/{i}` (encrypted pieces,
+  needs the rules change); IndexedDB `twodo-people`. Test 20 (needs an Avaturn .glb; Avaturn's sample is not in the
+  repo: it has no license).

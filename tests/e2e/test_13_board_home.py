@@ -13,11 +13,9 @@ from helpers import OPEN_CHAT, TITLES, open_chat, back_home
 
 # what is on the board, read from the screen
 BOARD = """(() => { const t = s => { const e = document.querySelector('.board ' + s); return e ? e.textContent : null; };
-  const card = id => document.querySelector(`.board .hc[data-card="${id}"]`), title = id => card(id) ? card(id).querySelector('.hc-title').textContent : null;
-  const top = document.querySelector('.board .hc.top'), n = s => { const m = /^(\\d+)/.exec(s || ''); return m ? +m[1] : 0; };
-  return { top: top && top.dataset.card, today: n(title('today')), todayTitle: title('today'), todaySub: card('today') && card('today').querySelector('.hc-sub').textContent,
-    partner: title('partner'), journal: title('journal'), week: title('week'), say: t('.say'), role: t('.role'), tape: t('.tape'),
-    pt: t('.stage-char.pt .stage-name'), badge: t('.stage-char.pt .pt-badge') }; })()"""
+  const n = s => { const m = /^(\\d+)/.exec(s || ''); return m ? +m[1] : 0; }, h = s => { const e = document.querySelector(s); return e ? e.textContent : null; };
+  return { today: n(t('.home-card-title')), todayTitle: t('.home-card-title'), todaySub: t('.home-card-sub'), say: t('.say'), tape: t('.tape'),
+    react: t('.home-moments .home-h'), pt: h('.home-pt-name'), badge: h('.home-pt .home-n') }; })()"""
 # what the To-dos screen counts (it must be open)
 HUB = """(() => { const v = document.querySelector('#stack > .view.pushed:not(.parked):not(.under)');
   return { cards: Object.fromEntries([...v.querySelectorAll('.hub-card')].map(c => [c.querySelector('.hub-t').textContent, +c.querySelector('.hub-n').textContent || 0])),
@@ -84,9 +82,8 @@ async def main():
             await pg.mouse.move(r['x'] + 90, r['y'] + r['height'] / 2); await pg.mouse.down(); await pg.wait_for_timeout(650); await pg.mouse.up(); await pg.wait_for_timeout(600)
             await pg.click(f'#menu [data-m="{pick}"]'); await pg.wait_for_timeout(900)
         async def open_today(pg):
-            """bring the Today card to the top with its dot, then open it"""
-            await pg.click('.hc-dot[aria-label="Show Today"]'); await pg.wait_for_timeout(500)
-            await pg.click('.board .hc.top'); await pg.wait_for_timeout(1000)
+            """Home's one card opens Today"""
+            await pg.click('.board .home-card'); await pg.wait_for_timeout(1000)
         async def todos(pg):
             await pg.click('.boardview .fab-btn[aria-label="To-dos and reminders"]'); await pg.wait_for_timeout(1000)
         async def said(pg):
@@ -94,7 +91,7 @@ async def main():
             n = int((await pg.evaluate("(document.querySelector('.say-n') || { textContent: '1/1' }).textContent")).split('/')[1])
             out = []
             for _ in range(n):
-                out.append(await pg.evaluate("document.querySelector('.say').textContent")); await pg.click('.stage-char'); await pg.wait_for_timeout(120)
+                out.append(await pg.evaluate("document.querySelector('.say').textContent")); await pg.click('.home-line'); await pg.wait_for_timeout(120)
             return out
         top = '#stack > .view:not(.under):not(.offright)'
         stamp = int(time.time()) % 1000000   # the test accounts keep their to-dos between runs
@@ -110,18 +107,17 @@ async def main():
         board = await q(BOARD)
         due0 = await q(TASKS + ".filter(t => !t.deleted && !t.done && t.due === (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })()).length")
         assert (f'{due0} ' in board['say']) if due0 else ('Nothing new today' in board['say'] or 'Nothing planned' in board['say'] or 'empty page' in board['say'] or 'quiet day' in board['say']), ('it says how many things today', due0, board['say'])
-        assert board['role'] in GREET and not any(board['say'].startswith(g) for g in GREET.values()), ('Home says hello itself; the line is what today holds', board)
-        cards = await q("[...document.querySelectorAll('.board .hc')].map(c => [c.dataset.card, c.classList.contains('top'), c.inert, c.getAttribute('aria-hidden')])")
-        assert sorted(c[0] for c in cards) == ['journal', 'partner', 'today', 'week'] and board['top'] == 'today', cards
-        assert all((c[1] and not c[2] and c[3] is None) or (not c[1] and c[2] and c[3] == 'true') for c in cards), ('only the top card can be reached', cards)
+        assert not any(board['say'].startswith(g) for gs in GREET.values() for g in gs), ('Home says hello itself; the line is what today holds', board)
+        assert await q("document.querySelectorAll('.board .home-card').length") == 1 and not await q("!!document.querySelector('.hc, .hc-dot, .home-two, .stage')"), 'one card; no fan, no "two of you"'
+        assert board['react'] == 'Moments with Deiva' and await q("!!document.querySelector('.home-moments .mo-card') && !!document.querySelector('.home-moments .mo-shutter') && !document.querySelector('.react')"), 'Moments, not reactions'
         await todos(A)
         hub = await q(HUB)
         assert board['today'] == hub['cards']['Today'], (board, hub)
-        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.stage svg.cv').length") == 2, 'both of you are there, as your characters'
-        assert await q("document.querySelector('.stage .stage-char.pt svg.cv').classList.contains('flip')"), "your partner's character turns to you"
-        assert not await q("document.querySelector('.board .n-msg, .board .tiles')"), "no message card, no row of extra doors"
+        assert board['pt'] == 'Deiva' and await q("document.querySelectorAll('.home-people .hp-draw svg.cv').length") == 2, 'both of you stand on Home, above the card'
+        assert await q("!document.querySelector('.home-card svg.cv, .home-card canvas')"), 'the card itself is only Today'
+        assert await q("document.querySelectorAll('.home-people .hp-draw svg.cv')[1].classList.contains('flip')"), "your partner's character turns to you"
         await back_home(A)
-        print(f"PASS: Home says hello and what today holds as a {board['role']}; four cards, only the top one reachable; Today matches the To-dos screen ({board['today']})")
+        print(f"PASS: Home says hello and what today holds; one card (Today, matching the To-dos screen: {board['today']}) and Moments with Deiva")
 
         # ---------- every card and button is a door: one tap, one screen, and Back returns to the board
         async def door(sel, titles):
@@ -130,14 +126,8 @@ async def main():
             assert len(now) == 2 and now[0] == 'Board' and now[1] in titles and await q(TRAP), (sel, now)
             await q("history.back()"); await A.wait_for_timeout(900)
             assert await q(TITLES) == ['Board'] and not await q(TRAP), (sel, await q(TITLES))
-        doors = [('.board .hc.top', ['Today']), ('.board .stage-char.pt', ['Chat']), ('.home-pt', ['Chat']), ('.board .role-change', ['Your character']),
-                 ('.boardview .fab-btn[aria-label^="Journal"]', ['Journal']), (OPEN_CHAT, ['Chat'])]
+        doors = [('.board .home-card', ['Today']), ('.home-pt', ['Chat']), ('.boardview .fab-btn[aria-label^="Journal"]', ['Journal']), (OPEN_CHAT, ['Chat'])]
         for sel, titles in doors: await door(sel, titles)
-        for dot, card, titles in (('Show the journal', 'journal', ['Journal']), ('Show this week', 'week', ['Week']), ('Show Deiva', 'partner', ['Chat'])):
-            await A.click(f'.hc-dot[aria-label="{dot}"]'); await A.wait_for_timeout(600)
-            assert (await q(BOARD))['top'] == card and await q(f"document.querySelector('.hc-dot[aria-label=\"{dot}\"]').getAttribute('aria-pressed')") == 'true', dot
-            await door('.board .hc.top', titles)
-        await A.click('.hc-dot[aria-label="Show Today"]'); await A.wait_for_timeout(500)
         await todos(A)
         assert await q(TITLES) == ['Board', 'To-dos'] and await q(f"document.querySelector('{top} .nav-btn.back').innerText.trim()") == 'Home'
         await A.click(f'{top} .nav-btn.back'); await A.wait_for_timeout(900)
@@ -145,42 +135,55 @@ async def main():
         assert await q("document.querySelector('.sheet.open h3').textContent") == 'Settings'
         await q("history.back()"); await A.wait_for_timeout(900)
         assert await q(TITLES) == ['Board'] and not await q(TRAP) and 'localhost:8003' in A.url
-        print(f'PASS: {len(doors) + 5} doors on Home each open one screen (or sheet), cards brought up by their dots; Back returns Home')
+        print(f'PASS: {len(doors) + 2} doors on Home each open one screen (or sheet); Back returns Home')
 
-        # ---------- a sideways swipe sends the top card to the back; a short one, a scroll or a second finger does nothing
-        box = await A.locator('.board .hc.top').bounding_box()
-        cx, cy = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
-        async def swipe(dx, dy=0, steps=8, hold=0):
-            await A.evaluate("""([x, y, dx, dy, steps, hold]) => new Promise(done => {
-              const el = document.elementFromPoint(x, y), mk = (cx, cy) => new Touch({ identifier: 7, target: el, clientX: cx, clientY: cy });
-              const fire = (type, cx, cy, list = true) => el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true,
-                touches: list ? [mk(cx, cy)] : [], targetTouches: list ? [mk(cx, cy)] : [], changedTouches: [mk(cx, cy)] }));
-              fire('touchstart', x, y); let i = 0;
-              const step = () => { i++; fire('touchmove', x + dx * i / steps, y + dy * i / steps);
-                if (i < steps) setTimeout(step, 16); else setTimeout(() => { fire('touchend', x + dx, y + dy, false); setTimeout(done, 700); }, hold); };
-              setTimeout(step, 16); })""", [cx, cy, dx, dy, steps, hold])
-        first = (await q(BOARD))['top']
-        await swipe(-30, hold=300)
-        assert (await q(BOARD))['top'] == first, 'a short drag that is held springs back'
-        await swipe(8, 160)
-        assert (await q(BOARD))['top'] == first and await q(TITLES) == ['Board'], 'a scroll leaves the cards alone and opens nothing'
-        await swipe(-220)
-        after_swipe = await q(BOARD)
-        assert after_swipe['top'] != first and await q(TITLES) == ['Board'], ('a swipe brings the next card up and opens nothing', first, after_swipe['top'])
-        order = await q("[...document.querySelectorAll('.board .hc')].sort((a, b) => b.style.zIndex - a.style.zIndex).map(c => c.dataset.card)")
-        assert order[-1] == first, ('the swiped card waits at the back', order)
-        await swipe(240)
-        assert (await q(BOARD))['top'] != after_swipe['top'], 'a swipe to the right works too'
-        await A.click('.hc-dot[aria-label="Show Today"]'); await A.wait_for_timeout(500)
-        print('PASS: a sideways swipe sends the top card to the back (either way); a held short drag or a scroll does nothing')
+        # ---------- the chat opened again while it is still sliding away (the iPhone crash of 2026-11-18): one chat, nothing fails
+        for _ in range(2):
+            await A.click('.home-pt'); await A.wait_for_timeout(900)
+            await q("history.back()"); await A.wait_for_timeout(120)   # it is still leaving
+            await q("document.querySelector('.home-pt').click()"); await A.wait_for_timeout(1000)   # the tap reaches the chip as on the iPhone
+            got = await q("[document.querySelectorAll('#stack > .chatview').length, !!document.querySelector('.chat-fail'), /Twodo stopped|couldn.t load/.test(document.body.innerText)]")
+            assert await q(TITLES) == ['Board', 'Chat'] and got == [1, False, False], ('reopening the chat while it leaves', await q(TITLES), got)
+            await q("history.back()"); await A.wait_for_timeout(900)
+        assert await q(TITLES) == ['Board']
+        print('PASS: tapping your partner again while the chat is still sliding away opens it again (one chat screen, nothing fails)')
+
+        # ---------- if part of Home (or the chat) fails to draw, the rest keeps working: a safe note says what failed
+        # Home formats dates when it draws; the chat's message bar asks whether this is a touch screen every time it draws
+        await q("""(() => { window.__lt = [Date.prototype.toLocaleTimeString, Date.prototype.toLocaleDateString, window.matchMedia];
+          const boom = () => { throw new TypeError('broken on purpose "secret words"'); }, mm = window.matchMedia;
+          Date.prototype.toLocaleTimeString = Date.prototype.toLocaleDateString = boom;
+          window.matchMedia = function (m) { if (/hover:\s*none/.test(m)) boom(); return mm.call(window, m); }; })()""")
+        await A.click('.board .home-line'); await A.wait_for_timeout(600)   # Home draws again, and fails
+        fail = await q("(() => { const f = document.querySelector('.boardview .area-fail'); return f && [f.querySelector('code').textContent, !!document.querySelector('.home-hi')]; })()")
+        assert fail and fail[0].startswith('Home · TypeError: broken on purpose') and 'secret' not in fail[0] and fail[1] is False, ('a failed Home part shows a safe note instead of a blank app', fail)
+        assert await q("!!document.querySelector('.home-pt') && !!document.querySelector('.board-tray .tray-btn.chat')"), 'the top and the bar are still there'
+        await A.click(OPEN_CHAT); await A.wait_for_timeout(1000)
+        assert await q(TITLES) == ['Board', 'Chat'], 'the bar still opens the chat'
+        cf = await q("(() => { const c = document.querySelector('.chatview.chat-fail'); return c && [c.querySelector('code').textContent, c.getAttribute('role'), c.inert]; })()")
+        assert cf and cf[0].startswith('Chat · TypeError: broken on purpose') and 'secret' not in cf[0] and cf[1] == 'alert' and cf[2] is False, ('the chat says what failed, safely', cf)
+        await q("history.back()"); await A.wait_for_timeout(900)
+        assert await q(TITLES) == ['Board'], 'back closes the failed chat'
+        parked = await q("""(() => { const c = document.querySelector('.chatview'); const b = document.querySelector('.boardview .area-fail .btn').getBoundingClientRect();
+          const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+          return [c.classList.contains('parked'), c.inert, !!(hit && hit.closest('.boardview'))]; })()""")
+        assert parked == [True, True, True], ('a failed chat parks like the chat and never covers Home', parked)
+        await q("(() => { [Date.prototype.toLocaleTimeString, Date.prototype.toLocaleDateString, window.matchMedia] = window.__lt; })()")
+        await A.click('.boardview .area-fail .btn'); await A.wait_for_timeout(600)
+        assert await q("!document.querySelector('.boardview .area-fail') && !!document.querySelector('.home-hi')"), 'Try again brings Home back'
+        await A.click(OPEN_CHAT); await A.wait_for_timeout(1000)
+        assert await q(TITLES) == ['Board', 'Chat'] and await q("!document.querySelector('.chat-fail') && !!document.querySelector('.chatview .cb-in')"), 'the chat tries again when it opens, and works'
+        await q("history.back()"); await A.wait_for_timeout(900)
+        errors[:] = [e for e in errors if 'broken on purpose' not in e and 'above error occurred' not in e]
+        print('PASS: a part of Home or the chat that fails to draw shows a safe note (no quoted text); the bar still works, a failed chat parks on Back, both try again')
 
         # ---------- the chat stays mounted while it is closed: opening it builds nothing new, and the board's notes stay as they are
-        await q("window.__chat = document.querySelector('#stack > .chatview'); window.__row = window.__chat.querySelector('.msg-row[data-id]'); window.__note = document.querySelector('.board .hc-stack')")
+        await q("window.__chat = document.querySelector('#stack > .chatview'); window.__row = window.__chat.querySelector('.msg-row[data-id]'); window.__note = document.querySelector('.board .home-card')")
         assert await q("!!window.__row && window.__chat.inert && getComputedStyle(window.__chat).visibility === 'hidden'"), 'closed: the conversation is drawn, hidden and unreachable'
         await open_chat(A)
         assert await q("document.querySelector('#stack > .chatview') === window.__chat && window.__row.isConnected && !window.__chat.inert && getComputedStyle(window.__chat).visibility === 'visible'")
         await back_home(A)
-        assert await q("document.querySelector('#stack > .chatview') === window.__chat && window.__row.isConnected && document.querySelector('.board .hc-stack') === window.__note")
+        assert await q("document.querySelector('#stack > .chatview') === window.__chat && window.__row.isConnected && document.querySelector('.board .home-card') === window.__note")
         print('PASS: opening and closing the chat reuses the same screen and the same messages; the board is not rebuilt')
 
         # ---------- "Add a to-do": the task box comes up over the board, the to-do is for today, the buttons come back
@@ -199,7 +202,7 @@ async def main():
         after = await q(BOARD)
         assert after['today'] == board['today'] + 1, ('the new to-do counts on the Today card', board['today'], after['today'])
         await A.click('#boardAdd'); await A.wait_for_timeout(300)   # leaving the board while the box is up (the bar steps aside): it belongs to the next screen
-        await A.click('.board .hc.top'); await A.wait_for_timeout(1000)
+        await A.click('.board .home-card'); await A.wait_for_timeout(1000)
         assert await q(TITLES) == ['Board', 'Today'] and await q(COMPOSER_UP)
         await q("document.activeElement.blur(); history.back()"); await A.wait_for_timeout(900)
         assert await q(TITLES) == ['Board'] and not await q(COMPOSER_UP) and await q(TRAY_SHOWN)
@@ -255,7 +258,7 @@ async def main():
         await press(A, f'{top} .task:has-text("Anniversary surprise") .ti', 'pin')
         assert await A.locator(f'{top} .task:has-text("Anniversary surprise")').count() == 1, 'the secret to-do exists: due today, for both, pinned'
         def same_board(now):
-            return all(now[k] == before[k] for k in ('today', 'todayTitle', 'todaySub', 'partner', 'journal', 'week'))
+            return all(now[k] == before[k] for k in ('today', 'todayTitle', 'todaySub', 'react'))
         hidden = "(() => { const t = document.querySelector('.boardview').textContent; return !t.includes('Anniversary') && !t.includes('Secret'); })()"
         async def says_nothing_secret():
             return not any('Anniversary' in l or 'Secret' in l for l in await said(A))
@@ -289,40 +292,42 @@ async def main():
         await ca.set_offline(False)
         assert await until(A, "!document.querySelector('.board .tape')", True, 15000), 'back online: the tape goes'
         n1 = n0 + 1; shown = '9+' if n1 > 9 else str(n1)
-        assert await until(B, "[(document.querySelector('.board .stage-char.pt .pt-badge') || {}).textContent, (document.querySelector('.board-tray .tray-n') || {}).textContent]", [shown, shown], 15000) == [shown, shown], "it reaches your partner: their Home says one more is new"
+        assert await until(B, "[(document.querySelector('.home-pt .home-n') || {}).textContent, (document.querySelector('.board-tray .tray-n') || {}).textContent]", [shown, shown], 15000) == [shown, shown], "it reaches your partner: their Home says one more is new"
         print('PASS: offline Home says so; the message goes when the connection returns, and your partner sees one more new')
 
         # ---------- your character and its role: picked on its own screen, shown on Home, seen by your partner
-        await A.click('.board .role-change'); await A.wait_for_timeout(1000)
+        await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
+        await A.click('.sheet.open .me-char'); await A.wait_for_timeout(1300)
         assert await q(TITLES) == ['Board', 'Your character']
-        before = await q("[document.querySelector('.chv-pick.on').dataset.look, ...[...document.querySelectorAll('.chv-dot.on')].map(d => d.getAttribute('aria-label'))]")
+        before = await q("[document.querySelector('.chv-pick.on').dataset.look, document.querySelector('.chv-face.on').dataset.person]")
         other = 'Male' if before[0] == 'female' else 'Female'
         await A.click(f'.chv-pick[data-look="{other.lower()}"]'); await A.wait_for_timeout(300)
-        skin, hair = ('Peach', 'Golden') if before[1:] == ['Cocoa', 'Auburn'] else ('Cocoa', 'Auburn')
-        await A.click(f'.chv-dot[aria-label="{skin}"]'); await A.wait_for_timeout(200)
-        await A.click(f'.chv-dot[aria-label="{hair}"]'); await A.wait_for_timeout(200)
+        faces = await q("[...document.querySelectorAll('.chv-face')].map(f => [f.dataset.person, f.getAttribute('aria-label')])")
+        assert len(faces) == 7 and all(f[0][0] == other[0].lower() for f in faces), ('seven people to pick from, of that look', faces)
+        person = faces[-1][0]; skin, hair = faces[-1][1].split(' skin, ')[0], faces[-1][1].split(' skin, ')[1].split(' hair')[0].capitalize()
+        await A.click(f'.chv-face[data-person="{person}"]'); await A.wait_for_timeout(300)
         await A.click('.chv-role:has-text("Calm friend")'); await A.wait_for_timeout(500)
         look = other.lower()
-        assert await q("[document.querySelector('.chv-pick.on').textContent, [...document.querySelectorAll('.chv-dot.on')].map(d => d.getAttribute('aria-label')).join('/'), document.querySelector('.chv-role.on b').textContent, !!document.querySelector('.chv-preview svg.cv-" + look + "')]") == [other, f'{skin}/{hair}', 'Calm friend', True]
+        assert await q("[document.querySelector('.chv-pick.on').textContent, document.querySelector('.chv-face.on').dataset.person, document.querySelector('.chv-role.on b').textContent, document.querySelector('.chv-preview .person-preview').dataset.people]") == [other, person, 'Calm friend', person]
         assert (await q("document.querySelector('.chv-preview .say').textContent")).startswith(GREET['Calm friend'])
-        assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && document.querySelectorAll('.chv-dot').length === 11"), 'skin and hair are labelled radio buttons'
+        assert await q("[...document.querySelectorAll('.chv [role=radiogroup] [role=radio]')].every(b => b.getAttribute('aria-checked') === 'true' || b.getAttribute('aria-checked') === 'false') && [...document.querySelectorAll('.chv-face')].every(f => f.getAttribute('aria-label'))"), 'the people are labelled radio buttons'
         await back_home(A)
         home = await q(BOARD)
-        assert await q(f"!!document.querySelector('.stage .stage-char.me svg.cv-{look}')") and home['role'] == 'Calm friend' and any(w in home['say'] for w in CALM), home
+        assert await q("document.querySelector('.home-people').dataset.people.split(' ')[0]") == person and any(w in home['say'] for w in CALM), home
         mine = await q("JSON.parse(localStorage.getItem('twodo:local')).me")
         want = f"{look}/{skin.lower()}/{hair.lower()}/calm"
         assert await until(B, f"(() => {{ const p = JSON.parse(localStorage.getItem('twodo:data')).people, m = p && p.{mine}; return m && m.avatar && [m.avatar.look, m.avatar.skin, m.avatar.hair, m.role].join('/'); }})()", want, 12000) == want, 'it reaches your partner'
-        assert await until(B, f"!!document.querySelector('.board .stage-char.pt svg.cv-{look}')", True), "your partner's Home shows your new character next to theirs"
+        assert await until(B, "document.querySelector('.home-people').dataset.people.split(' ')[1]", person) == person, "your partner's Home shows your new person next to theirs"
         await A.click('.boardview .fab-btn[aria-label="Settings"]'); await A.wait_for_timeout(900)
         assert await q("document.querySelector('.sheet.open .me-char .sub').textContent") == f'{other} · Calm friend'
-        assert await q("!!document.querySelector('.sheet.open .me-char .cv-portrait svg')"), 'the row shows your character'
+        assert await q(f"document.querySelector('.sheet.open .me-char .cv-portrait').dataset.person") == person and await q("!!document.querySelector('.sheet.open .me-char .cv-portrait img.pt-photo')"), 'the row shows a photo of your person'
         await A.click('.sheet.open .me-char'); await A.wait_for_timeout(1300)
         assert await q(TITLES) == ['Board', 'Your character'], 'Settings leads to it too'
         await A.click(f'.chv-pick[data-look="{before[0]}"]'); await A.wait_for_timeout(200)   # tidy up
-        for label in before[1:]: await A.click(f'.chv-dot[aria-label="{label}"]'); await A.wait_for_timeout(150)
+        await A.click(f'.chv-face[data-person="{before[1]}"]'); await A.wait_for_timeout(150)
         await A.click('.chv-role:has-text("Cheerleader")'); await A.wait_for_timeout(300)
         await back_home(A)
-        print("PASS: picking a look, skin, hair and role changes Home at once and reaches your partner (it stands next to theirs, turned to them); Settings leads there too")
+        print("PASS: picking a look, skin, hair and role (from Settings) changes Home at once and reaches your partner (on their card, turned to them)")
 
         # ---------- contrast: every piece of text on the board, for every colour two people can pick, light and dark
         # Deiva's board gets one of each kind of note first: something new, today, together, a list, a pin, something ticked off
@@ -330,16 +335,16 @@ async def main():
             await B.click('#boardAdd'); await B.wait_for_timeout(300)
             await B.keyboard.type(title); await B.keyboard.press('Enter'); await B.wait_for_timeout(700)
             await B.evaluate("document.activeElement.blur()"); await B.wait_for_timeout(500)
-        await B.click('.hc-dot[aria-label="Show Today"]'); await B.wait_for_timeout(500); await B.click('.board .hc.top'); await B.wait_for_timeout(1000)
+        await B.click('.board .home-card'); await B.wait_for_timeout(1000)
         await press(B, f'{top} .task:has-text("Pinned for contrast {stamp}") .ti', 'pin')
         await press(B, f'{top} .task:has-text("Done for contrast {stamp}") .ti', 'done'); await B.wait_for_timeout(1400)
         await back_home(B)
-        missing = await B.evaluate("['.home-hi', '.home-me-txt b', '.say', '.say-n', '.role', '.role-change', '.stage-name', '.pt-badge', '.home-n', '.hc.top .hc-title', '.hc.top .hc-sub', '.hc-badge', '.tray-n'].filter(s => !document.querySelector('.boardview ' + s))")
+        missing = await B.evaluate("['.home-hi', '.home-me-txt b', '.say', '.say-n', '.home-n', '.home-card-title', '.home-card-sub', '.home-card-badge', '.home-h', '.tray-n'].filter(s => !document.querySelector('.boardview ' + s))")
         assert not missing, ('the board under test should show every kind of note', missing)
         worst = await B.evaluate(CONTRAST)
         assert worst['ratio'] >= 4.5, ('board text contrast', worst)
         print(f"PASS: Home text keeps at least {min(worst['ratio'], offline_worst['ratio'])}:1 ({worst['measured']} pieces of text x 12 colours x light and dark, online and offline)")
-        await B.click('.hc-dot[aria-label="Show Today"]'); await B.wait_for_timeout(500); await B.click('.board .hc.top'); await B.wait_for_timeout(1000)     # tidy up: unpin it again
+        await B.click('.board .home-card'); await B.wait_for_timeout(1000)     # tidy up: unpin it again
         await press(B, f'{top} .task:has-text("Pinned for contrast {stamp}") .ti', 'pin')
         await back_home(B)
         await cb.close(); await ca.close()
@@ -352,9 +357,9 @@ async def main():
         await C.fill('#gUser', f'kavin{stamp}'); await C.click('[data-p="username"] [data-submit]'); await C.wait_for_timeout(2000)
         await C.click('text=Get started'); await C.wait_for_timeout(1500)
         first = await C.evaluate(BOARD)
-        assert first['pt'] == 'Add partner' and first['today'] > 0 and first['partner'] == 'Add your partner', first
+        assert first['pt'] == 'Add partner' and first['today'] > 0 and first['react'] == 'Moments', first
         assert await C.evaluate("[document.querySelector('.board-tray .tray-btn.chat').getAttribute('aria-label'), document.querySelector('.home-pt').textContent, document.querySelector('.home-me-txt span').textContent]") == ['Add your partner', 'Add partner', 'Just you, for now']
-        for sel in ('.board .stage-char.pt', OPEN_CHAT, '.home-pt'):
+        for sel in ('.home-moments .mo-card', OPEN_CHAT, '.home-pt'):
             await C.click(sel); await C.wait_for_timeout(900)
             assert await C.evaluate("document.querySelector('.sheet.open h3').textContent") == 'Add partner', sel
             await C.evaluate("history.back()"); await C.wait_for_timeout(900)

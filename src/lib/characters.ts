@@ -103,7 +103,7 @@ export function lines(f: Facts, r: RoleKind): string[] {
     cheeky: `${f.pt} ticked off ${cut(f.doneByPt)}. Your move.`, poet: `${f.pt} quietly ticked off ${cut(f.doneByPt)}.`,
   })[r]);
   if (f.ptPosted) out.push(({
-    cheer: `${f.pt} posted in the journal today!`, calm: `${f.pt} posted in the journal today.`,
+    cheer: `${f.pt} wrote today’s page in the journal!`, calm: `${f.pt} wrote today’s page in the journal.`,
     cheeky: `${f.pt} wrote in the journal. Aren’t you curious?`, poet: `${f.pt} left words in the journal today.`,
   })[r]);
   if (f.together) out.push(({

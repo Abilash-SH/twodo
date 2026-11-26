@@ -1,7 +1,9 @@
-/* Twodo · the journal: one shared thread for the two of you. Write, post, read, and give a post a heart.
-   Each post is one `journal` record with its own id (`us-p…`); only its writer edits or deletes it. A heart is a
-   record of its own (`us-h-<post>-<who>`), written only by whoever gave it, so a heart never collides with an edit.
-   Pages written before the thread (one per person per day) show as posts. Data: docs/journal-and-planner.md */
+/* Twodo · the journal, by day: each of you has a page for each day, and only today's can be written.
+   Records are the thread's posts, unchanged: one `journal` record each (`us-p…`), with the day it was written. Your
+   newest post from today is today's page (saving edits it, or makes it); older ones of a day are read-only, and so is
+   every earlier day. Only its writer edits or deletes a post. A heart is a record of its own (`us-h-<post>-<who>`),
+   written only by whoever gave it, so a heart never collides with an edit. Pages written before the thread (one per
+   person per day) show under their day. Data: docs/journal-and-planner.md */
 import { D, L, commit } from './store';
 import type { JournalEntry, PersonKey } from './types';
 import { todayStr } from './util';
@@ -36,6 +38,28 @@ export function latestToday(): JournalEntry | undefined {
   const t = todayStr();
   return posts().find(e => e.date === t);
 }
+/** What one of you wrote on a day, in the order it was written */
+export function entriesOn(date: string, who: PersonKey): JournalEntry[] {
+  return posts().filter(e => e.date === date && e.who === who).reverse();
+}
+export const wroteOn = (date: string, who: PersonKey): boolean => posts().some(e => e.date === date && e.who === who);
+/** Each day someone wrote on: did you, did your partner (for the week strip and the calendar) */
+export function writtenDays(): Map<string, { mine: boolean; theirs: boolean }> {
+  const m = new Map<string, { mine: boolean; theirs: boolean }>();
+  for (const e of posts()) {
+    const w = m.get(e.date) || { mine: false, theirs: false };
+    if (e.who === L.me) w.mine = true; else w.theirs = true;
+    m.set(e.date, w);
+  }
+  return m;
+}
+/** Today's page: your newest post from today */
+export const todayPage = (): JournalEntry | undefined => posts().find(e => e.date === todayStr() && e.who === L.me);
+/** Save today's page (emptied, it is deleted). Only ever today: a page from before midnight is not touched. */
+export function writeToday(text: string): JournalEntry | null {
+  const cur = todayPage();
+  return cur ? editPost(cur.id, text) : addPost(text);
+}
 
 export function addPost(text: string): JournalEntry | null {
   const t = text.trim().slice(0, POST_MAX);
@@ -48,7 +72,7 @@ export function addPost(text: string): JournalEntry | null {
 /** Change your own post; emptied, it is deleted */
 export function editPost(id: string, text: string): JournalEntry | null {
   const e = D.journal[id];
-  if (!e || e.deleted || e.private || isHeart(e) || e.who !== L.me) return null;
+  if (!e || e.deleted || e.private || isHeart(e) || e.who !== L.me || e.date !== todayStr()) return null;
   const t = text.trim().slice(0, POST_MAX);
   if (!t) return deletePost(id);
   if (t === e.text) return e;

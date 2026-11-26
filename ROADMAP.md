@@ -132,7 +132,7 @@ and data checks, and a short iPhone checklist.
 - **Data:** goals are a new record kind; planning only changes a to-do's date. `docs/journal-and-planner.md`.
 - **Done when:** test 14 passes; checked on an iPhone (the ribbon while scrolling, *Add to …* with the keyboard).
 
-### 15. Journal — ✅ #11 (pages) · ✅ thread (#19, #20) · 🔎 the app: one page each per day (#25)
+### 15. Journal — ✅ #11 (pages) · ✅ thread (#19, #20) · ✅ the app by day (#25) · ✅ web by date (#29) · 🔎 web by day, designed (this PR)
 - **Asked for 2026-11-15**, with the planner: a journal for the two of you (first with a private one each).
 - **Changed the same day:** "a continuous thread with just posting … keep it raw", no private posts.
 - **Built:** To-dos → *Journal* (or the note on the board): a box to write in, *Post*, then the posts, newest first,
@@ -143,7 +143,8 @@ and data checks, and a short iPhone checklist.
   partner's phone).
 - **Changed 2026-11-18, in the app:** "I dont need it like a threads … only for the same day i need it to enter and
   for seeing previous days i need to select days". The app's journal is one page each per day: only today's can be
-  written; a week strip and a calendar open earlier days, read-only. The web app keeps its thread until the move.
+  written; a week strip and a calendar open earlier days, read-only. The web app followed: #29 (Codex) by date, then
+  the same design as the app (a week strip, a calendar sheet, both characters, the two pages, hearts). Test 15 covers it.
 
 ### 16. Data and rendering performance — 🔎 this PR
 - **Request:** audit repeated queries, index coverage, stable-data caches, below-fold photos and optimistic UI.
@@ -194,6 +195,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-13 | In the chat the left 32 px belong to Back; a swipe on a message is only ever a reply | The chat is no longer Home, so it needs a way back that never fights the reply swipe |
 | 2026-11-15 | The planner plans existing to-dos by date; only the week's goals are new records | No time-blocking: to-dos have no durations, and a calendar of hours is not what was asked for |
 | 2026-11-15 | A busy day is six open to-dos or more; the look back shows what was done, never a score | Overcommitment is worth a gentle mark; comparison and streaks add pressure (roadmap item 9) |
+| 2026-11-18 | The web journal by day keeps the thread's post records: your newest post from today is today's page | No new id or migration for posts already written (#29 wrote some today); the move to the app turns each person's newest post of a day into that day's page |
 | 2026-11-15 | A journal page has one record per person: only its writer edits it | Two people never edit the same record at once, so last-write-wins never loses words |
 | 2026-11-15 | No app name on screen; the launch is two hearts in your colours with "Two souls, one space." | Asked for; the name under the Home Screen icon still comes from the page title and can be renamed when adding it |
 | 2026-11-16 | The journal is compact: rows instead of cards, each post on a love thread to the next | "Journal looks huge"; asked for posts that connect with love threads |

@@ -11,7 +11,7 @@ UNREAD = """(() => { const c = JSON.parse(localStorage.getItem('twodo:chat') || 
   return Object.values(c.msgs || {}).filter(m => m.f !== me && !m.del && m.ts > c.read).length; })()"""
 STATUS = "(document.querySelector('.c-status') || {}).className || ''"
 # what Home says about the conversation: [the number on your partner's character, the number on the "Message" button]
-BOARD_NEW = "[(document.querySelector('.board .stage-char.pt .pt-badge') || {}).textContent || null, (document.querySelector('.board-tray .tray-n') || {}).textContent || null]"
+BOARD_NEW = "[(document.querySelector('.home-pt .home-n') || {}).textContent || null, (document.querySelector('.board-tray .tray-n') || {}).textContent || null]"
 PILL = "(() => { const p = document.querySelector('.c-jump'); return p && !p.hidden ? p.textContent.trim() : null; })()"
 # the "New messages" line: [text of the message under it, its distance below the header, its distance above the message box]
 LINE = """(() => { const l = document.querySelector('.chatlist > .c-new'); if (!l) return null;
@@ -103,7 +103,7 @@ async def main():
         assert delivered(await B.evaluate(STATUS)), 'the chat is closed: nothing is read'
         assert await A.evaluate(UNREAD) == 3 and await until(A, BOARD_NEW, ['3', '3']) == ['3', '3'], (await A.evaluate(UNREAD), await A.evaluate(BOARD_NEW))
         assert 'board note' not in await A.evaluate("document.querySelector('.boardview').textContent"), 'Home never shows what a message says'
-        await A.click('.board .stage-char.pt')  # your partner's character is the way into the conversation
+        await A.click('.home-pt')  # your partner's chip is the way into the conversation
         assert seen(await until(B, STATUS, seen)), 'opened from the board with all of it on screen: read'
         line = await A.evaluate(LINE); assert line and line[0] == 'board note 0' and await A.evaluate(GAP) < 80, (line, await A.evaluate(GAP))
         await A.wait_for_timeout(700); await back_home(A)

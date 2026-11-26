@@ -1,0 +1,95 @@
+/* Twodo · the journal, one page each per day (design.md, "The journal"; like the iPhone app): a week strip, a stage
+   washed from your colour into your partner's with both characters, and a sheet over it with the day and both pages.
+   Only today has a writing box. Only transform and opacity animate. */
+.jd { --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); --love: #D63F74; padding: 0 16px 40px; }
+[data-theme="dark"] .jd { --love: #F57AA6; } /* the love pink, as in the iPhone app (LOVE): 3:1 or more as an icon */
+.vbody:has(> .jd) { max-width: 620px; }
+.jd-top { display: flex; align-items: center; justify-content: space-between; }
+.jd-top .large-title { padding-left: 0; padding-right: 0; }
+.jd-calbtn, .jd-arrow { flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg2); color: var(--label); box-shadow: 0 1px 2px rgba(27,23,48,.08), 0 10px 22px -16px rgba(27,23,48,.45);
+  transition: transform var(--dur-quick) var(--ease-out), opacity var(--dur-quick) var(--ease-out); }
+.jd-arrow { width: 38px; height: 38px; box-shadow: none; background: color-mix(in srgb, var(--label) 8%, var(--bg2)); }
+.jd-calbtn:active, .jd-arrow:active { transform: scale(.92); }
+.jd-arrow:disabled { opacity: .35; }
+
+/* ---------- the week ---------- */
+.jd-month { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 8px; }
+.jd-month h2 { margin: 0; font: 700 17px/22px var(--round); color: var(--label); }
+.jd-count { display: block; font-size: 13px; line-height: 18px; color: var(--soft); }
+.jd-arrows { display: flex; gap: 8px; }
+.jd-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.jd-day { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 72px; padding: 8px 0 6px; border: 0; border-radius: 16px;
+  background: var(--bg2); color: var(--label); font: inherit; box-shadow: 0 1px 2px rgba(27,23,48,.06); transition: transform var(--dur-quick) var(--ease-out); }
+.jd-day:active { transform: scale(.94); }
+.jd-day .jd-wd { font: 800 12px/16px var(--round); letter-spacing: .5px; text-transform: uppercase; color: var(--soft); }
+.jd-day b { font: 700 17px/22px var(--round); font-variant-numeric: tabular-nums; }
+.jd-day.today { box-shadow: inset 0 0 0 2px var(--c); }
+.jd-day.on { background: var(--label); color: var(--bg); box-shadow: none; }
+.jd-day.on .jd-wd { color: var(--bg); }
+.jd-day.future { background: none; box-shadow: none; color: var(--soft); } /* shut, but still readable */
+.jd-dots { display: flex; gap: 3px; min-height: 7px; }
+.jd-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--c); }
+.jd-day.on .jd-dots i { box-shadow: 0 0 0 1px var(--bg); }
+
+/* ---------- the stage and the sheet over it ---------- */
+.jd-stage { position: relative; display: block; height: 232px; margin-top: 18px; border-radius: 28px; overflow: hidden;
+  background-color: var(--b); background-image: linear-gradient(135deg, color-mix(in srgb, var(--a) 55%, #FFFFFF), var(--b)); }
+.jd-badge { position: absolute; top: 16px; left: 16px; display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 999px;
+  background: #1B1730; color: #FFFFFF; font: 800 12px/16px var(--round); letter-spacing: 1px; text-transform: uppercase; }
+.jd-badge .i { width: 12px; height: 12px; stroke-width: 2.6; }
+.jd-floor { position: absolute; left: 0; right: 0; bottom: 34px; display: flex; justify-content: center; align-items: flex-end; gap: 16px; }
+.jd-char { padding: 0; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
+.jd-sheet { position: relative; margin-top: -32px; padding: 20px; border-radius: 28px; background: var(--bg2);
+  box-shadow: 0 1px 2px rgba(27,23,48,.06), 0 18px 40px -16px rgba(40,20,60,.3); }
+.jd-label { display: block; font: 800 12px/16px var(--round); letter-spacing: 1px; text-transform: uppercase; color: var(--soft); }
+.jd-date { margin: 0; font: 900 30px/34px var(--round); letter-spacing: -.3px; text-transform: uppercase; color: var(--label); }
+.jd-block { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+.jd-block.theirs { padding-top: 18px; border-top: 1px solid color-mix(in srgb, var(--label) 10%, transparent); }
+.jd-who { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.jd-who b { flex: 1 1 auto; font: 700 17px/22px var(--round); color: var(--label); }
+.jd-saved { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--soft); }
+.jd-text { margin: 0; font-size: 17px; line-height: 24px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--label); }
+.jd-earlier { display: flex; flex-direction: column; gap: 8px; }
+.jd-earlier .jd-text { color: var(--soft); }
+.jd-none { margin: 0; font-size: 15px; line-height: 21px; color: var(--soft); }
+.jd-lock { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; line-height: 18px; color: var(--soft); }
+.jd-grow { padding: 6px 14px; border-radius: 16px; background: color-mix(in srgb, var(--label) 5%, var(--bg2)); }
+.jd-grow::after, .jd-grow > .jt-ta { min-height: 132px; max-height: none; font-size: 17px; line-height: 24px; }
+.jd-save { display: flex; align-items: center; gap: 12px; }
+.jd-note { flex: 1 1 auto; font-size: 13px; line-height: 18px; color: var(--soft); font-variant-numeric: tabular-nums; }
+.jd-btn { flex: none; min-height: 50px; padding: 0 24px; border: 0; border-radius: 25px; color: var(--on-color); font: 700 17px/22px var(--round);
+  background-color: var(--pt-c); background-image: linear-gradient(135deg, color-mix(in srgb, var(--me-c) 55%, #FFFFFF), var(--pt-c));
+  transition: transform var(--dur-quick) var(--ease-out), opacity var(--dur-quick) var(--ease-out); }
+.jd-btn:active { transform: scale(.96); }
+.jd-btn:disabled { opacity: .45; }
+.jd-entry { position: relative; display: flex; align-items: flex-start; gap: 6px; touch-action: manipulation; }
+.jd-entry .jd-text { flex: 1 1 auto; }
+.jd-heart { flex: none; width: 44px; height: 44px; margin: -8px -8px 0 0; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--label) 7%, var(--bg2)); color: var(--soft); transition: transform var(--dur-quick) var(--ease-bounce); }
+.jd-heart:active { transform: scale(.88); }
+.jd-heart.on { background: color-mix(in srgb, var(--love) 14%, var(--bg2)); color: var(--love); }
+.jd-heart.on .i { fill: currentColor; }
+[data-theme="dark"] .jd-heart.on { background: color-mix(in srgb, var(--love) 24%, var(--bg2)); }
+.jd-loved { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; line-height: 18px; font-weight: 700; color: color-mix(in srgb, var(--c) 45%, var(--label)); }
+.jd-loved .i { fill: var(--love); color: var(--love); }
+.jd-burst { position: absolute; left: 50%; top: 50%; z-index: 1; width: 64px; height: 64px; margin: -32px 0 0 -32px; display: grid; place-items: center; opacity: 0; pointer-events: none; color: var(--love); }
+.jd-burst .i { width: 64px; height: 64px; fill: currentColor; stroke: #FFFFFF; stroke-width: 1.2; filter: drop-shadow(0 4px 10px rgba(27,23,48,.25)); }
+
+/* ---------- the calendar (in a sheet) ---------- */
+.jd-cal { padding: 4px 16px 24px; --soft: color-mix(in srgb, var(--label) 64%, var(--bg2)); }
+.jd-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 4px; }
+.jd-h { text-align: center; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--soft); padding: 6px 0; }
+.jd-cd { justify-self: center; width: 44px; height: 50px; padding: 0; border: 0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; background: none; color: var(--label); font: inherit; }
+.jd-cd b { font-size: 16px; line-height: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.jd-cd.today { box-shadow: inset 0 0 0 2px var(--c); }
+.jd-cd.today b, .jd-cd.on b { font-weight: 700; }
+.jd-cd.on { background: var(--label); color: var(--bg); }
+.jd-cd:disabled { color: var(--soft); }
+.jd-legend { display: flex; justify-content: center; gap: 18px; margin: 14px 0; font-size: 13px; line-height: 18px; color: var(--soft); }
+.jd-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.jd-legend i { width: 8px; height: 8px; border-radius: 4px; background: var(--c); }
+.jd-go { display: block; width: 100%; min-height: 50px; border: 0; border-radius: 16px; background: color-mix(in srgb, var(--label) 8%, var(--bg2));
+  color: color-mix(in srgb, var(--me-c) 45%, var(--label)); font: 700 17px/22px var(--round); }
+@media (prefers-reduced-motion: reduce) { .jd-day, .jd-btn, .jd-heart { transition: opacity var(--dur-quick) linear; } }
