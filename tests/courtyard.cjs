@@ -1,0 +1,97 @@
+/* Real collision/path regressions and encrypted presence protocol, independent of WebGL. */
+const fs = require('node:fs'), vm = require('node:vm'), ts = require('typescript');
+const { strict: assert } = require('node:assert');
+const { webcrypto } = require('node:crypto');
+function load(path, dependencies = {}, extras = {}) {
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText,
+    { exports, require: name => { assert(name in dependencies, 'Unmocked dependency ' + name); return dependencies[name]; }, TextEncoder, TextDecoder, crypto: webcrypto, btoa, atob, Uint8Array, ...extras });
+  return exports;
+}
+const state = load('src/lib/courtyard/state.ts');
+const store = load('src/lib/store.ts', { './courtyard/state': state, './render': { scheduleRender() {} }, './util': { PALETTE: ['blue', 'pink'], REPEATS: {} } });
+const points = [state.SPAWN, ...Object.values(state.PLACES)];
+for (const from of points) for (const to of points) {
+  const route = state.route(from, to); assert(route.length, 'reachable world landmark');
+  for (const p of route) assert(state.walkable(p.x, p.z));
+  for (let i = 1; i < route.length; i++) for (let t = 0; t <= 10; t++) {
+    const a = route[i - 1], b = route[i]; assert(state.walkable(a.x + (b.x - a.x) * t / 10, a.z + (b.z - a.z) * t / 10), 'no diagonal corner clipping');
+  }
+}
+const moved = state.moveWithin({ x: -4.8, z: -1.5 }, 0, -12);
+assert(moved.z > -2.6, 'large frame cannot tunnel through the cottage');
+assert.equal(state.route(state.SPAWN, { x: NaN, z: 0 }).length, 0);
+const pose = { v: 1, session: '0123456789abcdef', seq: 1, t: 100000, x: 0, z: 5, yaw: 0, mode: 'idle' };
+assert(state.cleanPose(pose));
+assert(store.cleanRecord(pose, 'courtyard'));
+assert.equal(store.cleanRecord({ ...pose, kind: 'courtyard', id: 'presence' }), null, 'poses never become saved/synced records');
+for (const bad of [{ x: Infinity }, { x: -4.8, z: -4.5 }, { x: .2, z: -.6 }, { yaw: 20 }, { seq: 0 }, { session: '../a' }, { mode: 'dance' }, { mode: 'sit' }, { t: '100' }]) assert.equal(state.cleanPose({ ...pose, ...bad }), null);
+assert(state.cleanPose({ ...pose, ...state.SEATS[0], mode: 'sit' }));
+assert(!('secret' in state.cleanPose({ ...pose, secret: 'never retained' })));
+assert.equal(state.cleanEnvelope({ u: 1, d: 'A'.repeat(1025) }), null);
+assert.equal(store.cleanRecord({ u: 1, d: 'A'.repeat(1025) }, 'courtyard-envelope'), null);
+
+async function main() {
+  const crypt = load('src/lib/crypto.ts');
+  const key = await webcrypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  let now = 100000, stream, timer, block = null, writes = [], peer = [], statuses = [];
+  const timers = new Set();
+  const fakeDate = class extends Date { static now() { return now; } };
+  let current = { x: 0, z: 5, yaw: 0, mode: 'idle' };
+  const network = { async dbReq(path, options) { writes.push({ path, options }); if (block) await block; return options.body; } };
+  const live = { open(options) { stream = options; return options; }, close(s) { if (s) s.closed = true; } };
+  const pendingCrypto = new Set();
+  const track = fn => (...args) => {
+    const task = fn(...args).finally(() => pendingCrypto.delete(task));
+    pendingCrypto.add(task);
+    return task;
+  };
+  const presence = load('src/lib/courtyard/presence.ts', {
+    '../crypto': { ...crypt, encryptObj: track(crypt.encryptObj), decryptObj: track(crypt.decryptObj) }, '../firebase': network, '../live': { Live: live }, '../store': store, './state': state,
+  }, { Date: fakeDate, document: { hidden: false }, navigator: { onLine: true }, AbortController,
+    setInterval(fn) { timer = fn; return fn; }, clearInterval() { timer = null; }, setTimeout(fn) { timers.add(fn); return fn; }, clearTimeout(fn) { timers.delete(fn); } });
+  const stop = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner: p => peer.push(p), status: s => statuses.push(s) });
+  const settle = async () => {
+    while (pendingCrypto.size) await Promise.allSettled([...pendingCrypto]);
+    await new Promise(resolve => setImmediate(resolve));
+  };
+  await settle(); assert.equal(writes.length, 1);
+  assert(!JSON.stringify(writes[0].options.body).includes('"x"'), 'only ciphertext goes to Firebase');
+  assert.equal(writes[0].options.body.u['.sv'], 'timestamp');
+  const decrypted = await crypt.decryptObj(key, writes[0].options.body.d); assert.equal(decrypted.x, 0); assert.equal(decrypted.z, 5);
+  stream.on('put', { path: '/', data: null }); await settle(); assert.equal(statuses.at(-1), 'live');
+  const receive = async (p, stamp = now) => { stream.on('put', { path: '/', data: { u: stamp, d: await crypt.encryptObj(key, p) } }); await settle(); };
+  await receive(pose); assert.equal(peer.at(-1).seq, 1);
+  await receive({ ...pose, seq: 2, x: 1 }, now + 1); assert.equal(peer.at(-1).x, 1);
+  await receive({ ...pose, seq: 1, x: 2 }, now + 2); assert.equal(peer.at(-1).x, 1, 'stale sequence never replays');
+  await receive({ ...pose, seq: 3, x: Infinity }, now + 3); assert.equal(peer.at(-1).x, 1, 'invalid coordinates ignored');
+  await receive({ ...pose, seq: 4, x: 1.2 }, now + 400);
+  await receive({ ...pose, seq: 5, x: 1.4 }, now + 300);
+  assert.equal(peer.at(-1).seq, 5, 'a newer pose sequence wins even when an older aborted request committed later on the server');
+  for (let i = 0; i < 10; i++) { now += 200; timer(); await settle(); } assert.equal(writes.length, 1, 'resting heartbeats are not per frame');
+  now += 1000; timer(); await settle(); assert.equal(writes.length, 2);
+  let release; block = new Promise(resolve => { release = resolve; });
+  current = { ...current, x: 1 }; now += 200; timer(); await settle(); const before = writes.length;
+  for (let i = 0; i < 5; i++) { current = { ...current, x: 1 + i * .1 }; now += 200; timer(); }
+  await settle(); assert.equal(writes.length, before, 'one in-flight write, no queue of old motion');
+  release(); block = null; await settle(); now += 200; timer(); await settle(); assert.equal((await crypt.decryptObj(key, writes.at(-1).options.body.d)).x, 1.4, 'next write coalesces to the newest position');
+  now += state.LEASE_MS + 1; timer(); await settle(); assert.equal(peer.at(-1), null, 'sleeping partner expires');
+  stream.onDown(); assert.equal(statuses.at(-1), 'connecting'); assert.equal(peer.at(-1), null);
+  stop(); assert.equal(timer, null); assert.equal(stream.closed, true); assert.equal(timers.size, 0);
+  const count = writes.length;
+  const rejected = presence.joinWorld({ space: '../outside', uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
+  assert.equal(statuses.at(-1), 'unavailable'); await settle(); assert.equal(writes.length, count); rejected();
+  let unavailable = true;
+  network.dbReq = async () => { if (unavailable) throw new Error('Temporary write failure'); };
+  const stopRecovering = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
+  stream.on('put', { path: '/', data: null });
+  await settle(); assert.equal(statuses.at(-1), 'connecting');
+  unavailable = false; now += 600; timer(); await settle();
+  assert.equal(statuses.at(-1), 'live', 'write recovery works while the receive stream is quiet');
+  stopRecovering();
+  network.dbReq = async () => { const e = new Error('denied'); e.status = 403; throw e; };
+  const stopDenied = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
+  await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied();
+  console.log('PASS: 25 routes; collision substeps; hostile poses; AES-GCM wire privacy; sequence ordering; heartbeat lease; serialized/coalesced writes; cleanup.');
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -148,6 +148,19 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   removed) and *Try again*. Home's bar, the top of Home and Back keep working. If everything fails, a plain
   page says the same with *Reload*. Never red, never the framework's blank error page.
 
+### Courtyard preview — approved 2026-11-26
+
+The owner approved a human-scale third-person 3D life-simulation direction, and live movement together online
+with resting avatars offline. `docs/courtyard.md` specifies the first build and its separate encrypted presence
+channel. A visible opt-in preview on Home keeps the existing Home available until physical iPhone validation.
+The world has realistic human models, original plaster/wood/stone/foliage, a following camera, a thumbstick,
+drag-to-look, Find partner, Sit/stand and Wave. Small world objects lead to the existing features; the header and
+ordinary feature controls remain available without walking or WebGL. The preview adds no card-based dashboard.
+Natural environment materials use dedicated `--world-*` tokens; UI uses existing text, surface and motion tokens.
+No blurred layers over the moving world. Use one renderer and stop at rest/coverage/hide; release its resources.
+Reduced Motion removes gait, reactions and camera easing, retaining explicit movement and direct look controls.
+The target image is art direction; it is not a promise of photorealism or a measured iPhone frame rate.
+
 ## 6. Characters
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;

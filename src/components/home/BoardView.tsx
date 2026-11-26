@@ -31,6 +31,7 @@ import { Icon } from '../ui/Icon';
 import { Portrait } from './Character';
 import { HomeMoments } from './Moments';
 import { HomePeople } from './People';
+import { CourtyardHome } from './CourtyardHome';
 
 /* ---------- what is on the board (plain data, so it is easy to check) ---------- */
 interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'waiting' | 'failed' | 'last'; who: PersonKey; text: string; n: number; when: string }
@@ -142,6 +143,7 @@ const Notes = memo(function Notes({ v, online }: { v: number; online: boolean })
 
 export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
   const v = useApp();
+  const [exploring, setExploring] = useState(false);
   const update = useStore(updateStore).ready, adding = useStore(boardAdd);
   const ok = paired(), me = L.me, pk = partnerKey();
   const warn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
@@ -153,7 +155,7 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
     return () => { removeEventListener('online', net); removeEventListener('offline', net); };
   }, []);
   return (
-    <section className={`${cls} boardview home-v2${adding ? ' adding' : ''}`} data-vid={entry.id}>
+    <section className={`${cls} boardview home-v2${adding ? ' adding' : ''}${exploring ? ' courtyard-on' : ''}`} data-vid={entry.id}>
       <header className="home-top">
         <h1 className="board-title">Home</h1>
         <AreaBoundary area="Home’s top" compact>
@@ -168,10 +170,13 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
         </button>
         </AreaBoundary>
       </header>
-      <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
+      {exploring ? <AreaBoundary area="Our place"><CourtyardHome v={v} leave={() => setExploring(false)} /></AreaBoundary> : <>
+        <button type="button" className="world-enter" onClick={() => setExploring(true)}>Explore our place <span>3D preview</span></button>
+        <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
+      </>}
       <nav className="board-tray home-dock" aria-label="Main">
         <div className="dock-pill">
-          <button className="dock-tab on" type="button" aria-label="Home" aria-current="page"><Icon name="home" /></button>
+          <button className="dock-tab on" type="button" aria-label="Home" aria-current="page" onClick={() => setExploring(false)}><Icon name="home" /></button>
           <button className="fab-btn dock-tab" type="button" aria-label="To-dos and reminders" onClick={() => navTo({ type: 'todos' })}><Icon name="todo" /><i className="fab-dot" hidden={!todoDot} /></button>
           <button className="fab-btn dock-tab" type="button" aria-label={posted ? 'Journal, new today' : 'Journal'} onClick={() => openJournal()}><Icon name="journal" /><i className="fab-dot" hidden={!posted} /></button>
           <button className="tray-btn chat dock-tab" type="button" onClick={toPartner}

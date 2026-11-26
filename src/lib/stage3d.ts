@@ -322,6 +322,8 @@ export async function mountStage(canvas: HTMLCanvasElement, w: number, h: number
       document.removeEventListener('visibilitychange', onVis);
       for (const p of list) p.mixer.stopAllAction();
       shadowGeo.dispose(); shadowMat.map?.dispose(); shadowMat.dispose(); r.dispose();
+      // Home is remounted when leaving the courtyard preview. Release its old context, not just JS resources.
+      if (!r.getContext().isContextLost()) r.forceContextLoss();
     },
   };
   return handle;

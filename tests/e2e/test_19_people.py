@@ -6,7 +6,7 @@ scrolls Home; a tap and they wave. With Reduce Motion they stand still and only 
 partner shares a moment, theirs takes a photo. The character screen has the same person to turn round, alone.
 Without WebGL the drawings stay and nothing fails.
 Run test 1 first (it creates Abilash and Deiva). Needs the test build on 8003 and /tmp/mo/sunset.jpg (test 18)."""
-import asyncio, os
+import asyncio, os, time
 from playwright.async_api import async_playwright
 from helpers import TITLES, back_home
 
@@ -39,10 +39,12 @@ async def main():
             async def drag(x0, y0, x1, y1, steps=10, ms=16):
                 nonlocal cdp
                 cdp = cdp or await ctx.new_cdp_session(pg)
-                await cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y0}]})
+                # Hardware timestamps describe the gesture, not the time SwiftShader takes to deliver each CDP call.
+                at = time.time()
+                await cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'timestamp': at, 'touchPoints': [{'x': x0, 'y': y0}]})
                 for i in range(1, steps + 1):
-                    await cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + (x1 - x0) * i / steps, 'y': y0 + (y1 - y0) * i / steps}]}); await pg.wait_for_timeout(ms)
-                await cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
+                    await cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'timestamp': at + i * ms / 1000, 'touchPoints': [{'x': x0 + (x1 - x0) * i / steps, 'y': y0 + (y1 - y0) * i / steps}]}); await pg.wait_for_timeout(ms)
+                await cdp.send('Input.dispatchTouchEvent', {'type': 'touchEnd', 'timestamp': at + steps * ms / 1000 + .001, 'touchPoints': []})
             return drag
 
         # ---------- they stand free on Home: drawings first, then the 3D people; the card is only Today

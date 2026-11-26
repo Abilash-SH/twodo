@@ -3,7 +3,41 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-25.
+Last updated: 2026-11-26.
+
+## Current session: courtyard preview (2026-11-26)
+
+- Latest remote main verified at `bb96a06` (#42 merged). Earlier state/history below is retained; #39/#41/#42
+  are merged, and the old reply-flick regression noted below was fixed by pausing the people behind screens.
+- Owner explicitly chose **web app, Home first**, rejected card layouts, then approved a realistic third-person
+  life-simulation courtyard. Both partners should move live online, with a resting avatar offline. Approved
+  reference art is an aspiration, not a working-game screenshot. No code/art from the unrelated inspiration site.
+- Draft [PR #43](https://github.com/Abilash-SH/twodo/pull/43) is on **`feat/courtyard-preview`**, branched from
+  current main. Home gets an opt-in **Explore our
+  place · 3D preview**; the existing Home and its improvements remain available. No work in mobile/Supabase.
+- `docs/courtyard.md` was written before implementing the new presence channel. New Firebase path
+  `spaces/{space}/world/{uid}` carries only a latest encrypted virtual pose, owner-written/member-readable.
+  Uses unchanged `encryptObj`/`decryptObj`, new validation scopes in `cleanRecord`; no saved record kind or key
+  changes. Publish the new rules manually before live presence can work against production Firebase.
+- Reuses the licensed human/own-avatar and mocap pipeline. Original courtyard geometry, four optimized CC0
+  surface maps and procedural fallbacks, third-person camera, dual-touch stick/look, bounded pathfinding,
+  sit/stand/wave, a compact task patch and existing Moments camera/library, Journal and Chat controls.
+  One renderer, static environment shadow map, contact shadows for people, no unchanged-heartbeat redraw.
+- Browser test 21 passed in isolation on the textured build. It checks two-account movement, sitting, pauses,
+  lease expiry, keyboard focus, task completion, taking and sending a Moment, landscape, Reduce Motion and
+  WebGL fallback. Simulated context loss recovers on a fresh canvas. The opening portrait view drew 109 calls
+  and about 25,000 triangles in Chromium's software renderer. The retry of a failed presence write while its
+  receive stream stays healthy is covered by the protocol test.
+- Eighteen of the nineteen existing browser scripts passed across the suite and focused reruns. Test 13 passed
+  Home navigation, secret-list isolation, contrast, offline recovery and avatar settings before its time limit.
+  Its remaining unpaired and sign-out flows did not finish in that run.
+- Default Turbopack cannot bind its CSS worker IPC port in this cloud environment, even outside the command
+  sandbox. Supported webpack build succeeds: `IS_WEBPACK_TEST=1 npm run build`; test build likewise
+  `IS_WEBPACK_TEST=1 sh scripts/build-test.sh`. No package/bundler configuration changed in the repository.
+- `tests/performance.cjs` on main lacked its newly imported reactions dependency; its test double is now supplied,
+  and the original zero-GET/cache/optimistic-write assertions pass. This changes no chat runtime behaviour.
+- Physical iPhone fidelity, frame pacing, memory/thermal use, real Firebase rule deployment and two physical
+  phones remain unverified. Keep the opt-in preview until these are reviewed.
 
 ## The project in short
 
