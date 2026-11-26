@@ -40,12 +40,21 @@ async function main() {
   let current = { x: 0, z: 5, yaw: 0, mode: 'idle' };
   const network = { async dbReq(path, options) { writes.push({ path, options }); if (block) await block; return options.body; } };
   const live = { open(options) { stream = options; return options; }, close(s) { if (s) s.closed = true; } };
+  const pendingCrypto = new Set();
+  const track = fn => (...args) => {
+    const task = fn(...args).finally(() => pendingCrypto.delete(task));
+    pendingCrypto.add(task);
+    return task;
+  };
   const presence = load('src/lib/courtyard/presence.ts', {
-    '../crypto': crypt, '../firebase': network, '../live': { Live: live }, '../store': { cleanRecord: (raw, scope) => scope === 'courtyard' ? state.cleanPose(raw) : state.cleanEnvelope(raw) }, './state': state,
+    '../crypto': { ...crypt, encryptObj: track(crypt.encryptObj), decryptObj: track(crypt.decryptObj) }, '../firebase': network, '../live': { Live: live }, '../store': store, './state': state,
   }, { Date: fakeDate, document: { hidden: false }, navigator: { onLine: true }, AbortController,
     setInterval(fn) { timer = fn; return fn; }, clearInterval() { timer = null; }, setTimeout(fn) { timers.add(fn); return fn; }, clearTimeout(fn) { timers.delete(fn); } });
   const stop = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner: p => peer.push(p), status: s => statuses.push(s) });
-  const settle = async () => { await new Promise(resolve => setTimeout(resolve, 15)); };
+  const settle = async () => {
+    while (pendingCrypto.size) await Promise.allSettled([...pendingCrypto]);
+    await new Promise(resolve => setImmediate(resolve));
+  };
   await settle(); assert.equal(writes.length, 1);
   assert(!JSON.stringify(writes[0].options.body).includes('"x"'), 'only ciphertext goes to Firebase');
   assert.equal(writes[0].options.body.u['.sv'], 'timestamp');
@@ -72,6 +81,14 @@ async function main() {
   const count = writes.length;
   const rejected = presence.joinWorld({ space: '../outside', uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
   assert.equal(statuses.at(-1), 'unavailable'); await settle(); assert.equal(writes.length, count); rejected();
+  let unavailable = true;
+  network.dbReq = async () => { if (unavailable) throw new Error('Temporary write failure'); };
+  const stopRecovering = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
+  stream.on('put', { path: '/', data: null });
+  await settle(); assert.equal(statuses.at(-1), 'connecting');
+  unavailable = false; now += 600; timer(); await settle();
+  assert.equal(statuses.at(-1), 'live', 'write recovery works while the receive stream is quiet');
+  stopRecovering();
   network.dbReq = async () => { const e = new Error('denied'); e.status = 403; throw e; };
   const stopDenied = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
   await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied();

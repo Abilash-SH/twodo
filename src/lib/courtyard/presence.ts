@@ -67,7 +67,17 @@ export function joinWorld(o: Options): () => void {
     } catch (e) {
       if (closed) return;
       if ((e as AppError).status === 401 || (e as AppError).status === 403) { denied = true; Live.close(stream); down('unavailable'); }
-      else { retryAt = Date.now() + Math.min(15000, 500 * 2 ** Math.min(failures++, 5)); down(navigator.onLine ? 'connecting' : 'offline'); }
+      else {
+        retryAt = Date.now() + Math.min(15000, 500 * 2 ** Math.min(failures++, 5));
+        if (!navigator.onLine) down('offline');
+        else {
+          // The receive stream can stay healthy through a failed write. Keep its state so a successful
+          // retry restores the connection even when the partner has no fresh movement to send.
+          wrote = false;
+          o.partner(null);
+          set('connecting');
+        }
+      }
     } finally { clearTimeout(timeout); if (request === controller) request = null; busy = false; }
   }
   set(navigator.onLine ? 'connecting' : 'offline');

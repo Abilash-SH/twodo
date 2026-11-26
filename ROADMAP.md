@@ -217,7 +217,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-18 | The web app gets the iPhone app's two characters too, stored as `avatar` (look, skin, hair) on each person; `char` is still read, no longer drawn | Asked to have the new Home and journal in the web app as well; both are built around these characters. One optional field, kept by older versions |
 | 2026-11-18 | The web app's Home becomes the iPhone app's: a hello, a fanned stack of cards, the two of you, and a floating bar with Add a to-do beside it; ticking moves to Today | Asked for the reference's Home in the web app too; one card at a time keeps it calm, and Today is one tap away |
 
-### 18. Roaming 3D Home preview — 🚧 2026-11-26
+### 18. Roaming 3D Home preview — 🔎 draft PR #43, 2026-11-26
 
 - **Owner decision:** web app first; a realistic third-person simulation world rather than cards. Art direction
   approved; live movement together online, a marked resting avatar offline. Original courtyard, not copied art.

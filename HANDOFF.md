@@ -12,7 +12,8 @@ Last updated: 2026-11-26.
 - Owner explicitly chose **web app, Home first**, rejected card layouts, then approved a realistic third-person
   life-simulation courtyard. Both partners should move live online, with a resting avatar offline. Approved
   reference art is an aspiration, not a working-game screenshot. No code/art from the unrelated inspiration site.
-- Work is on **`feat/courtyard-preview`**, cleanly branched from current main. Home gets an opt-in **Explore our
+- Draft [PR #43](https://github.com/Abilash-SH/twodo/pull/43) is on **`feat/courtyard-preview`**, branched from
+  current main. Home gets an opt-in **Explore our
   place · 3D preview**; the existing Home and its improvements remain available. No work in mobile/Supabase.
 - `docs/courtyard.md` was written before implementing the new presence channel. New Firebase path
   `spaces/{space}/world/{uid}` carries only a latest encrypted virtual pose, owner-written/member-readable.
@@ -22,10 +23,14 @@ Last updated: 2026-11-26.
   surface maps and procedural fallbacks, third-person camera, dual-touch stick/look, bounded pathfinding,
   sit/stand/wave, a compact task patch and existing Moments camera/library, Journal and Chat controls.
   One renderer, static environment shadow map, contact shadows for people, no unchanged-heartbeat redraw.
-- Browser test 21 reproduced and fixed two initial issues: input listeners installed before the stick existed,
-  and both slots spawned together. The earlier build passed the two-account movement, sitting, pause/lease,
-  keyboard, landscape, Reduce Motion and WebGL fallback checks. The latest test also exercises completing a
-  task, sharing a Moment and successfully retrying on a fresh canvas after context loss.
+- Browser test 21 passed in isolation on the textured build. It checks two-account movement, sitting, pauses,
+  lease expiry, keyboard focus, task completion, taking and sending a Moment, landscape, Reduce Motion and
+  WebGL fallback. Simulated context loss recovers on a fresh canvas. The opening portrait view drew 109 calls
+  and about 25,000 triangles in Chromium's software renderer. The retry of a failed presence write while its
+  receive stream stays healthy is covered by the protocol test.
+- Eighteen of the nineteen existing browser scripts passed across the suite and focused reruns. Test 13 passed
+  Home navigation, secret-list isolation, contrast, offline recovery and avatar settings before its time limit.
+  Its remaining unpaired and sign-out flows did not finish in that run.
 - Default Turbopack cannot bind its CSS worker IPC port in this cloud environment, even outside the command
   sandbox. Supported webpack build succeeds: `IS_WEBPACK_TEST=1 npm run build`; test build likewise
   `IS_WEBPACK_TEST=1 sh scripts/build-test.sh`. No package/bundler configuration changed in the repository.
