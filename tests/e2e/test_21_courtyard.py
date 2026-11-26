@@ -83,6 +83,7 @@ async def main():
         await B.locator('[data-presence="resting"]').wait_for(timeout=15000)
         await A.locator('.sheet.open [data-s="done"]').click()
         await A.locator('[data-presence="live"]').wait_for(timeout=12000)
+        await cb.close()
         await A.locator('#boardAdd').click()
         await A.locator('#cta').fill('Water the courtyard plants')
         await A.locator('#cta').press('Enter')
@@ -103,6 +104,7 @@ async def main():
         await file_chooser.set_files('/tmp/mo/sunset.jpg')
         await A.locator('.mo-send-btn').click()
         await A.locator('.mo-send').wait_for(state='hidden')
+        print('PASS: sit/stand, foreground lease, task completion and Moments camera/send', flush=True)
         # The existing chat and keyboard rules survive the new Home mode.
         await A.locator('.board-tray .tray-btn.chat').click()
         await A.locator('.chatview:not(.offright)').wait_for()
@@ -117,10 +119,14 @@ async def main():
         # Landscape keeps every door and exit reachable.
         await A.set_viewport_size({'width':844,'height':390})
         await A.wait_for_timeout(500)
-        assert await A.evaluate('document.documentElement.scrollWidth<=innerWidth')
-        for selector in ['.world-toolbar button','.world-doors','.home-dock']:
-            r=await A.locator(selector).bounding_box()
-            assert r and r['y']>=0 and r['y']+r['height']<=390, (selector,r)
+        dimensions = await A.evaluate('''() => ({
+            fits: document.documentElement.scrollWidth <= innerWidth,
+            bounds: ['.world-toolbar button','.world-doors','.home-dock'].map(selector => {
+                const rect = document.querySelector(selector)?.getBoundingClientRect();
+                return rect && { top: rect.top, bottom: rect.bottom };
+            }),
+        })''')
+        assert dimensions['fits'] and all(r and r['top'] >= 0 and r['bottom'] <= 390 for r in dimensions['bounds']), dimensions
         await A.screenshot(path='/tmp/twodo-courtyard-landscape.png')
         await A.set_viewport_size({'width':390,'height':844})
         await A.emulate_media(reduced_motion='reduce')
@@ -137,7 +143,7 @@ async def main():
         await A.locator('.world-canvas[data-ready="yes"]').wait_for(timeout=30000)
         await A.locator('.world-toolbar button').click()
         assert await A.locator('.world-enter').is_visible()
-        await ca.close();await cb.close();await browser.close()
+        await ca.close();await browser.close()
         # No WebGL never blanks Home or removes feature shortcuts.
         fallback = await p.chromium.launch(executable_path=os.environ.get('CHROME', '/usr/bin/google-chrome'), args=['--no-sandbox','--disable-3d-apis'])
         context_state=json.loads(Path('/tmp/twodo-A.json').read_text())
