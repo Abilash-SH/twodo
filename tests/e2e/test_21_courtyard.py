@@ -88,9 +88,13 @@ async def main():
         await A.locator('#cta').press('Enter')
         await A.keyboard.press('Escape')
         await A.locator('.world-doors button:has-text("Task patch")').click()
-        task = A.locator('.world-task-patch label', has_text='Water the courtyard plants')
-        await task.click()
-        await task.wait_for(state='hidden')
+        tasks = A.locator('.world-task-patch label')
+        await tasks.first.wait_for()
+        assert await tasks.count() <= 3
+        title = (await tasks.first.inner_text()).strip()
+        chosen = A.locator('.world-task-patch label', has_text=title).first
+        await chosen.click()
+        await chosen.wait_for(state='hidden')
         await A.locator('.sheet.open [data-s="done"]').click()
         async with A.expect_file_chooser() as chooser:
             await A.locator('.world-doors button[aria-label="Take a photo"]').click()
