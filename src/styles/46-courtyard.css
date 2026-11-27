@@ -24,7 +24,7 @@
 .world-fallback span { font-size: 15px; line-height: 21px; }
 .world-fallback button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 22px; color: var(--label); background: var(--fill); font: inherit; }
 .world-hint { position: absolute; top: 8px; left: 8px; right: 8px; padding: 6px 10px; font-size: 12px; line-height: 18px; color: var(--label); background: var(--bg2); border-radius: 12px; text-align: center; pointer-events: none; }
-.world-travel { position: absolute; right: 8px; top: 48px; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; max-width:calc(100% - 16px); }
+.world-travel { position: absolute; right: 8px; top: 48px; display:flex; gap:8px; }
 .world-find, .world-bench { min-height: 44px; padding: 0 12px; border: 0; border-radius: 22px; color: var(--label); background: var(--bg2); font: 600 15px/20px var(--round); }
 .world-stick { position: absolute; left: 32px; bottom: 16px; width: 112px; height: 112px; min-height: 44px; padding: 0; border: 0; background: none; border-radius: 50%; touch-action: none; -webkit-touch-callout: none; }
 .world-stick-base { position: absolute; inset: 0; border-radius: 50%; background: var(--bg2); opacity: .72; }

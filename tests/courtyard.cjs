@@ -10,22 +10,37 @@ function load(path, dependencies = {}, extras = {}) {
 }
 const state = load('src/lib/courtyard/state.ts');
 const store = load('src/lib/store.ts', { './courtyard/state': state, './render': { scheduleRender() {} }, './util': { PALETTE: ['blue', 'pink'], REPEATS: {} } });
-const points = [state.SPAWN, ...Object.values(state.PLACES)];
+const points = [...Object.values(state.DESTINATIONS), ...Object.values(state.PLACES)];
 for (const from of points) for (const to of points) {
   const route = state.route(from, to); assert(route.length, 'reachable world landmark');
   for (const p of route) assert(state.walkable(p.x, p.z));
   for (let i = 1; i < route.length; i++) for (let t = 0; t <= 10; t++) {
     const a = route[i - 1], b = route[i]; assert(state.walkable(a.x + (b.x - a.x) * t / 10, a.z + (b.z - a.z) * t / 10), 'no diagonal corner clipping');
   }
+  let position = from;
+  for (let elapsed = 0; route.length && elapsed < 20; elapsed += .25) {
+    position = state.followRoute(position, route, 1.45 * .25);
+  }
+  assert.equal(route.length, 0, 'route reaches its destination at four render frames per second');
+  assert(Math.hypot(position.x - to.x, position.z - to.z) < .31);
 }
-const moved = state.moveWithin({ x: -4.8, z: -1.5 }, 0, -12);
-assert(moved.z > -2.6, 'large frame cannot tunnel through the cottage');
+for (const [name, room] of Object.entries(state.ROOMS)) {
+  const through = state.moveWithin({ x: (room.doorLeft + room.doorRight) / 2, z: room.front + .8 }, 0, -2);
+  assert.equal(state.areaAt(through.x, through.z), name, 'can walk through the open doorway');
+  const blocked = state.moveWithin({ x: room.minX + .4, z: room.front + .8 }, 0, -12);
+  assert(blocked.z > room.front, 'cannot tunnel through the front wall');
+  const back = state.moveWithin(through, 0, 2);
+  assert.equal(state.areaAt(back.x, back.z), 'garden', 'can leave through the same opening');
+}
 assert.equal(state.route(state.SPAWN, { x: NaN, z: 0 }).length, 0);
 const pose = { v: 1, session: '0123456789abcdef', seq: 1, t: 100000, x: 0, z: 5, yaw: 0, mode: 'idle' };
 assert(state.cleanPose(pose));
 assert(store.cleanRecord(pose, 'courtyard'));
 assert.equal(store.cleanRecord({ ...pose, kind: 'courtyard', id: 'presence' }), null, 'poses never become saved/synced records');
-for (const bad of [{ x: Infinity }, { x: -4.8, z: -4.5 }, { x: .2, z: -.6 }, { yaw: 20 }, { seq: 0 }, { session: '../a' }, { mode: 'dance' }, { mode: 'sit' }, { t: '100' }]) assert.equal(state.cleanPose({ ...pose, ...bad }), null);
+for (const bad of [{ x: Infinity }, { x: -7.65, z: -4.5 }, { x: .2, z: -.6 }, { yaw: 20 }, { seq: 0 }, { session: '../a' }, { mode: 'dance' }, { mode: 'sit' }, { t: '100' }]) assert.equal(state.cleanPose({ ...pose, ...bad }), null);
+assert.equal(state.cleanPose({ ...pose, ...state.DESTINATIONS.villa, mode: 'wave', gesture: 'clap' }).gesture, 'clap');
+assert.equal(state.cleanPose({ ...pose, mode: 'wave', gesture: 'unrecognized' }).gesture, undefined);
+assert.equal(state.cleanPose({ ...pose, gesture: 'cheer' }).gesture, undefined);
 assert(state.cleanPose({ ...pose, ...state.SEATS[0], mode: 'sit' }));
 assert(!('secret' in state.cleanPose({ ...pose, secret: 'never retained' })));
 assert.equal(state.cleanEnvelope({ u: 1, d: 'A'.repeat(1025) }), null);
@@ -50,7 +65,7 @@ async function main() {
     '../crypto': { ...crypt, encryptObj: track(crypt.encryptObj), decryptObj: track(crypt.decryptObj) }, '../firebase': network, '../live': { Live: live }, '../store': store, './state': state,
   }, { Date: fakeDate, document: { hidden: false }, navigator: { onLine: true }, AbortController,
     setInterval(fn) { timer = fn; return fn; }, clearInterval() { timer = null; }, setTimeout(fn) { timers.add(fn); return fn; }, clearTimeout(fn) { timers.delete(fn); } });
-  const stop = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner: p => peer.push(p), status: s => statuses.push(s) });
+  const session = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner: p => peer.push(p), status: s => statuses.push(s) });
   const settle = async () => {
     while (pendingCrypto.size) await Promise.allSettled([...pendingCrypto]);
     await new Promise(resolve => setImmediate(resolve));
@@ -75,12 +90,15 @@ async function main() {
   for (let i = 0; i < 5; i++) { current = { ...current, x: 1 + i * .1 }; now += 200; timer(); }
   await settle(); assert.equal(writes.length, before, 'one in-flight write, no queue of old motion');
   release(); block = null; await settle(); now += 200; timer(); await settle(); assert.equal((await crypt.decryptObj(key, writes.at(-1).options.body.d)).x, 1.4, 'next write coalesces to the newest position');
+  current = { ...current, mode: 'wave', gesture: 'cheer' };
+  session.publish(); await settle();
+  assert.equal((await crypt.decryptObj(key, writes.at(-1).options.body.d)).gesture, 'cheer', 'tap publishes without a render or a heartbeat');
   now += state.LEASE_MS + 1; timer(); await settle(); assert.equal(peer.at(-1), null, 'sleeping partner expires');
   stream.onDown(); assert.equal(statuses.at(-1), 'connecting'); assert.equal(peer.at(-1), null);
-  stop(); assert.equal(timer, null); assert.equal(stream.closed, true); assert.equal(timers.size, 0);
+  session.close(); assert.equal(timer, null); assert.equal(stream.closed, true); assert.equal(timers.size, 0);
   const count = writes.length;
   const rejected = presence.joinWorld({ space: '../outside', uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
-  assert.equal(statuses.at(-1), 'unavailable'); await settle(); assert.equal(writes.length, count); rejected();
+  assert.equal(statuses.at(-1), 'unavailable'); await settle(); assert.equal(writes.length, count); rejected.close();
   let unavailable = true;
   network.dbReq = async () => { if (unavailable) throw new Error('Temporary write failure'); };
   const stopRecovering = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
@@ -88,10 +106,10 @@ async function main() {
   await settle(); assert.equal(statuses.at(-1), 'connecting');
   unavailable = false; now += 600; timer(); await settle();
   assert.equal(statuses.at(-1), 'live', 'write recovery works while the receive stream is quiet');
-  stopRecovering();
+  stopRecovering.close();
   network.dbReq = async () => { const e = new Error('denied'); e.status = 403; throw e; };
   const stopDenied = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
-  await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied();
-  console.log('PASS: 25 routes; collision substeps; hostile poses; AES-GCM wire privacy; sequence ordering; heartbeat lease; serialized/coalesced writes; cleanup.');
+  await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied.close();
+  console.log('PASS: indoor routes and thresholds, walls, gesture bounds, ciphertext, sequencing, heartbeat, coalescing, cleanup.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

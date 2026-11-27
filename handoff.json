@@ -1,0 +1,71 @@
+{
+  "goal": "twodo_walkable_explore_and_realistic_avatars",
+  "done": [
+    "villa_and_garage_entry",
+    "journal_desk",
+    "task_workbench",
+    "collision_safe_autowalk",
+    "live_indoor_presence",
+    "wave_clap_cheer",
+    "avatar_closeup",
+    "delayed_frame_movement_fix",
+    "immediate_encrypted_reactions",
+    "final_isolated_browser_tests_1_and_21",
+    "draft_pr_44"
+  ],
+  "state": {
+    "branch": "feat/explore-villa",
+    "base": "88146ade887cd574069b78c1b5646dbf058d43ed",
+    "implementation_commit": "46e37fabdafffe66c13aae5a8f6eda24df395c5c",
+    "pr": 44,
+    "pr_url": "https://github.com/Abilash-SH/twodo/pull/44",
+    "npm_ci": "pass",
+    "typecheck": "pass",
+    "webpack_production": "pass",
+    "courtyard_velocity_performance_rules": "pass",
+    "isolated_browser": [
+      1,
+      21
+    ],
+    "browser_errors": 0,
+    "regression_passed": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      8,
+      11,
+      12,
+      14,
+      15,
+      16,
+      18,
+      19,
+      20
+    ],
+    "regression_failed_or_timed_out": {
+      "test_6": "settings_click_outside_viewport",
+      "test_7": "diagonal_swipe_did_not_pop",
+      "test_9": "timeout_after_navigation_checks",
+      "test_10": "delivered_status_assertion",
+      "test_13": "timeout_after_home_checks"
+    },
+    "iphone": "unverified",
+    "production_rules": "unverified",
+    "default_face_geometry": "existing_rocketbox",
+    "replacement_faces": "pending_original_rigged_assets",
+    "handoff": "HANDOFF.md",
+    "design": "docs/explore-villa.md",
+    "layout": "src/lib/courtyard/state.ts",
+    "environment": "src/lib/courtyard/environment.ts",
+    "actors": "src/lib/courtyard/actor.ts",
+    "villa_capture": "/workspace/twodo-preview/twodo-villa.png",
+    "garage_capture": "/workspace/twodo-preview/twodo-garage.png",
+    "avatar_capture": "/workspace/twodo-preview/twodo-avatar.png",
+    "landscape_capture": "/workspace/twodo-preview/twodo-villa-landscape.png",
+    "final_test_logs": "/tmp/twodo-villa-final-checks",
+    "suite_logs": "/tmp/twodo-villa-regressions"
+  },
+  "next": "prototype_original_high_detail_rigged_faces_and_validate_on_iphone"
+}

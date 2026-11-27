@@ -1,20 +1,61 @@
 /** Virtual metres only. This module has no React, storage or network dependencies. */
 export interface Point { x: number; z: number }
 export type PoseMode = 'idle' | 'walk' | 'sit' | 'wave';
-export interface WorldPose extends Point { v: 1; session: string; seq: number; t: number; yaw: number; mode: PoseMode }
+export const GESTURES = ['wave', 'clap', 'cheer'] as const;
+export type WorldGesture = typeof GESTURES[number];
+export interface WorldPose extends Point { v: 1; session: string; seq: number; t: number; yaw: number; mode: PoseMode; gesture?: WorldGesture }
 export interface WorldEnvelope { u: number; d: string }
 export const LEASE_MS = 12000;
 export const SPAWN: Point = { x: 0, z: 5.4 };
 export const BENCH: Point = { x: 4.2, z: 2.6 };
 export const SEATS = [{ x: 3.65, z: 2.6 }, { x: 4.75, z: 2.6 }];
-export const TREES: Point[] = [{ x: -7.6, z: 1 }, { x: -7.5, z: 5.3 }, { x: 7.1, z: -2 }, { x: 6.9, z: 5.8 }, { x: -.5, z: -7 }, { x: 3.6, z: -6.4 }];
+export const TREES: Point[] = [{ x: -7.6, z: 1 }, { x: -7.5, z: 5.3 }, { x: 7.85, z: -2 }, { x: 6.9, z: 5.8 }, { x: -.5, z: -7 }, { x: 8.4, z: -6.8 }];
+export interface Solid extends Point { w: number; d: number; h: number }
+export interface Room { minX: number; maxX: number; back: number; front: number; doorLeft: number; doorRight: number }
+export const ROOMS = {
+  villa: { minX: -7.65, maxX: -2.45, back: -7.1, front: -2.55, doorLeft: -5.95, doorRight: -4.25 },
+  garage: { minX: 2.4, maxX: 7.45, back: -7.25, front: -3.65, doorLeft: 3.25, doorRight: 6.6 },
+} satisfies Record<string, Room>;
+export type RoomName = keyof typeof ROOMS;
+export const WALL_HEIGHT = 2.8;
+const wall = (x: number, z: number, w: number, d: number): Solid => ({ x, z, w, d, h: WALL_HEIGHT });
+export function walls(room: Room): Solid[] {
+  const { minX, maxX, back, front, doorLeft, doorRight } = room;
+  return [
+    wall((minX + maxX) / 2, back, maxX - minX, .18),
+    wall(minX, (back + front) / 2, .18, front - back),
+    wall(maxX, (back + front) / 2, .18, front - back),
+    wall((minX + doorLeft) / 2, front, doorLeft - minX, .18),
+    wall((doorRight + maxX) / 2, front, maxX - doorRight, .18),
+  ];
+}
+export function areaAt(x: number, z: number): RoomName | 'garden' {
+  for (const [name, room] of Object.entries(ROOMS) as [RoomName, Room][]) {
+    if (x > room.minX && x < room.maxX && z > room.back && z < room.front) return name;
+  }
+  return 'garden';
+}
 export const PLACES = {
-  partner: { x: 4.2, z: 3.9 }, tasks: { x: -4.6, z: 3.5 }, moments: { x: 4.4, z: -3.2 }, journal: { x: -2.7, z: -1.5 },
+  partner: { x: 4.2, z: 3.9 }, tasks: { x: -4.6, z: 3.5 }, moments: { x: 4.4, z: -1.5 },
+  journal: { x: -3.7, z: -5.8 }, workbench: { x: 5.55, z: -5.8 },
 };
-const boxes = [{ x: -4.8, z: -4.5, w: 4.4, d: 3.4 }, { ...BENCH, w: 2.7, d: .85 }, { x: -2.7, z: -2.6, w: 1.5, d: .8 }];
+export const DESTINATIONS = {
+  garden: SPAWN, villa: { x: -5.1, z: -4.7 }, garage: { x: 4.9, z: -5.05 },
+};
+export const FURNITURE = {
+  sofa: { x: -6.8, z: -5.85, w: .89, d: 1.9, h: .85 },
+  desk: { x: -3.22, z: -6.48, w: 1.15, d: .76, h: .82 },
+  workbench: { x: 5.55, z: -6.73, w: 2.3, d: .72, h: .94 },
+  boxes: { x: 3.14, z: -6.5, w: .8, d: .8, h: .8 },
+} satisfies Record<string, Solid>;
+export const SOLIDS: Solid[] = [
+  ...Object.values(ROOMS).flatMap(walls),
+  ...Object.values(FURNITURE),
+  { ...BENCH, w: 2.7, d: .85, h: 1.1 },
+];
 export function walkable(x: number, z: number): boolean {
   return Number.isFinite(x) && Number.isFinite(z) && Math.abs(x) < 9 && Math.abs(z) < 8
-    && !boxes.some(b => Math.abs(x - b.x) < b.w / 2 + .25 && Math.abs(z - b.z) < b.d / 2 + .25)
+    && !SOLIDS.some(b => Math.abs(x - b.x) < b.w / 2 + .25 && Math.abs(z - b.z) < b.d / 2 + .25)
     && ((x - .2) / 2.05) ** 2 + ((z + .6) / 1.6) ** 2 > 1
     && !TREES.some(t => Math.hypot(x - t.x, z - t.z) < .6);
 }
@@ -28,6 +69,21 @@ export function moveWithin(p: Point, dx: number, dz: number): Point {
     if (walkable(x, z + dz / steps)) z += dz / steps;
   }
   return { x, z };
+}
+
+/** Consume the full movement budget, including when a frame crosses a route waypoint. */
+export function followRoute(position: Point, path: Point[], metres: number): Point {
+  while (path.length && metres > 0) {
+    const next = path[0];
+    const dx = next.x - position.x, dz = next.z - position.z;
+    const distance = Math.hypot(dx, dz);
+    const step = Math.min(distance, metres);
+    if (distance) position = moveWithin(position, dx / distance * step, dz / distance * step);
+    if (Math.hypot(next.x - position.x, next.z - position.z) >= .025) break;
+    path.shift();
+    metres -= step;
+  }
+  return position;
 }
 const STEP = .4, HALF = 24, SIZE = 49;
 const point = (id: number): Point => ({ x: (id % SIZE - HALF) * STEP, z: (Math.floor(id / SIZE) - HALF) * STEP });
@@ -68,7 +124,8 @@ export function cleanPose(raw: unknown): WorldPose | null {
   const { x, z, yaw, t } = q as unknown as WorldPose;
   if (Math.abs(yaw) > Math.PI || t < 1 || t > 8.64e15) return null;
   if (q.mode === 'sit' ? !SEATS.some(p => Math.hypot(p.x - x, p.z - z) < .08) : !walkable(x, z)) return null;
-  return { v: 1, session: q.session, seq: q.seq as number, t, x, z, yaw, mode: q.mode as PoseMode };
+  const gesture = q.mode === 'wave' && GESTURES.find(value => value === q.gesture);
+  return { v: 1, session: q.session, seq: q.seq as number, t, x, z, yaw, mode: q.mode as PoseMode, ...(gesture ? { gesture } : {}) };
 }
 export function cleanEnvelope(raw: unknown): WorldEnvelope | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;

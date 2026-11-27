@@ -6,19 +6,20 @@ import { cleanRecord } from '../store';
 import { LEASE_MS, type WorldPose } from './state';
 
 export type Connection = 'connecting' | 'live' | 'offline' | 'unavailable';
-export type LocalPose = Pick<WorldPose, 'x' | 'z' | 'yaw' | 'mode'>;
+export type LocalPose = Pick<WorldPose, 'x' | 'z' | 'yaw' | 'mode' | 'gesture'>;
 interface Options {
   space: string; uid: string; peer: string; key: CryptoKey;
   pose: () => LocalPose; partner: (p: WorldPose | null) => void; status: (s: Connection) => void;
 }
-export function joinWorld(o: Options): () => void {
+export function joinWorld(o: Options): { publish(): void; close(): void } {
   if (!/^[0-9a-f]{40}$/.test(o.space) || !/^[A-Za-z0-9_-]{1,128}$/.test(o.uid) || !/^[A-Za-z0-9_-]{1,128}$/.test(o.peer) || o.uid === o.peer) {
-    o.status('unavailable'); o.partner(null); return () => {};
+    o.status('unavailable'); o.partner(null); return { publish() {}, close() {} };
   }
   let closed = false, busy = false, readUp = false, wrote = false, denied = false;
   let seq = 0, generation = 0, peerStamp = 0, peerSeq = 0, peerSession = '', expires = 0;
   let lastSent = 0, signature = '', status: Connection | null = null, retryAt = 0, failures = 0;
   let request: AbortController | null = null, latest: WorldPose | null = null;
+  let publishAfterWrite = false;
   const session = randHex(8), path = `spaces/${o.space}/world/`;
   const set = (next: Connection) => { if (!closed && next !== status) { status = next; o.status(next); } };
   const down = (next: Connection) => { generation++; readUp = false; wrote = false; latest = null; expires = 0; o.partner(null); set(next); };
@@ -50,7 +51,7 @@ export function joinWorld(o: Options): () => void {
     if (closed || busy || denied || document.hidden || Date.now() < retryAt) return;
     if (!navigator.onLine) { down('offline'); return; }
     const now = Date.now(), pose = o.pose();
-    const next = [pose.x.toFixed(2), pose.z.toFixed(2), pose.yaw.toFixed(2), pose.mode].join(':');
+    const next = [pose.x.toFixed(2), pose.z.toFixed(2), pose.yaw.toFixed(2), pose.mode, pose.gesture].join(':');
     if (next === signature && now - lastSent < 3000) return;
     busy = true;
     const controller = new AbortController(); request = controller;
@@ -78,10 +79,16 @@ export function joinWorld(o: Options): () => void {
           set('connecting');
         }
       }
-    } finally { clearTimeout(timeout); if (request === controller) request = null; busy = false; }
+    } finally {
+      clearTimeout(timeout); if (request === controller) request = null; busy = false;
+      if (publishAfterWrite) { publishAfterWrite = false; void send(); }
+    }
   }
   set(navigator.onLine ? 'connecting' : 'offline');
   const timer = setInterval(() => { if (expires && Date.now() >= expires) { expires = 0; o.partner(null); } void send(); }, 200);
   void send();
-  return () => { closed = true; generation++; request?.abort(); clearInterval(timer); Live.close(stream); stream = null; o.partner(null); };
+  return {
+    publish() { if (busy) publishAfterWrite = true; else void send(); },
+    close() { closed = true; generation++; request?.abort(); clearInterval(timer); Live.close(stream); stream = null; o.partner(null); },
+  };
 }
