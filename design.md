@@ -166,6 +166,11 @@ roof is hidden to keep the player in view. The living room desk opens Journal an
 patch. Walk to offers the same destinations without using the stick. The avatar close-up frames the head bone
 with a soft fill light. Wave, Clap and Cheer play once and have a brief text cue on the sending phone.
 
+For Explore's first facial geometry prototypes, keep the existing rig, skin tone, hair and clothing of the
+selected characters. Refine the eyelids, lips and cheeks and use small, distinct smiles during Wave, Clap
+and Cheer. The smile fades back to neutral with the gesture. Reduce Motion holds the neutral face. Use the
+selected original model if the prototype cannot load and give a person's imported avatar priority.
+
 ## 6. Characters
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;

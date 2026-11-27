@@ -1,5 +1,5 @@
 {
-  "goal": "twodo_walkable_explore_and_realistic_avatars",
+  "goal": "explore_avatar_face_prototypes",
   "done": [
     "villa_and_garage_entry",
     "journal_desk",
@@ -11,11 +11,29 @@
     "delayed_frame_movement_fix",
     "immediate_encrypted_reactions",
     "final_isolated_browser_tests_1_and_21",
-    "draft_pr_44"
+    "draft_pr_44",
+    "pr_44_merged",
+    "avatar_branch_from_main",
+    "rig_and_design_reviewed",
+    "sculpted_two_rigged_faces",
+    "standalone_face_assets",
+    "expression_curves",
+    "offline_asset_cache",
+    "face_rig_and_fallback_tests",
+    "locked_offline_install",
+    "typecheck",
+    "webpack_production",
+    "vertex_color_bug_reproduced_in_browser",
+    "vertex_attributes_interpolated",
+    "face_attribute_counts_verified",
+    "both_face_comparisons_rendered",
+    "portrait_landscape_captures",
+    "embedded_texture_and_rig_verification",
+    "corrected_webpack_exports"
   ],
   "state": {
-    "branch": "feat/explore-villa",
-    "base": "88146ade887cd574069b78c1b5646dbf058d43ed",
+    "branch": "feat/explore-avatar-faces",
+    "base": "4c3135ec7ad5f8dc732dd56cb8a06f500eabae81",
     "implementation_commit": "46e37fabdafffe66c13aae5a8f6eda24df395c5c",
     "pr": 44,
     "pr_url": "https://github.com/Abilash-SH/twodo/pull/44",
@@ -65,7 +83,26 @@
     "avatar_capture": "/workspace/twodo-preview/twodo-avatar.png",
     "landscape_capture": "/workspace/twodo-preview/twodo-villa-landscape.png",
     "final_test_logs": "/tmp/twodo-villa-final-checks",
-    "suite_logs": "/tmp/twodo-villa-regressions"
+    "suite_logs": "/tmp/twodo-villa-regressions",
+    "villa_pr": 44,
+    "asset_basis": "mit_rocketbox_f07_m17",
+    "prototype_faces": [
+      "public/people/explore/f07.glb",
+      "public/people/explore/m17.glb"
+    ],
+    "generator": "scripts/people/explore_faces.py",
+    "face_design": "docs/explore-faces.md",
+    "face_asset_bytes": 1995628,
+    "added_triangles": 8524,
+    "face_unit_tests": "pass",
+    "face_browser": "both_faces_compared",
+    "face_test_logs": "/tmp/twodo-avatar-final-checks",
+    "avatar_pr": "pending",
+    "f07_before": "/workspace/twodo-preview/explore-f07-original.png",
+    "f07_after": "/workspace/twodo-preview/explore-f07-refined.png",
+    "m17_before": "/workspace/twodo-preview/explore-m17-original.png",
+    "m17_after": "/workspace/twodo-preview/explore-m17-refined.png",
+    "avatar_suite": "running"
   },
-  "next": "prototype_original_high_detail_rigged_faces_and_validate_on_iphone"
+  "next": "finish_browser_suite_and_open_draft_pr"
 }

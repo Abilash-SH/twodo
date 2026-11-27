@@ -16,7 +16,7 @@ export interface WorldScene {
   photos(values: readonly (string | null)[]): void;
   pose(): LocalPose; destroy(): void;
 }
-interface AvatarSource { url: string; fallback: string; gender: 'm' | 'f' }
+interface AvatarSource { urls: readonly string[]; gender: 'm' | 'f' }
 interface Options { slot: 0 | 1; me: AvatarSource; partner: AvatarSource; report(r: SceneReport): void; failure(): void }
 export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: Options): WorldScene {
   const created = makeRenderer(canvas); if (!created) throw new Error('3D is unavailable');
@@ -170,10 +170,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   resize(w, h);
   const tasks = [o.me, o.partner].map(async (person, index) => {
     try {
-      const actor = await loadActor(person.url, person.gender, abort.signal).catch(error => {
-        if (abort.signal.aborted || person.url === person.fallback) throw error;
-        return loadActor(person.fallback, person.gender, abort.signal);
-      });
+      const actor = await loadActor(person.urls, person.gender, abort.signal);
       if (gone) { actor.destroy(); return; }
       scene.add(actor.holder);
       if (index === 0) { player = actor; actor.holder.position.set(position.x, 0, position.z); }

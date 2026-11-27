@@ -217,7 +217,7 @@ and data checks, and a short iPhone checklist.
 | 2026-11-18 | The web app gets the iPhone app's two characters too, stored as `avatar` (look, skin, hair) on each person; `char` is still read, no longer drawn | Asked to have the new Home and journal in the web app as well; both are built around these characters. One optional field, kept by older versions |
 | 2026-11-18 | The web app's Home becomes the iPhone app's: a hello, a fanned stack of cards, the two of you, and a floating bar with Add a to-do beside it; ticking moves to Today | Asked for the reference's Home in the web app too; one card at a time keeps it calm, and Today is one tap away |
 
-### 18. Roaming 3D Home preview — #43 merged, villa follow-up in draft PR #44
+### 18. Roaming 3D Home preview — #43 and #44 merged, facial geometry prototypes in review
 
 - **Owner decision:** web app first; a realistic third-person simulation world rather than cards. Art direction
   approved; live movement together online, a marked resting avatar offline. Original courtyard, not copied art.
@@ -237,8 +237,11 @@ and data checks, and a short iPhone checklist.
 - **Villa follow-up:** living room and garage with open entrances, solid walls, shorter indoor camera, and
   destinations. The desk opens Journal and the garage workbench opens today's task patch. Wave, Clap and Cheer
   use the same encrypted presence channel. Browser test 21 covers the indoor shortcuts and paired presence.
-- **Next art milestone:** evaluate original rigged human models with detailed facial geometry and documented
-  reuse rights. Compare them to the current models using the new close-up and measure the cost on an iPhone.
+- **Facial geometry prototypes:** two locally sculpted face variants on the existing MIT rigs. Explore adds
+  distinct expressions for Wave, Clap and Cheer and supports neutral Reduce Motion. The selected look and import
+  priority are preserved. See `docs/explore-faces.md` for scope, asset cost and device acceptance.
+- **Next art milestone:** compare the prototypes to the originals on a physical iPhone before expanding to
+  additional looks or changing characters outside Explore.
 
 ## How to pick up work
 

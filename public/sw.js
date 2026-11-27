@@ -31,7 +31,7 @@ self.addEventListener('fetch', e => {
     if (hit) return hit;
     // a 3D person (people/*.glb, *.jpg) and their movements (people/motion/*.json) are downloaded once, when first
     // shown, and kept for this version
-    if (/\/people\/(?:[a-z0-9]+\.(?:glb|jpg)|motion\/[fm]_[a-z0-9]+\.json)$/.test(url.pathname)
+    if (/\/people\/(?:[a-z0-9]+\.(?:glb|jpg)|explore\/(?:f07|m17)\.glb|motion\/[fm]_[a-z0-9]+\.json)$/.test(url.pathname)
         || /\/world\/(?:grass|plaster|wood|stone)\.jpg$/.test(url.pathname)) {
       const r = await fetch(e.request);
       if (r.ok) await cache.put(e.request, r.clone());

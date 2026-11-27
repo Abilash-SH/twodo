@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { avatarOf } from '@/lib/characters';
 import { Avatars } from '@/lib/avatar3d';
-import { modelUrl, personFor } from '@/lib/people';
+import { exploreModels, personFor } from '@/lib/people';
 import { L, SMART, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
 import { Sync } from '@/lib/sync';
 import { Moments } from '@/lib/moments';
@@ -59,9 +59,9 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   const activity = useRef(active); activity.current = active;
   const me = L.me, pk = partnerKey(), paired = L.pair?.status === 'paired', name = firstWord(person(pk).name) || 'Your partner';
   const mine = avatarOf(me), theirs = avatarOf(pk);
-  const defaultMine = modelUrl(personFor(mine)), defaultTheirs = modelUrl(personFor(theirs));
-  const myUrl = Avatars.url[me] || defaultMine, theirUrl = Avatars.url[pk] || defaultTheirs;
-  const canvasKey = `${attempt}:${me}:${mine.look}:${theirs.look}:${myUrl}:${theirUrl}`;
+  const myPerson = personFor(mine), theirPerson = personFor(theirs);
+  const myUrl = Avatars.url[me], theirUrl = Avatars.url[pk];
+  const canvasKey = `${attempt}:${me}:${myPerson.id}:${theirPerson.id}:${myUrl}:${theirUrl}`;
   const key = Sync.key, space = Sync.space, uid = L.auth?.uid, peer = L.pair?.uid;
   const myPhoto = paired ? Moments.of(me)?.img || null : null, theirPhoto = paired ? Moments.of(pk)?.img || null : null;
 
@@ -84,8 +84,8 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
         if (gone || failedToLoad) return;
         const handle = m.mountWorld(cv, width, height, {
           slot: me === 'a' ? 0 : 1,
-          me: { url: myUrl, fallback: defaultMine, gender: mine.look === 'male' ? 'm' : 'f' },
-          partner: { url: theirUrl, fallback: defaultTheirs, gender: theirs.look === 'male' ? 'm' : 'f' },
+          me: { urls: exploreModels(myPerson, myUrl), gender: myPerson.look === 'male' ? 'm' : 'f' },
+          partner: { urls: exploreModels(theirPerson, theirUrl), gender: theirPerson.look === 'male' ? 'm' : 'f' },
           report(r) { if (!gone) { cv.dataset.ready = r.ready ? 'yes' : 'no'; setReport(r); if (r.ready) clearTimeout(timeout); } }, failure: fail,
         });
         world.current = handle; handle.active(activity.current);
@@ -97,7 +97,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
       if (!resizeFrame) resizeFrame = requestAnimationFrame(resized);
     }); ro.observe(b);
     return () => { gone = true; clearTimeout(timeout); cancelAnimationFrame(resizeFrame); ro.disconnect(); world.current?.destroy(); world.current = null; delete cv.dataset.ready; };
-  }, [canvasKey, myUrl, theirUrl, defaultMine, defaultTheirs, mine.look, theirs.look, me]);
+  }, [canvasKey, myUrl, theirUrl, myPerson, theirPerson, me]);
   useEffect(() => { world.current?.active(active); }, [active, report.ready]);
   useEffect(() => {
     if (!reaction) return;
