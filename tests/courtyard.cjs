@@ -65,7 +65,7 @@ async function main() {
     '../crypto': { ...crypt, encryptObj: track(crypt.encryptObj), decryptObj: track(crypt.decryptObj) }, '../firebase': network, '../live': { Live: live }, '../store': store, './state': state,
   }, { Date: fakeDate, document: { hidden: false }, navigator: { onLine: true }, AbortController,
     setInterval(fn) { timer = fn; return fn; }, clearInterval() { timer = null; }, setTimeout(fn) { timers.add(fn); return fn; }, clearTimeout(fn) { timers.delete(fn); } });
-  const stop = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner: p => peer.push(p), status: s => statuses.push(s) });
+  const session = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner: p => peer.push(p), status: s => statuses.push(s) });
   const settle = async () => {
     while (pendingCrypto.size) await Promise.allSettled([...pendingCrypto]);
     await new Promise(resolve => setImmediate(resolve));
@@ -90,12 +90,15 @@ async function main() {
   for (let i = 0; i < 5; i++) { current = { ...current, x: 1 + i * .1 }; now += 200; timer(); }
   await settle(); assert.equal(writes.length, before, 'one in-flight write, no queue of old motion');
   release(); block = null; await settle(); now += 200; timer(); await settle(); assert.equal((await crypt.decryptObj(key, writes.at(-1).options.body.d)).x, 1.4, 'next write coalesces to the newest position');
+  current = { ...current, mode: 'wave', gesture: 'cheer' };
+  session.publish(); await settle();
+  assert.equal((await crypt.decryptObj(key, writes.at(-1).options.body.d)).gesture, 'cheer', 'tap publishes without a render or a heartbeat');
   now += state.LEASE_MS + 1; timer(); await settle(); assert.equal(peer.at(-1), null, 'sleeping partner expires');
   stream.onDown(); assert.equal(statuses.at(-1), 'connecting'); assert.equal(peer.at(-1), null);
-  stop(); assert.equal(timer, null); assert.equal(stream.closed, true); assert.equal(timers.size, 0);
+  session.close(); assert.equal(timer, null); assert.equal(stream.closed, true); assert.equal(timers.size, 0);
   const count = writes.length;
   const rejected = presence.joinWorld({ space: '../outside', uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
-  assert.equal(statuses.at(-1), 'unavailable'); await settle(); assert.equal(writes.length, count); rejected();
+  assert.equal(statuses.at(-1), 'unavailable'); await settle(); assert.equal(writes.length, count); rejected.close();
   let unavailable = true;
   network.dbReq = async () => { if (unavailable) throw new Error('Temporary write failure'); };
   const stopRecovering = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
@@ -103,10 +106,10 @@ async function main() {
   await settle(); assert.equal(statuses.at(-1), 'connecting');
   unavailable = false; now += 600; timer(); await settle();
   assert.equal(statuses.at(-1), 'live', 'write recovery works while the receive stream is quiet');
-  stopRecovering();
+  stopRecovering.close();
   network.dbReq = async () => { const e = new Error('denied'); e.status = 403; throw e; };
   const stopDenied = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
-  await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied();
+  await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied.close();
   console.log('PASS: indoor routes and thresholds, walls, gesture bounds, ciphertext, sequencing, heartbeat, coalescing, cleanup.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

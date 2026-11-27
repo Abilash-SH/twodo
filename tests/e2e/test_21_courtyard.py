@@ -33,6 +33,12 @@ async def main():
         cb, B = await phone('/tmp/twodo-B.json')
         await A.locator('[data-presence="live"]').wait_for(timeout=12000)
         await B.locator('[data-presence="live"]').wait_for(timeout=12000)
+        await B.locator('.world-canvas').evaluate("""canvas => {
+            const seen = window.seenWorldReactions = new Set();
+            new MutationObserver(() => {
+                if (canvas.dataset.peerGesture) seen.add(canvas.dataset.peerGesture);
+            }).observe(canvas, { attributes: true, attributeFilter: ['data-peer-gesture'] });
+        }""")
         await A.get_by_role('button', name='React', exact=True).click()
         # A cold shader can delay the next draw past the reaction's send window.
         await A.get_by_role('button', name='Cheer', exact=True).evaluate("""button => {
@@ -41,7 +47,7 @@ async def main():
             button.click();
             setTimeout(() => { window.requestAnimationFrame = nextFrame; }, 1900);
         }""")
-        await B.locator('.world-canvas[data-peer-gesture="cheer"]').wait_for(timeout=12000)
+        await B.wait_for_function("window.seenWorldReactions.has('cheer')", timeout=18000)
         await A.screenshot(path='/tmp/twodo-courtyard.png')
         canvas = A.locator('.world-canvas')
         print('Portrait render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
@@ -70,7 +76,7 @@ async def main():
         print('PASS: simultaneous touch movement/look; partner receives position', flush=True)
         await A.get_by_role('button', name='React', exact=True).click()
         await A.get_by_role('button', name='Clap', exact=True).click()
-        await B.locator('.world-canvas[data-peer-gesture="clap"]').wait_for(timeout=12000)
+        await B.wait_for_function("window.seenWorldReactions.has('clap')", timeout=18000)
         await A.locator('.world-destination').select_option('villa')
         await A.locator('.world-canvas[data-area="villa"]').wait_for(timeout=75000)
         journal = A.get_by_role('button', name='Open journal', exact=True)

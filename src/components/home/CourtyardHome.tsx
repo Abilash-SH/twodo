@@ -46,6 +46,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   void v;
   const box = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null), stick = useRef<HTMLButtonElement>(null), knob = useRef<HTMLSpanElement>(null);
   const world = useRef<WorldScene | null>(null);
+  const liveWorld = useRef<ReturnType<typeof joinWorld> | null>(null);
   const [report, setReport] = useState(INITIAL), [failed, setFailed] = useState(false), [attempt, setAttempt] = useState(0);
   const [connection, setConnection] = useState<Connection>('connecting'), [here, setHere] = useState(false);
   const [reactions, showReactions] = useState(false);
@@ -115,7 +116,9 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   useEffect(() => {
     const w = world.current;
     if (!active || !report.ready || !w || !paired || !key || !space || !uid || !peer) { setHere(false); return; }
-    return joinWorld({ space, uid, peer, key, pose: () => w.pose(), partner: p => { w.peer(p); setHere(!!p); }, status: setConnection });
+    const session = joinWorld({ space, uid, peer, key, pose: () => w.pose(), partner: p => { w.peer(p); setHere(!!p); }, status: setConnection });
+    liveWorld.current = session;
+    return () => { liveWorld.current = null; session.close(); };
   }, [active, report.ready, paired, key, space, uid, peer]);
 
   useEffect(() => {
@@ -185,7 +188,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
             </select>
             {reactions ? <div className="world-reactions" role="group" aria-label="Avatar reactions">
               {GESTURES.map(gesture => <button type="button" key={gesture} onClick={() => {
-                world.current?.react(gesture); setReaction(gesture); showReactions(false);
+                world.current?.react(gesture); liveWorld.current?.publish(); setReaction(gesture); showReactions(false);
               }}>{REACTIONS[gesture]}</button>)}
             </div> : null}
           </div>

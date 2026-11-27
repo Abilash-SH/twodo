@@ -58,7 +58,11 @@
     "initial_cheer_browser_regression",
     "reaction_static_exports_passed",
     "cheer_while_render_delayed_passed",
-    "wave_and_clap_followup_passed"
+    "wave_and_clap_followup_passed",
+    "immediate_encrypted_publish",
+    "coalesced_explicit_publish",
+    "publish_protocol_test_passed",
+    "receiver_event_capture"
   ],
   "state": {
     "base": "88146ade887cd574069b78c1b5646dbf058d43ed",
@@ -92,11 +96,11 @@
     "pr_url": "https://github.com/Abilash-SH/twodo/pull/44",
     "avatar_capture": "/workspace/twodo-preview/twodo-avatar.png",
     "garage_capture": "/workspace/twodo-preview/twodo-garage.png",
-    "browser_export": "/tmp/twodo-villa-gesture-export",
+    "browser_export": "/tmp/twodo-villa-immediate-export",
     "suite_logs": "/tmp/twodo-villa-regressions",
     "landscape_capture": "/workspace/twodo-preview/twodo-villa-landscape.png",
-    "reaction_followup": "three_gestures_passed",
+    "reaction_followup": "final_browser_check_pending",
     "reaction_timeout": "rendered_pose_sample"
   },
-  "next": "finish_final_explore_and_broad_browser_suite"
+  "next": "finish_final_browser_and_record_handoff"
 }
