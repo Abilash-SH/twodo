@@ -5,9 +5,19 @@ For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task.
 
 Last updated: 2026-11-27.
 
-## Current session: walkable villa and garage (2026-11-27)
+## Current session: Explore face prototypes (2026-11-27)
 
-- PR #43 merged at `88146ad`. The follow-up is [draft PR #44](https://github.com/Abilash-SH/twodo/pull/44)
+- PR #44 merged at `4c3135e`. The avatar work is on `feat/explore-avatar-faces`.
+- The two Explore prototypes refine the jaw, cheeks, eyelids and lips on the MIT Rocketbox `f07` and `m17`
+  rigs. Explore drives a smile and brow shape with the existing Wave, Clap and Cheer clips.
+- `docs/explore-faces.md` records the asset provenance, file sizes, regeneration and physical iPhone checklist.
+  Read `handoff.json` for test results and before-and-after captures. Imports take priority, missing prototypes
+  use the selected original, and Reduce Motion holds the neutral face.
+- Review on a physical iPhone before expanding this treatment to additional choices or outside Explore.
+
+## Previous session: walkable villa and garage (2026-11-27)
+
+- PR #43 merged at `88146ad`. The follow-up was [PR #44](https://github.com/Abilash-SH/twodo/pull/44)
   on `feat/explore-villa`, with work tracked in `handoff.json`.
 - Explore now has a living room and garage. Walk through the openings, or use **Walk to**. The living room desk
   opens Journal and the workbench opens the existing task patch. Shared collision geometry keeps walking and

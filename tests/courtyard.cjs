@@ -112,4 +112,69 @@ async function main() {
   await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied.close();
   console.log('PASS: indoor routes and thresholds, walls, gesture bounds, ciphertext, sequencing, heartbeat, coalescing, cleanup.');
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+async function faces() {
+  const three = await import('three');
+  const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+  const skeleton = await import('three/examples/jsm/utils/SkeletonUtils.js');
+  // GLTFLoader can decode the skin and morph geometry in Node. Pixels are checked in the browser.
+  globalThis.self = globalThis;
+  globalThis.createImageBitmap = async () => ({ width: 1, height: 1 });
+  const loadModel = async path => {
+    const bytes = fs.readFileSync(`public/${path}`);
+    return (await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '')).scene;
+  };
+  const mocap = load('src/lib/mocap.ts', { three });
+  const canvas = { getContext: () => ({
+    createRadialGradient: () => ({ addColorStop() {} }), fillRect() {},
+  }) };
+  const { loadActor } = load('src/lib/courtyard/actor.ts', {
+    three, 'three/examples/jsm/utils/SkeletonUtils.js': skeleton,
+    '../config': { asset: path => path },
+    '../mocap': mocap, '../people3d': { model: loadModel, prepare: root => root },
+  }, {
+    document: { createElement: () => canvas },
+    fetch: async path => ({ ok: true, json: async () => JSON.parse(fs.readFileSync(`public/${path}`, 'utf8')) }),
+  });
+  const signal = new AbortController().signal;
+  for (const id of ['f07', 'm17']) {
+    const original = `people/${id}.glb`, refined = `people/explore/${id}.glb`;
+    const gender = id[0];
+    const actor = await loadActor(['bad-import.glb', refined, original], gender, signal);
+    const face = actor.holder.getObjectByName('TwodoFace');
+    assert(face?.isSkinnedMesh, 'the new face uses the humanoid skin');
+    assert(face.skeleton.bones.includes(actor.head), 'both the face and camera use the same head bone');
+    for (const attr of Object.values(face.geometry.attributes)) {
+      assert.equal(attr.count, face.geometry.attributes.position.count, 'vertex attributes match the subdivided mesh');
+    }
+    const weights = face.geometry.getAttribute('skinWeight');
+    for (let i = 0; i < weights.count; i++) {
+      assert(Math.abs(weights.getX(i) + weights.getY(i) + weights.getZ(i) + weights.getW(i) - 1) < .001);
+    }
+    const peaks = [];
+    for (const gesture of state.GESTURES) {
+      actor.mode('wave', false, gesture);
+      actor.update(.34, false);
+      peaks.push([...face.morphTargetInfluences]);
+      actor.mode('idle', false);
+      actor.update(.3, false);
+      assert(face.morphTargetInfluences.every(weight => Math.abs(weight) < .001), 'reaction settles to neutral');
+    }
+    assert(peaks[0][0] > .3 && peaks[1][0] > peaks[0][0] && peaks[2][1] > .5, 'wave, clap and cheer use distinct faces');
+    actor.mode('walk', false);
+    actor.update(.4, false);
+    actor.mode('wave', false, 'cheer');
+    actor.update(.34, false);
+    actor.mode('wave', true, 'cheer');
+    actor.update(.34, true);
+    assert(face.morphTargetInfluences.every(weight => Math.abs(weight) < .001), 'Reduce Motion keeps the neutral face');
+    actor.destroy();
+    const imported = await loadActor([original, refined], gender, signal);
+    assert(!imported.holder.getObjectByName('TwodoFace'), 'a working imported rig has priority');
+    imported.destroy();
+    const fallback = await loadActor(['missing-prototype.glb', original], gender, signal);
+    assert(!fallback.holder.getObjectByName('TwodoFace'), 'an unavailable prototype falls back to the selected rig');
+    fallback.destroy();
+  }
+  console.log('PASS: facial skin weights, both rigs, three expressions, neutral/reduced motion, import priority and fallback.');
+}
+main().then(faces).catch(error => { console.error(error); process.exitCode = 1; });

@@ -34,6 +34,8 @@ context loss/retry and no-WebGL fallback. It uses `/tmp/mo/sunset.jpg`, as test 
 checks indoor routes, movement on delayed frames and protocol bounds, actual AES-GCM payload privacy, stale sequences, coalesced serialized writes,
 heartbeat expiry, denied channels and cleanup. `test_courtyard_rules.py` tests the hand-translated mock rules;
 it is not a substitute for publishing/testing the production Firebase rules. See `docs/courtyard.md`.
+The courtyard checks also load the two Explore face GLBs with Three.js and verify the new vertex attributes,
+skin weights, expression curves, neutral Reduce Motion, import priority and fallback to the original models.
 
 Where Turbopack's CSS-worker IPC port is blocked by the execution environment, use Next's webpack test selector:
 `IS_WEBPACK_TEST=1 sh scripts/build-test.sh` (or `IS_WEBPACK_TEST=1 npm run build`). The repository's default build

@@ -5,15 +5,45 @@ import { bake, makeRig, parseMotion, type Motion } from '../mocap';
 import { model, prepare } from '../people3d';
 import type { PoseMode, WorldGesture } from './state';
 
+const EXPRESSION = { wave: [.42, .16], clap: [.60, .06], cheer: [.76, .68] } as const;
+
+/** Mix the shape curves with the existing body clips, so crossfades restore the neutral face. */
+function addExpression(clip: T.AnimationClip, face: T.Mesh | undefined, gesture: WorldGesture): void {
+  if (!face?.morphTargetDictionary) return;
+  const times = [0, .22, .63, 1].map(part => part * clip.duration);
+  for (const [i, name] of ['twodoSmile', 'twodoBrighten'].entries()) {
+    const morph = face.morphTargetDictionary[name];
+    if (morph === undefined) continue;
+    const peak = EXPRESSION[gesture][i];
+    clip.tracks.push(new T.NumberKeyframeTrack(
+      `${face.uuid}.morphTargetInfluences[${morph}]`, times, [0, peak, peak * .85, 0],
+    ));
+  }
+}
+
 export interface Actor {
   holder: T.Group; head: T.Object3D;
   mode(next: PoseMode, reduced: boolean, gesture?: WorldGesture): void;
   update(dt: number, reduced: boolean): void;
   destroy(): void;
 }
+async function loadRig(urls: readonly string[], signal: AbortSignal) {
+  for (const url of urls) {
+    try {
+      const root = clone(await model(url));
+      signal.throwIfAborted();
+      const rig = makeRig(root);
+      if (rig) return { root, rig };
+    } catch { signal.throwIfAborted(); }
+  }
+  throw new Error('The avatar has no supported human skeleton');
+}
+
 /** Materials are owned by this scene; shared cached model geometry and textures are never disposed here. */
-export async function loadActor(url: string, gender: 'm' | 'f', signal: AbortSignal): Promise<Actor> {
-  const root = clone(await model(url)), owned: T.Material[] = [];
+export async function loadActor(urls: readonly string[], gender: 'm' | 'f', signal: AbortSignal): Promise<Actor> {
+  const { root, rig } = await loadRig(urls, signal);
+  const face = root.getObjectByName('TwodoFace') as T.Mesh | undefined;
+  const owned: T.Material[] = [];
   root.traverse(o => { const mesh = o as T.Mesh; if (!mesh.isMesh) return;
     const copy = (m: T.Material) => { const c = m.clone(); owned.push(c); return c; };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(copy) : copy(mesh.material);
@@ -21,9 +51,6 @@ export async function loadActor(url: string, gender: 'm' | 'f', signal: AbortSig
   });
   try {
     signal.throwIfAborted(); prepare(root);
-    const supported = makeRig(root);
-    if (!supported) throw new Error('The avatar has no supported human skeleton');
-    const rig = supported;
     const loadMotion = async (name: string) => {
       const response = await fetch(asset(`people/motion/${gender}_${name}.json`), { signal });
       if (!response.ok) throw new Error('A movement could not load');
@@ -54,7 +81,9 @@ export async function loadActor(url: string, gender: 'm' | 'f', signal: AbortSig
     });
     const seated: Motion = { ...idle, name: 'sit', frames: 2, fps: 1, loop: true, q: sitQ, hips };
     function add(name: PoseMode | WorldGesture, motion: Motion): void {
-      const action = mixer.clipAction(bake(motion, rig)); actions.set(name, action);
+      const clip = bake(motion, rig);
+      if (name === 'wave' || name === 'clap' || name === 'cheer') addExpression(clip, face, name);
+      const action = mixer.clipAction(clip); actions.set(name, action);
       if (name === 'wave' || name === 'clap' || name === 'cheer') {
         action.setLoop(T.LoopOnce, 1);
         action.clampWhenFinished = true;
