@@ -17,9 +17,13 @@ Last updated: 2026-11-27.
   Personal GLB import remains available through Settings.
 - Read `docs/explore-villa.md` for the layout and compatibility decision. World presence uses the Firebase rules
   introduced in #43. Use the same version on both phones for indoor presence.
-- Chromium test 21 passed with two accounts, indoor presence, both shortcuts, portrait and landscape, keyboard
-  focus, Reduce Motion, and WebGL fallback. Slow renderer frames previously slowed the simulated walk, so the
-  movement clock now advances through collision substeps independently of camera easing.
+- The final isolated Chromium run passed tests 1 and 21 with no page errors. It covered indoor presence,
+  both shortcuts, delayed-frame Cheer, Clap, keyboard focus, landscape, Reduce Motion and WebGL fallback.
+  Movement now advances through collision substeps independently of camera easing, and reaction taps request
+  an immediate encrypted pose write.
+- In the broader Chromium run, 14 of 19 tests passed. Test 6 timed out clicking Settings, test 7 failed a
+  back swipe, test 9 timed out after passing several navigation checks, test 10 failed a delivery assertion,
+  and test 13 timed out after passing Home checks. The local logs and test numbers are recorded in `handoff.json`.
 - The deferred face work should start with two self-contained GLBs, documented rights, and a supported humanoid rig.
   Compare face and full-body views in both phone orientations, retarget every reaction, check the import override,
   and measure asset cost and device performance before replacing the defaults.
