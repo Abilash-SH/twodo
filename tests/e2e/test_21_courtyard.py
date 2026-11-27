@@ -33,6 +33,15 @@ async def main():
         cb, B = await phone('/tmp/twodo-B.json')
         await A.locator('[data-presence="live"]').wait_for(timeout=12000)
         await B.locator('[data-presence="live"]').wait_for(timeout=12000)
+        await A.get_by_role('button', name='React', exact=True).click()
+        # A cold shader can delay the next draw past the reaction's send window.
+        await A.get_by_role('button', name='Cheer', exact=True).evaluate("""button => {
+            const nextFrame = window.requestAnimationFrame;
+            window.requestAnimationFrame = callback => setTimeout(() => callback(performance.now()), 2000);
+            button.click();
+            setTimeout(() => { window.requestAnimationFrame = nextFrame; }, 1900);
+        }""")
+        await B.locator('.world-canvas[data-peer-gesture="cheer"]').wait_for(timeout=12000)
         await A.screenshot(path='/tmp/twodo-courtyard.png')
         canvas = A.locator('.world-canvas')
         print('Portrait render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
@@ -84,7 +93,7 @@ async def main():
         await A.locator('.sheet.open [data-s="done"]').click()
         await A.locator('.world-destination').select_option('garden')
         await A.locator('.world-canvas[data-area="garden"]').wait_for(timeout=75000)
-        print('PASS: live clap and indoor presence, villa and garage doors, journal desk, workbench, avatar close-up', flush=True)
+        print('PASS: live cheer and clap, indoor presence, villa and garage doors, journal desk, workbench, avatar close-up', flush=True)
         # Demand rendering rests rather than spinning the GPU behind unchanged scenery.
         await A.wait_for_timeout(1500)
         f1 = int(await canvas.get_attribute('data-frames'))

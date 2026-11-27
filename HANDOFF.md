@@ -7,7 +7,8 @@ Last updated: 2026-11-27.
 
 ## Current session: walkable villa and garage (2026-11-27)
 
-- PR #43 merged at `88146ad`. The follow-up is `feat/explore-villa` with work tracked in `handoff.json`.
+- PR #43 merged at `88146ad`. The follow-up is [draft PR #44](https://github.com/Abilash-SH/twodo/pull/44)
+  on `feat/explore-villa`, with work tracked in `handoff.json`.
 - Explore now has a living room and garage. Walk through the openings, or use **Walk to**. The living room desk
   opens Journal and the workbench opens the existing task patch. Shared collision geometry keeps walking and
   the camera clear of the walls. **React** plays Wave, Clap or Cheer for both people while present.
@@ -16,6 +17,12 @@ Last updated: 2026-11-27.
   Personal GLB import remains available through Settings.
 - Read `docs/explore-villa.md` for the layout and compatibility decision. World presence uses the Firebase rules
   introduced in #43. Use the same version on both phones for indoor presence.
+- Chromium test 21 passed with two accounts, indoor presence, both shortcuts, portrait and landscape, keyboard
+  focus, Reduce Motion, and WebGL fallback. Slow renderer frames previously slowed the simulated walk, so the
+  movement clock now advances through collision substeps independently of camera easing.
+- The deferred face work should start with two self-contained GLBs, documented rights, and a supported humanoid rig.
+  Compare face and full-body views in both phone orientations, retarget every reaction, check the import override,
+  and measure asset cost and device performance before replacing the defaults.
 - Before expanding the preview, check doorway and close-up framing, reaction playback, orientation changes,
   and two-player indoor movement on physical iPhones. Production rule publication is unverified.
 

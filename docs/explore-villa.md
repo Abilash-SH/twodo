@@ -18,6 +18,7 @@ verifies the simulation under delayed frames. Physical iPhone frame pacing still
 
 The current encrypted path and Firebase rules stay in place. Wave, clap and cheer share the existing wave mode.
 An optional gesture field selects clap or cheer on updated clients. Earlier clients receive the regular wave.
+Publication samples the person's tap before the next render. The receiver starts the clip when it can draw.
 Older versions may refuse positions inside walls from their own layout. Use the same updated build on both phones
 to test indoor presence. Coordinates remain virtual, and no task, journal or photo content enters presence.
 

@@ -33,7 +33,9 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   let movement = { x: 0, y: 0 }, path: Point[] = [], cameraYaw = 0, pitch = .35, size = { w, h };
   let active = true, inViewport = true, gone = false, frame = 0, last = 0, settling = 0, mode: PoseMode = 'idle', lastReport = '', rendered = 0, dpr = Math.min(1.5, devicePixelRatio || 1);
   let directLook = false, placementBlend = 0;
-  let gesture: WorldGesture = 'wave', peerGestureUntil = 0, portrait = false, room = areaAt(position.x, position.z), portraitYaw = 0;
+  let gesture: WorldGesture = 'wave', peerGesture: WorldGesture = 'wave';
+  let reactionLeft = 0, peerReactionLeft = 0;
+  let portrait = false, room = areaAt(position.x, position.z), portraitYaw = 0;
   const target = new T.Vector3(position.x, 1.05, position.z), eye = new T.Vector3(position.x, 2.65, position.z + 4.5);
   const nearPoint = new T.Vector3(), nextEye = new T.Vector3(), lookTarget = new T.Vector3(), offset = new T.Vector3();
   const portraitTarget = new T.Vector3();
@@ -48,7 +50,8 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   const restingSeat = SEATS[o.slot === 0 ? 1 : 0], ownSeat = SEATS[o.slot];
   const peerPosition = new T.Vector3(restingSeat.x, 0, restingSeat.z);
   const fail = () => { if (gone) return; stop(); o.failure(); };
-  function stop() { cancelAnimationFrame(frame); frame = 0; last = 0; movement = { x: 0, y: 0 }; path = []; }
+  function cancelReaction() { reactionLeft = 0; waveUntil = 0; }
+  function stop() { cancelAnimationFrame(frame); frame = 0; last = 0; movement = { x: 0, y: 0 }; path = []; cancelReaction(); peerReactionLeft = 0; }
   function nearest(): Place | null {
     let result: Place | null = null, distance = 2;
     for (const [name, p] of Object.entries(PLACES) as [Place, Point][]) {
@@ -65,6 +68,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   function travel(point: Point) {
     if (!player) return;
     portrait = false;
+    cancelReaction();
     stand();
     path = route(position, point);
     settling = .4;
@@ -101,19 +105,20 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     const dx = position.x - old.x, dz = position.z - old.z, walking = Math.hypot(dx, dz) > .0001 && !sitting;
     if (walking) yaw += angleDelta(yaw, Math.atan2(dx, dz)) * (reduced ? 1 : 1 - Math.exp(-dt * 12));
     yaw = Math.atan2(Math.sin(yaw), Math.cos(yaw));
-    mode = sitting ? 'sit' : walking ? 'walk' : now < waveUntil ? 'wave' : 'idle';
+    mode = sitting ? 'sit' : walking ? 'walk' : reactionLeft > 0 ? 'wave' : 'idle';
     if (player) {
       nearPoint.set(position.x, 0, position.z); player.holder.position.lerp(nearPoint, !reduced && placementBlend > 0 ? 1 - Math.exp(-dt * 18) : 1); player.holder.rotation.y = yaw;
       player.mode(mode, reduced, gesture); player.update(elapsed, reduced);
     }
     const peerAt = livePeer || { ...restingSeat, yaw: 0, mode: 'sit' as const };
+    const peerReacting = !!livePeer && peerAt.mode !== 'walk' && peerAt.mode !== 'sit' && peerReactionLeft > 0;
     peerPosition.set(peerAt.x, 0, peerAt.z);
     let peerBusy = false;
     if (partner) {
       peerBusy = partner.holder.position.distanceTo(peerPosition) > .015;
       partner.holder.position.lerp(peerPosition, reduced || partner.holder.position.distanceTo(peerPosition) > 3 ? 1 : 1 - Math.exp(-dt * 12));
       partner.holder.rotation.y += angleDelta(partner.holder.rotation.y, peerAt.yaw) * (reduced ? 1 : 1 - Math.exp(-dt * 12));
-      partner.mode(peerAt.mode === 'wave' && now < peerGestureUntil ? 'wave' : peerAt.mode === 'sit' ? 'sit' : peerBusy ? 'walk' : 'idle', reduced, livePeer?.gesture);
+      partner.mode(peerReacting ? 'wave' : peerAt.mode === 'sit' ? 'sit' : peerBusy ? 'walk' : 'idle', reduced, peerGesture);
       partner.update(elapsed, reduced);
     }
     const nextRoom = areaAt(position.x, position.z);
@@ -143,12 +148,15 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     canvas.dataset.cameraYaw = cameraYaw.toFixed(3);
     canvas.dataset.area = room;
     canvas.dataset.gesture = mode === 'wave' ? gesture : '';
-    canvas.dataset.peerGesture = now < peerGestureUntil && livePeer?.mode === 'wave' ? livePeer.gesture || 'wave' : '';
+    canvas.dataset.peerGesture = peerReacting ? peerGesture : '';
     canvas.dataset.peerX = peerPosition.x.toFixed(3); canvas.dataset.peerZ = peerPosition.z.toFixed(3); canvas.dataset.peer = livePeer ? 'live' : 'resting';
     canvas.dataset.drawCalls = String(renderer.info.render.calls); canvas.dataset.triangles = String(renderer.info.render.triangles);
     report(); settling = Math.max(0, settling - dt);
+    const reacting = reactionLeft > 0 || peerReactionLeft > 0;
+    reactionLeft = Math.max(0, reactionLeft - elapsed);
+    peerReactionLeft = Math.max(0, peerReactionLeft - elapsed);
     const cameraBusy = eye.distanceTo(nextEye) > .003 || target.distanceTo(lookTarget) > .003;
-    if (walking || peerBusy || inputLength > .08 || path.length || cameraBusy || (!reduced && (now < waveUntil || now < peerGestureUntil)) || settling > 0) wake(); else last = 0;
+    if (walking || peerBusy || inputLength > .08 || path.length || cameraBusy || reacting || settling > 0) wake(); else last = 0;
   }
   function wake() { if (!frame && !gone && active && inViewport && !document.hidden) frame = requestAnimationFrame(tick); }
   invalidate = () => { settling = .1; wake(); };
@@ -175,7 +183,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   });
   void Promise.all(tasks);
   return {
-    input(x, y) { movement = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }; settling = .35; wake(); },
+    input(x, y) { movement = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }; if (Math.hypot(x, y) > .08) cancelReaction(); settling = .35; wake(); },
     look(dx, dy) { if (portrait) portraitYaw -= dx * .006; else { cameraYaw -= dx * .006; pitch = Math.max(.08, Math.min(.85, pitch + dy * .004)); } directLook = true; settling = .35; wake(); },
     find() {
       if (!livePeer || livePeer.mode === 'sit') { travel(PLACES.partner); return; }
@@ -194,13 +202,14 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       path = []; movement = { x: 0, y: 0 };
       gesture = next;
       waveUntil = performance.now() + 1300;
-      settling = reducedMotion.matches ? .1 : 1.45;
+      reactionLeft = reducedMotion.matches ? .1 : 1.3;
       wake();
     },
-    sit() { if (!player) return; if (sitting) stand(); else if (Math.hypot(position.x - PLACES.partner.x, position.z - PLACES.partner.z) < 2) { standAt = { ...position }; position = { ...ownSeat }; yaw = 0; sitting = true; path = []; placementBlend = .35; updatePortraitTarget = true; } settling = .5; report(); wake(); },
+    sit() { if (!player) return; cancelReaction(); if (sitting) stand(); else if (Math.hypot(position.x - PLACES.partner.x, position.z - PLACES.partner.z) < 2) { standAt = { ...position }; position = { ...ownSeat }; yaw = 0; sitting = true; path = []; placementBlend = .35; updatePortraitTarget = true; } settling = .5; report(); wake(); },
     peer(p) {
       const newGesture = p?.mode === 'wave' && (livePeer?.mode !== 'wave' || p.gesture !== livePeer.gesture || p.session !== livePeer.session);
-      if (newGesture) peerGestureUntil = performance.now() + 1350;
+      if (newGesture) { peerGesture = p.gesture || 'wave'; peerReactionLeft = reducedMotion.matches ? .1 : 1.3; }
+      else if (!p || p.mode === 'walk' || p.mode === 'sit') peerReactionLeft = 0;
       const changed = !!p !== !!livePeer || (p && livePeer && (p.x !== livePeer.x || p.z !== livePeer.z || p.yaw !== livePeer.yaw || p.mode !== livePeer.mode));
       livePeer = p;
       if (changed || newGesture) { settling = .4; wake(); }
@@ -209,7 +218,8 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     resize,
     photos(values) { if (!gone) environment.photos(values, () => { settling = .1; wake(); }); },
     pose() {
-      const current = sitting ? 'sit' : mode === 'wave' && performance.now() >= waveUntil ? 'idle' : mode;
+      // Presence samples the tap even when the next animation frame is delayed.
+      const current = sitting ? 'sit' : performance.now() < waveUntil ? 'wave' : mode === 'wave' ? 'idle' : mode;
       return { ...position, yaw, mode: current, ...(current === 'wave' ? { gesture } : {}) };
     },
     destroy() { if (gone) return; gone = true; stop(); abort.abort(); seen.disconnect(); document.removeEventListener('visibilitychange', visibility); motionMedia.removeEventListener('change', motion); canvas.removeEventListener('webglcontextlost', lost); player?.destroy(); partner?.destroy(); environment.dispose(); renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); },
