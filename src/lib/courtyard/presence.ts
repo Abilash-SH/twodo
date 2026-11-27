@@ -6,7 +6,7 @@ import { cleanRecord } from '../store';
 import { LEASE_MS, type WorldPose } from './state';
 
 export type Connection = 'connecting' | 'live' | 'offline' | 'unavailable';
-export type LocalPose = Pick<WorldPose, 'x' | 'z' | 'yaw' | 'mode'>;
+export type LocalPose = Pick<WorldPose, 'x' | 'z' | 'yaw' | 'mode' | 'gesture'>;
 interface Options {
   space: string; uid: string; peer: string; key: CryptoKey;
   pose: () => LocalPose; partner: (p: WorldPose | null) => void; status: (s: Connection) => void;
@@ -50,7 +50,7 @@ export function joinWorld(o: Options): () => void {
     if (closed || busy || denied || document.hidden || Date.now() < retryAt) return;
     if (!navigator.onLine) { down('offline'); return; }
     const now = Date.now(), pose = o.pose();
-    const next = [pose.x.toFixed(2), pose.z.toFixed(2), pose.yaw.toFixed(2), pose.mode].join(':');
+    const next = [pose.x.toFixed(2), pose.z.toFixed(2), pose.yaw.toFixed(2), pose.mode, pose.gesture].join(':');
     if (next === signature && now - lastSent < 3000) return;
     busy = true;
     const controller = new AbortController(); request = controller;

@@ -10,22 +10,37 @@ function load(path, dependencies = {}, extras = {}) {
 }
 const state = load('src/lib/courtyard/state.ts');
 const store = load('src/lib/store.ts', { './courtyard/state': state, './render': { scheduleRender() {} }, './util': { PALETTE: ['blue', 'pink'], REPEATS: {} } });
-const points = [state.SPAWN, ...Object.values(state.PLACES)];
+const points = [...Object.values(state.DESTINATIONS), ...Object.values(state.PLACES)];
 for (const from of points) for (const to of points) {
   const route = state.route(from, to); assert(route.length, 'reachable world landmark');
   for (const p of route) assert(state.walkable(p.x, p.z));
   for (let i = 1; i < route.length; i++) for (let t = 0; t <= 10; t++) {
     const a = route[i - 1], b = route[i]; assert(state.walkable(a.x + (b.x - a.x) * t / 10, a.z + (b.z - a.z) * t / 10), 'no diagonal corner clipping');
   }
+  let position = from;
+  for (let elapsed = 0; route.length && elapsed < 20; elapsed += .25) {
+    position = state.followRoute(position, route, 1.45 * .25);
+  }
+  assert.equal(route.length, 0, 'route reaches its destination at four render frames per second');
+  assert(Math.hypot(position.x - to.x, position.z - to.z) < .31);
 }
-const moved = state.moveWithin({ x: -4.8, z: -1.5 }, 0, -12);
-assert(moved.z > -2.6, 'large frame cannot tunnel through the cottage');
+for (const [name, room] of Object.entries(state.ROOMS)) {
+  const through = state.moveWithin({ x: (room.doorLeft + room.doorRight) / 2, z: room.front + .8 }, 0, -2);
+  assert.equal(state.areaAt(through.x, through.z), name, 'can walk through the open doorway');
+  const blocked = state.moveWithin({ x: room.minX + .4, z: room.front + .8 }, 0, -12);
+  assert(blocked.z > room.front, 'cannot tunnel through the front wall');
+  const back = state.moveWithin(through, 0, 2);
+  assert.equal(state.areaAt(back.x, back.z), 'garden', 'can leave through the same opening');
+}
 assert.equal(state.route(state.SPAWN, { x: NaN, z: 0 }).length, 0);
 const pose = { v: 1, session: '0123456789abcdef', seq: 1, t: 100000, x: 0, z: 5, yaw: 0, mode: 'idle' };
 assert(state.cleanPose(pose));
 assert(store.cleanRecord(pose, 'courtyard'));
 assert.equal(store.cleanRecord({ ...pose, kind: 'courtyard', id: 'presence' }), null, 'poses never become saved/synced records');
-for (const bad of [{ x: Infinity }, { x: -4.8, z: -4.5 }, { x: .2, z: -.6 }, { yaw: 20 }, { seq: 0 }, { session: '../a' }, { mode: 'dance' }, { mode: 'sit' }, { t: '100' }]) assert.equal(state.cleanPose({ ...pose, ...bad }), null);
+for (const bad of [{ x: Infinity }, { x: -7.65, z: -4.5 }, { x: .2, z: -.6 }, { yaw: 20 }, { seq: 0 }, { session: '../a' }, { mode: 'dance' }, { mode: 'sit' }, { t: '100' }]) assert.equal(state.cleanPose({ ...pose, ...bad }), null);
+assert.equal(state.cleanPose({ ...pose, ...state.DESTINATIONS.villa, mode: 'wave', gesture: 'clap' }).gesture, 'clap');
+assert.equal(state.cleanPose({ ...pose, mode: 'wave', gesture: 'unrecognized' }).gesture, undefined);
+assert.equal(state.cleanPose({ ...pose, gesture: 'cheer' }).gesture, undefined);
 assert(state.cleanPose({ ...pose, ...state.SEATS[0], mode: 'sit' }));
 assert(!('secret' in state.cleanPose({ ...pose, secret: 'never retained' })));
 assert.equal(state.cleanEnvelope({ u: 1, d: 'A'.repeat(1025) }), null);
@@ -92,6 +107,6 @@ async function main() {
   network.dbReq = async () => { const e = new Error('denied'); e.status = 403; throw e; };
   const stopDenied = presence.joinWorld({ space: 'a'.repeat(40), uid: 'alice', peer: 'deiva', key, pose: () => current, partner() {}, status: s => statuses.push(s) });
   await settle(); assert.equal(statuses.at(-1), 'unavailable'); assert.equal(stream.closed, true); stopDenied();
-  console.log('PASS: 25 routes; collision substeps; hostile poses; AES-GCM wire privacy; sequence ordering; heartbeat lease; serialized/coalesced writes; cleanup.');
+  console.log('PASS: indoor routes and thresholds, walls, gesture bounds, ciphertext, sequencing, heartbeat, coalescing, cleanup.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -2,9 +2,9 @@
 import * as T from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { asset } from '../config';
-import { BENCH, TREES } from './state';
+import { BENCH, FURNITURE, ROOMS, TREES, WALL_HEIGHT, walls, type RoomName } from './state';
 
-export interface Environment { photos(values: readonly (string | null)[], changed: () => void): void; dispose(): void }
+export interface Environment { area(name: RoomName | 'garden'): void; photos(values: readonly (string | null)[], changed: () => void): void; dispose(): void }
 export function buildEnvironment(scene: T.Scene, renderer: T.WebGLRenderer, tokens: CSSStyleDeclaration, changed: () => void): Environment {
   const geometries = new Set<T.BufferGeometry>(), materials = new Set<T.Material>(), textures = new Set<T.Texture>();
   const color = (name: string) => new T.Color(tokens.getPropertyValue('--world-' + name).trim());
@@ -53,26 +53,60 @@ export function buildEnvironment(scene: T.Scene, renderer: T.WebGLRenderer, toke
   for (let i = 0; i < 15; i++) rock(-.7 + Math.sin(i * .7) * .2, .015, 7 - i * .7, .57, .055, .38);
   for (let i = 0; i < 13; i++) rock(-5.2 + i * .8, .012, 3.3 + Math.sin(i) * .15, .48, .05, .38);
   for (let i = 0; i < 7; i++) rock(3.8 + Math.sin(i) * .15, .012, 2.7 - i * .85, .45, .05, .38);
-  // Plaster cottage, pitched tiled roof, shutters, porch and hand-built furniture.
-  box(-4.8, 1.35, -4.5, 4.4, 2.7, 3.4, plaster);
-  box(-4.8, .15, -2.3, 5, .3, 1.25, stone);
-  for (const side of [-1, 1]) { const r = box(-4.8 + side * 1.22, 3.06, -4.5, 2.65, .13, 4, roof); r.rotation.z = -side * .42; }
-  box(-4.8, 3.6, -4.5, .16, .13, 4, darkWood);
-  for (const [z, reverse] of [[-2.8, false], [-6.2, true]] as const) {
-    const points = [[-7, 2.7, z], [-2.6, 2.7, z], [-4.8, 3.6, z]];
-    const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute((reverse ? points.reverse() : points).flat(), 3)); g.setAttribute('uv', new T.Float32BufferAttribute([0, 0, 1, 0, .5, 1], 2)); g.computeVertexNormals(); mesh(g, plaster, 0, 0, 0);
+  const roofs = new Map<RoomName, T.Group>();
+  for (const [name, room] of Object.entries(ROOMS) as [RoomName, typeof ROOMS[RoomName]][]) {
+    const { minX, maxX, back, front, doorLeft, doorRight } = room;
+    const x = (minX + maxX) / 2, z = (back + front) / 2;
+    const width = maxX - minX, depth = front - back;
+    const entry = (doorLeft + doorRight) / 2, opening = doorRight - doorLeft;
+    for (const wall of walls(room)) box(wall.x, wall.h / 2, wall.z, wall.w, wall.h, wall.d, plaster);
+    box(x, -.016, z, width, .06, depth, name === 'villa' ? wood : stone).castShadow = false;
+    box(entry, -.012, front + .6, opening + .4, .045, 1.4, stone).castShadow = false;
+    const lintelY = name === 'villa' ? 2.3 : 2.45;
+    box(entry, (lintelY + WALL_HEIGHT) / 2, front, opening, WALL_HEIGHT - lintelY, .18, plaster);
+    for (const edge of [doorLeft, doorRight]) box(edge, lintelY / 2, front, .075, lintelY, .22, darkWood);
+    box(entry, lintelY, front, opening, .08, .22, wood);
+    const top = new T.Group();
+    scene.add(top); roofs.set(name, top);
+    if (name === 'villa') {
+      for (const side of [-1, 1]) {
+        const tile = box(x + side * width / 4, WALL_HEIGHT + .55, z, width * .56, .16, depth + .55, roof, top);
+        tile.rotation.z = -side * .38;
+      }
+      box(x, WALL_HEIGHT + 1.07, z, .16, .14, depth + .55, darkWood, top);
+      // An open timber porch over the doorway, with space for the camera to follow inside.
+      box(entry, 2.53, front + .68, opening + .95, .1, 1.6, wood, top);
+      for (const edge of [doorLeft - .34, doorRight + .34]) box(edge, 1.25, front + 1.25, .08, 2.5, .08, wood, top);
+    } else {
+      box(x, WALL_HEIGHT + .12, z, width + .42, .24, depth + .42, darkWood, top);
+      box(entry, WALL_HEIGHT + .04, front + .44, opening + .56, .11, .77, wood, top);
+    }
   }
-  box(-4.7, 1.02, -2.785, .8, 2.04, .08, darkWood);
-  cylinder(-4.41, 1, -2.72, .035, .06, stone).rotation.x = Math.PI / 2;
-  for (const x of [-6, -3.5]) {
-    box(x, 1.5, -2.77, .78, .85, .035, glass);
-    for (const sx of [-.48, .48]) box(x + sx, 1.5, -2.67, .22, 1.08, .08, wood);
-    box(x, 1.5, -2.72, .035, .85, .04, darkWood); box(x, 1.5, -2.72, .8, .035, .04, darkWood);
-    box(x, 1.01, -2.61, 1.1, .08, .24, stone);
+  const cloth = mat('cloth'), cushion = mat('cushion');
+  const couch = FURNITURE.sofa;
+  box(couch.x, .22, couch.z, couch.w, .32, couch.d, darkWood);
+  box(couch.x, .47, couch.z, couch.w, .2, couch.d - .15, cloth);
+  box(couch.x - .34, .66, couch.z, .18, .58, couch.d, cloth);
+  for (const end of [-1, 1]) {
+    box(couch.x, .61, couch.z + end * .84, couch.w, .28, .16, cloth);
+    const pillow = box(couch.x - .18, .71, couch.z + end * .49, .22, .32, .37, cushion);
+    pillow.rotation.x = end * .14;
   }
-  for (const x of [-7.1, -2.5]) cylinder(x, 1.3, -1.8, .07, 2.6, darkWood);
-  const porchRoof = box(-4.8, 2.8, -1.92, 5.3, .12, 1.9, wood); porchRoof.rotation.x = -.09;
-  for (let i = 0; i < 6; i++) box(-7 + i * .85, 2.75, -2.05, .06, .12, 1.6, darkWood);
+  box(-5.26, .013, -4.72, 1.72, .035, 2, cloth).castShadow = false;
+  const table = FURNITURE.desk;
+  for (const x of [table.x - .46, table.x + .46]) for (const z of [table.z - .28, table.z + .28]) box(x, .39, z, .075, .78, .075, darkWood);
+  box(table.x, .78, table.z, table.w, .08, table.d, wood);
+  box(table.x - .12, .84, table.z + .08, .49, .043, .31, plaster);
+  box(table.x - .12, .867, table.z + .08, .019, .012, .31, darkWood);
+  const bench = FURNITURE.workbench;
+  box(bench.x, .88, bench.z, bench.w, .12, bench.d, wood);
+  box(bench.x, .34, bench.z, bench.w, .08, bench.d, darkWood);
+  for (const x of [bench.x - 1.05, bench.x + 1.05]) for (const z of [bench.z - .28, bench.z + .28]) box(x, .43, z, .09, .86, .09, darkWood);
+  box(bench.x, 1.43, bench.z - .28, bench.w, .78, .035, wood);
+  for (let i = 0; i < 5; i++) box(bench.x - .77 + .38 * i, 1.5, bench.z - .24, .03, .25 + .025 * i, .06, stone);
+  const crates = FURNITURE.boxes;
+  box(crates.x, .21, crates.z, crates.w, .42, crates.d, wood);
+  box(crates.x, .57, crates.z, crates.w * .84, .3, crates.d * .8, darkWood);
   // Pond: reflection from one environment texture, no secondary scene rendering every frame.
   const waterMat = new T.MeshPhysicalMaterial({ color: color('water'), roughness: .19, metalness: .15, clearcoat: .6, clearcoatRoughness: .2 }); materials.add(waterMat);
   const water = mesh(new T.CircleGeometry(1, 48), waterMat, .2, .012, -.6); water.rotation.x = -Math.PI / 2; water.scale.set(1.8, 1.35, 1); water.castShadow = false;
@@ -81,15 +115,11 @@ export function buildEnvironment(scene: T.Scene, renderer: T.WebGLRenderer, toke
   for (const x of [3.1, 5.3]) { box(x, .25, 2.6, .09, .5, .65, darkWood); box(x, .76, 2.29, .07, .6, .07, darkWood); }
   for (let i = 0; i < 4; i++) box(BENCH.x, .48, 2.3 + i * .18, 2.65, .07, .14, wood);
   for (let i = 0; i < 3; i++) box(BENCH.x, .71 + i * .13, 2.27, 2.65, .1, .07, wood);
-  // Journal table and book, with separate covers, pages and spine.
-  for (const x of [-3.3, -2.1]) for (const z of [-2.88, -2.3]) box(x, .36, z, .07, .72, .07, darkWood);
-  box(-2.7, .76, -2.6, 1.5, .09, .8, wood);
-  box(-2.7, .83, -2.6, .65, .035, .43, darkWood); box(-2.7, .86, -2.6, .61, .04, .4, plaster); box(-2.7, .89, -2.6, .018, .015, .4, darkWood);
   // Existing shared Moments become physical prints; no new storage or external requests.
   const photoMaterials: T.MeshStandardMaterial[] = [];
-  for (const x of [3.2, 5.6]) cylinder(x, .97, -4.15, .04, 1.94, wood);
-  box(4.4, 1.8, -4.15, 2.45, .025, .025, darkWood);
-  for (const x of [3.85, 4.95]) { const paper = glass.clone(); materials.add(paper); photoMaterials.push(paper); box(x, 1.37, -4.15, .85, .88, .025, plaster); box(x, 1.43, -4.125, .72, .61, .012, paper); box(x, 1.8, -4.12, .055, .15, .04, wood); }
+  for (const x of [3.2, 5.6]) cylinder(x, .97, -2.36, .04, 1.94, wood);
+  box(4.4, 1.8, -2.36, 2.45, .025, .025, darkWood);
+  for (const x of [3.85, 4.95]) { const paper = glass.clone(); materials.add(paper); photoMaterials.push(paper); box(x, 1.37, -2.36, .85, .88, .025, plaster); box(x, 1.43, -2.335, .72, .61, .012, paper); box(x, 1.8, -2.33, .055, .15, .04, wood); }
   for (let i = 0; i < 3; i++) { cylinder(-5.4 + i * .75, .15, 4.3, .27, .3, roof); cylinder(-5.4 + i * .75, .52, 4.3, .018, .55, leaf); rock(-5.4 + i * .75, .72, 4.3, .15, .12, .15); }
   // Individual leaves share one alpha-cut texture and one instanced draw call.
   const lc = document.createElement('canvas'); lc.width = lc.height = 64; const lx = lc.getContext('2d')!;
@@ -128,6 +158,7 @@ export function buildEnvironment(scene: T.Scene, renderer: T.WebGLRenderer, toke
     });
   }
   return {
+    area(name) { roofs.forEach((roof, id) => { roof.visible = name !== id; }); },
     photos(values, changed) {
       photoMaterials.forEach((m, i) => {
         const url = values[i] || null; if (url === photoUrls[i]) return;

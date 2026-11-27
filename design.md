@@ -161,6 +161,11 @@ No blurred layers over the moving world. Use one renderer and stop at rest/cover
 Reduced Motion removes gait, reactions and camera easing, retaining explicit movement and direct look controls.
 The target image is art direction; it is not a promise of photorealism or a measured iPhone frame rate.
 
+The villa and garage use walkable doorways and solid walls. Inside, the camera comes closer and the occupied
+roof is hidden to keep the player in view. The living room desk opens Journal and the workbench opens the task
+patch. Walk to offers the same destinations without using the stick. The avatar close-up frames the head bone
+with a soft fill light. Wave, Clap and Cheer play once and have a brief text cue on the sending phone.
+
 ## 6. Characters
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;

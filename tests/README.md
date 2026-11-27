@@ -26,11 +26,12 @@ swipes, and text contrast for every palette pair. Test 6 refreshes bubble geomet
 after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
 
-Test 21 covers the opt-in courtyard after test 1: simultaneous two-finger movement/look, live partner positions,
+Test 21 covers the opt-in courtyard after test 1: simultaneous two-finger movement/look, live partner positions
+and a clap, entering and leaving the villa and garage, opening Journal and the workbench, the avatar close-up,
 collision-safe travel to the bench, sitting/standing, expired presence after a sheet opens, rendering pause,
 Chat keyboard retention, task completion, camera preview/send, feature doors, landscape, Reduce Motion and
 context loss/retry and no-WebGL fallback. It uses `/tmp/mo/sunset.jpg`, as test 18 does. `tests/courtyard.cjs`
-checks routes and protocol bounds, actual AES-GCM payload privacy, stale sequences, coalesced serialized writes,
+checks indoor routes, movement on delayed frames and protocol bounds, actual AES-GCM payload privacy, stale sequences, coalesced serialized writes,
 heartbeat expiry, denied channels and cleanup. `test_courtyard_rules.py` tests the hand-translated mock rules;
 it is not a substitute for publishing/testing the production Firebase rules. See `docs/courtyard.md`.
 

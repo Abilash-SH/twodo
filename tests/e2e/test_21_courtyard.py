@@ -9,6 +9,7 @@ from playwright.async_api import async_playwright
 from helpers import back_home
 
 URL = os.environ.get('COURTYARD_TEST_URL', 'http://localhost:8003/')
+SHOTS = Path(os.environ.get('COURTYARD_SHOTS', '/tmp'))
 
 async def main():
     async with async_playwright() as p:
@@ -58,6 +59,32 @@ async def main():
         assert await canvas.get_attribute('data-camera-yaw') != initial_yaw, 'the second finger controls the camera'
         await B.wait_for_function("expected => { const c=document.querySelector('.world-canvas'); return c.dataset.peer==='live' && Math.hypot(Number(c.dataset.peerX)-expected[0],Number(c.dataset.peerZ)-expected[1])<.1; }", arg=after, timeout=6000)
         print('PASS: simultaneous touch movement/look; partner receives position', flush=True)
+        await A.get_by_role('button', name='React', exact=True).click()
+        await A.get_by_role('button', name='Clap', exact=True).click()
+        await B.locator('.world-canvas[data-peer-gesture="clap"]').wait_for(timeout=12000)
+        await A.locator('.world-destination').select_option('villa')
+        await A.locator('.world-canvas[data-area="villa"]').wait_for(timeout=75000)
+        journal = A.get_by_role('button', name='Open journal', exact=True)
+        await journal.wait_for(timeout=60000)
+        await B.wait_for_function("() => +document.querySelector('.world-canvas').dataset.peerZ < -4", timeout=30000)
+        await A.screenshot(path=SHOTS / 'twodo-villa.png')
+        await journal.click()
+        await A.locator('.jd').wait_for()
+        await back_home(A)
+        await A.get_by_role('button', name='View avatar', exact=True).click()
+        await A.wait_for_timeout(1200)
+        await A.screenshot(path=SHOTS / 'twodo-avatar.png')
+        await A.get_by_role('button', name='Back to explore', exact=True).click()
+        await A.locator('.world-destination').select_option('garage')
+        await A.locator('.world-canvas[data-area="garage"]').wait_for(timeout=90000)
+        workbench = A.get_by_role('button', name='Use workbench', exact=True)
+        await workbench.wait_for(timeout=45000)
+        await A.screenshot(path=SHOTS / 'twodo-garage.png')
+        await workbench.click()
+        await A.locator('.sheet.open [data-s="done"]').click()
+        await A.locator('.world-destination').select_option('garden')
+        await A.locator('.world-canvas[data-area="garden"]').wait_for(timeout=75000)
+        print('PASS: live clap and indoor presence, villa and garage doors, journal desk, workbench, avatar close-up', flush=True)
         # Demand rendering rests rather than spinning the GPU behind unchanged scenery.
         await A.wait_for_timeout(1500)
         f1 = int(await canvas.get_attribute('data-frames'))

@@ -3,16 +3,30 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-26.
+Last updated: 2026-11-27.
 
-## Current session: courtyard preview (2026-11-26)
+## Current session: walkable villa and garage (2026-11-27)
+
+- PR #43 merged at `88146ad`. The follow-up is `feat/explore-villa` with work tracked in `handoff.json`.
+- Explore now has a living room and garage. Walk through the openings, or use **Walk to**. The living room desk
+  opens Journal and the workbench opens the existing task patch. Shared collision geometry keeps walking and
+  the camera clear of the walls. **React** plays Wave, Clap or Cheer for both people while present.
+- **View avatar** uses the head bone for close-up framing and adds a soft fill light. Default faces still use
+  the existing rigs. Continue with realistic, original rigged face assets under documented reuse rights.
+  Personal GLB import remains available through Settings.
+- Read `docs/explore-villa.md` for the layout and compatibility decision. World presence uses the Firebase rules
+  introduced in #43. Use the same version on both phones for indoor presence.
+- Before expanding the preview, check doorway and close-up framing, reaction playback, orientation changes,
+  and two-player indoor movement on physical iPhones. Production rule publication is unverified.
+
+## Previous session: courtyard preview (2026-11-26)
 
 - Latest remote main verified at `bb96a06` (#42 merged). Earlier state/history below is retained; #39/#41/#42
   are merged, and the old reply-flick regression noted below was fixed by pausing the people behind screens.
 - Owner explicitly chose **web app, Home first**, rejected card layouts, then approved a realistic third-person
   life-simulation courtyard. Both partners should move live online, with a resting avatar offline. Approved
   reference art is an aspiration, not a working-game screenshot. No code/art from the unrelated inspiration site.
-- Draft [PR #43](https://github.com/Abilash-SH/twodo/pull/43) is on **`feat/courtyard-preview`**, branched from
+- [PR #43](https://github.com/Abilash-SH/twodo/pull/43) was built on **`feat/courtyard-preview`**, branched from
   current main. Home gets an opt-in **Explore our
   place · 3D preview**; the existing Home and its improvements remain available. No work in mobile/Supabase.
 - `docs/courtyard.md` was written before implementing the new presence channel. New Firebase path

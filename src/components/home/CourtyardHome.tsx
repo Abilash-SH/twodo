@@ -8,6 +8,7 @@ import { Sync } from '@/lib/sync';
 import { Moments } from '@/lib/moments';
 import { firstWord } from '@/lib/util';
 import { joinWorld, type Connection } from '@/lib/courtyard/presence';
+import { GESTURES, type WorldGesture } from '@/lib/courtyard/state';
 import type { SceneReport, WorldScene } from '@/lib/courtyard/scene';
 import { boardAdd, navState, openJournal } from '@/ui/nav';
 import { alertStore } from '@/ui/alert';
@@ -24,7 +25,10 @@ import { openInviteSheet } from '../settings/AccountSheets';
 import { Icon } from '../ui/Icon';
 import { openMoments, pickMoment } from './Moments';
 
-const INITIAL: SceneReport = { near: null, sitting: false, canSit: false, ready: false, partnerReady: false };
+const INITIAL: SceneReport = { near: null, area: 'garden', portrait: false, sitting: false, canSit: false, ready: false, partnerReady: false };
+const PLACES = { garden: 'Garden', villa: 'Villa', garage: 'Garage' } as const;
+const REACTIONS = { wave: 'Wave', clap: 'Clap', cheer: 'Cheer' } as const;
+const NEAR_LABELS = { tasks: 'Task patch', workbench: 'Use workbench', moments: 'Open Moments', journal: 'Open journal', partner: 'Open chat' } as const;
 
 function TaskPatch() {
   useApp();
@@ -44,6 +48,8 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   const world = useRef<WorldScene | null>(null);
   const [report, setReport] = useState(INITIAL), [failed, setFailed] = useState(false), [attempt, setAttempt] = useState(0);
   const [connection, setConnection] = useState<Connection>('connecting'), [here, setHere] = useState(false);
+  const [reactions, showReactions] = useState(false);
+  const [reaction, setReaction] = useState<WorldGesture | null>(null);
   const entries = useStore(navState).entries, sheets = useStore(sheetStore), adding = useStore(boardAdd);
   const alerts = useStore(alertStore), viewingPhoto = useStore(photoStore), timer = useStore(focusOpen), gate = useStore(gateStore);
   const [visible, setVisible] = useState(true), [inViewport, setInViewport] = useState(true), [keyboard, setKeyboard] = useState(false);
@@ -92,6 +98,12 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
     return () => { gone = true; clearTimeout(timeout); cancelAnimationFrame(resizeFrame); ro.disconnect(); world.current?.destroy(); world.current = null; delete cv.dataset.ready; };
   }, [canvasKey, myUrl, theirUrl, defaultMine, defaultTheirs, mine.look, theirs.look, me]);
   useEffect(() => { world.current?.active(active); }, [active, report.ready]);
+  useEffect(() => {
+    if (!reaction) return;
+    const timeout = setTimeout(() => setReaction(null), 1500);
+    return () => clearTimeout(timeout);
+  }, [reaction]);
+  useEffect(() => { if (!active) showReactions(false); }, [active]);
   useEffect(() => { world.current?.photos([myPhoto, theirPhoto]); }, [myPhoto, theirPhoto, report.ready]);
   useEffect(() => {
     const b = box.current; if (!b) return;
@@ -118,7 +130,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
       touchAt = e.timeStamp; if (!activity.current) return;
       for (const touch of Array.from(e.changedTouches)) {
         if ((e.target as Element).closest('.world-stick')) { if (moveId !== null) continue; centre(); moveId = touch.identifier; move(touch.clientX, touch.clientY); if (e.cancelable) e.preventDefault(); }
-        else if (!(e.target as Element).closest('button') && lookId === null && touch.clientX > 32 && !atBackEdge(touch.clientX)) { lookId = touch.identifier; lastX = touch.clientX; lastY = touch.clientY; }
+        else if (!(e.target as Element).closest('button,select') && lookId === null && touch.clientX > 32 && !atBackEdge(touch.clientX)) { lookId = touch.identifier; lastX = touch.clientX; lastY = touch.clientY; }
       }
     };
     const follow = (e: TouchEvent) => { if (!activity.current) { reset(); return; }
@@ -131,7 +143,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
     const mm = (e: MouseEvent) => { if (!activity.current) return; if (mouseMove) move(e.clientX, e.clientY); if (mouseLook) { world.current?.look(e.clientX - lastX, e.clientY - lastY); lastX = e.clientX; lastY = e.clientY; } };
     const md = (e: MouseEvent) => { if (!activity.current || e.button !== 0 || e.timeStamp - touchAt < 900) return;
       if ((e.target as Element).closest('.world-stick')) { centre(); mouseMove = true; move(e.clientX, e.clientY); }
-      else if (!(e.target as Element).closest('button') && !atBackEdge(e.clientX)) { mouseLook = true; lastX = e.clientX; lastY = e.clientY; }
+      else if (!(e.target as Element).closest('button,select') && !atBackEdge(e.clientX)) { mouseLook = true; lastX = e.clientX; lastY = e.clientY; }
       if (mouseMove || mouseLook) e.preventDefault();
     };
     const map: Record<string, string> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', w: 'up', s: 'down', a: 'left', d: 'right' };
@@ -147,7 +159,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
 
   const toChat = () => paired ? ChatCtl.open() : openInviteSheet();
   const openNear = () => {
-    if (report.near === 'tasks') openTaskPatch();
+    if (report.near === 'tasks' || report.near === 'workbench') openTaskPatch();
     else if (report.near === 'moments') paired ? openMoments() : openInviteSheet();
     else if (report.near === 'journal') openJournal();
     else toChat();
@@ -160,14 +172,31 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
         <canvas key={canvasKey} ref={canvas} className="world-canvas" aria-hidden="true" />
         {!report.ready || failed ? <div className="world-fallback" role="status"><b>{failed ? 'Our place couldn’t load' : 'Preparing our place…'}</b><span>{failed ? 'Your to-dos, journal and chat are still available below.' : 'Your controls are ready while the world loads.'}</span>{failed ? <button type="button" onClick={() => setAttempt(n => n + 1)}>Try 3D again</button> : null}</div> : null}
         {report.ready && !failed ? <>
-          <div className="world-hint">Drag to look · hold the stick to walk</div>
-          <div className="world-travel"><button type="button" className="world-find" onClick={() => world.current?.find()}>Find {name}</button><button type="button" className="world-bench" onClick={() => world.current?.bench()}>Bench</button></div>
+          <div className="world-hint">{PLACES[report.area]} · drag to look, hold the stick to walk</div>
+          <div className="world-travel">
+            <button type="button" className="world-find" onClick={() => world.current?.find()} aria-label={`Find ${name}`}>Find {name}</button>
+            <button type="button" className="world-bench" onClick={() => world.current?.bench()}>Bench</button>
+            <select className="world-destination" aria-label="Walk to" value="" onChange={event => {
+              const name = event.currentTarget.value;
+              if (name === 'villa' || name === 'garage' || name === 'garden') world.current?.visit(name);
+            }}>
+              <option value="" disabled>Walk to</option>
+              {Object.entries(PLACES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </select>
+            {reactions ? <div className="world-reactions" role="group" aria-label="Avatar reactions">
+              {GESTURES.map(gesture => <button type="button" key={gesture} onClick={() => {
+                world.current?.react(gesture); setReaction(gesture); showReactions(false);
+              }}>{REACTIONS[gesture]}</button>)}
+            </div> : null}
+          </div>
           <button type="button" className="world-stick" ref={stick} aria-label="Walk: drag this control, or focus it and use arrow keys or W A S D"><span className="world-stick-base" aria-hidden="true" /><span className="world-stick-knob" ref={knob} aria-hidden="true"><Icon name="arrowUp" /></span></button>
           <div className="world-interactions">
-            <button type="button" onClick={() => world.current?.wave()} aria-label="Wave">Wave</button>
+            <button type="button" onClick={() => world.current?.viewAvatar()} aria-pressed={report.portrait}>{report.portrait ? 'Back to explore' : 'View avatar'}</button>
+            <button type="button" onClick={() => showReactions(v => !v)} aria-expanded={reactions}>React</button>
             {report.canSit || report.sitting ? <button type="button" onClick={() => world.current?.sit()}>{report.sitting ? 'Stand up' : 'Sit together'}</button> : null}
-            {report.near ? <button type="button" onClick={openNear}>{report.near === 'tasks' ? 'Task patch' : report.near === 'moments' ? 'Open Moments' : report.near === 'journal' ? 'Open journal' : 'Open chat'}</button> : null}
+            {report.near ? <button type="button" onClick={openNear}>{NEAR_LABELS[report.near]}</button> : null}
           </div>
+          <span className="world-reaction-status" role="status" hidden={!reaction}>{reaction ? REACTIONS[reaction] : ''}</span>
         </> : null}
       </div>
       <div className="world-doors" aria-label="Open without walking">
