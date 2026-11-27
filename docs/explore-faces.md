@@ -10,7 +10,7 @@ returns to neutral. Reduce Motion holds the neutral face.
 
 The meshes and colour maps start from the existing MIT-licensed Rocketbox `f07` and `m17` assets. The new
 facial surface and expression shapes were authored for Twodo. The Rocketbox license and attribution are at
-`public/people/LICENSE-Rocketbox.md`. The assets use no personal photos.
+`public/people/LICENSE-Rocketbox.md`. The assets use no photos from Twodo accounts.
 
 From the repository root, `python3 scripts/people/explore_faces.py` with NumPy rebuilds both GLBs. The build
 splits facial triangles where more detail is needed, interpolates UVs and normalized joint weights, preserves the
@@ -25,7 +25,8 @@ adds no preference, storage key, database field, encryption change or network or
 
 ## Physical iPhone review
 
-1. With the matching skin and hair choice, open Explore and compare the walk view with **View avatar**. Drag to
+1. In **Settings → Your character**, choose Female and the honey skin, espresso hair portrait, or Male and
+   the caramel skin, black hair portrait. Open Explore and compare the walk view with **View avatar**. Drag to
    check the forehead, nose, lips and jaw from the front and three-quarter angles.
 2. Try Wave, Clap and Cheer while watching both people. Each expression should settle to neutral. Repeat with
    Reduce Motion and verify the face stays neutral.

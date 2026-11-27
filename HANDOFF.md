@@ -7,12 +7,16 @@ Last updated: 2026-11-27.
 
 ## Current session: Explore face prototypes (2026-11-27)
 
-- PR #44 merged at `4c3135e`. The avatar work is on `feat/explore-avatar-faces`.
+- PR #44 merged at `4c3135e`. The avatar follow-up is [draft PR #45](https://github.com/Abilash-SH/twodo/pull/45)
+  on `feat/explore-avatar-faces`.
 - The two Explore prototypes refine the jaw, cheeks, eyelids and lips on the MIT Rocketbox `f07` and `m17`
   rigs. Explore drives a smile and brow shape with the existing Wave, Clap and Cheer clips.
 - `docs/explore-faces.md` records the asset provenance, file sizes, regeneration and physical iPhone checklist.
   Read `handoff.json` for test results and before-and-after captures. Imports take priority, missing prototypes
   use the selected original, and Reduce Motion holds the neutral face.
+- The locked install, typecheck, webpack exports, unit checks and Chromium comparisons passed. The full
+  Chromium suite passed 19 of 20 scripts, including paired Explore, keyboard, landscape, WebGL recovery
+  and encrypted avatar import. Test 13 timed out after its navigation and chat checks.
 - Review on a physical iPhone before expanding this treatment to additional choices or outside Explore.
 
 ## Previous session: walkable villa and garage (2026-11-27)
