@@ -7,8 +7,8 @@ Last updated: 2026-11-27.
 
 ## Current session: Explore face prototypes (2026-11-27)
 
-- PR #44 merged at `4c3135e`. The avatar follow-up is [draft PR #45](https://github.com/Abilash-SH/twodo/pull/45)
-  on `feat/explore-avatar-faces`.
+- PR #44 merged at `4c3135e`. The avatar follow-up [PR #45](https://github.com/Abilash-SH/twodo/pull/45)
+  merged at `cde3d56`. Final test notes are on `feat/explore-avatar-faces`.
 - The two Explore prototypes refine the jaw, cheeks, eyelids and lips on the MIT Rocketbox `f07` and `m17`
   rigs. Explore drives a smile and brow shape with the existing Wave, Clap and Cheer clips.
 - `docs/explore-faces.md` records the asset provenance, file sizes, regeneration and physical iPhone checklist.

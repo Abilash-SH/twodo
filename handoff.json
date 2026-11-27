@@ -13,7 +13,8 @@
     "draft_pr_45",
     "full_browser_suite_run",
     "paired_explore_regression_passed",
-    "iphone_checklist"
+    "iphone_checklist",
+    "avatar_pr_45_merged"
   ],
   "state": {
     "branch": "feat/explore-avatar-faces",
@@ -68,7 +69,8 @@
     },
     "avatar_pr_url": "https://github.com/Abilash-SH/twodo/pull/45",
     "world_draw_calls": 119,
-    "world_triangles": 33666
+    "world_triangles": 33666,
+    "merge_commit": "cde3d56899a09f96332983cb33324b59ba62d084"
   },
   "next": "review_faces_on_physical_iphone_before_expanding"
 }
