@@ -274,3 +274,7 @@ and data checks, and a short iPhone checklist.
 - **Explore fullscreen follow-up (2026-11-28):** fullscreen manifest and actual sky-coloured page edge implemented
   on a review branch; physical iPhone confirmation, build/typecheck and browser regression tests remain pending.
   See `docs/iphone-validation.md`.
+
+- **Explore bottom viewport follow-up:** #50 deployed; owner reported a white bottom strip after fresh installation.
+  Scoped physical-screen gap compensation implemented on a review branch; device confirmation and regression
+  checks pending. See `docs/iphone-validation.md`.

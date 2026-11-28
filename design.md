@@ -204,7 +204,9 @@ and rim light replace "static lighting only"; rendering still happens only while
 **By the hour, 2026-11-28 (third request: full screen, a badge, realistic light, a real sky, a bigger map).** This
 replaces the violet night and most of the neon above. Explore requests full screen: the city runs to the edges allowed by iOS.
 If iOS reserves the status bar, the actual page edge takes the colour of the rendered sky as a fallback,
-rather than the app's light background. True under-bar rendering must be verified on the target iPhone. Home's header steps aside for a **couple badge** (both faces overlapping, both
+rather than the app's light background. A bounded physical-screen gap may extend the foreground city scenery
+only at rest on installed iOS; the bottom controls keep their original visible-viewport clearance.
+True under-bar rendering must be verified on the target iPhone. Home's header steps aside for a **couple badge** (both faces overlapping, both
 first names, a green dot and "… is here" when your partner is live); the place and the time of day ("Sunset ·
 5:40 PM", "Lakeside") sit under it, and the way out is a round × top right. The light follows the phone's clock:
 blue days with soft shadows, gold and pink sunsets, a navy night with stars, the moon, lit windows and street lamps.

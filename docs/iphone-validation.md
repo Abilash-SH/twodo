@@ -52,3 +52,19 @@ WebGL fallback, entering/leaving Explore, chat, journal, task sheet and repeated
 Check ordinary light/dark screens and Android installed mode (fullscreen may hide system bars; orientation
 is no longer manifest-locked). Verify Home Screen push eligibility and offline launch/update.
 Do not claim OS-level fullscreen until a physical iPhone confirms it.
+
+### Bottom strip after fresh installation (follow-up to #50)
+
+Reference implementation: https://github.com/peopleofcity/peopleofcity/blob/main/src/game/device.ts
+uses the long/short physical screen side and innerHeight to size its canvas. Twodo adapts this only for foreground
+Explore: measure the discrepancy at rest, reject zoom, width mismatch, keyboard and gaps over 100 CSS pixels,
+and add the same discrepancy to the city HUD's bottom inset so controls never move below the original viewport.
+No viewport units or permanent screen-height layout for chat.
+
+On a physical iPhone compare the existing and freshly installed icon, portrait and landscape. Check top and
+bottom separately and record a screenshot of the entire screen with the clock and home indicator visible.
+Verify the dock, stick, doors and interactions remain tappable; open a task sheet, chat and journal, type and
+rotate. Check fallback if WebGL fails. Chromium test 21 simulates a 62px difference; it cannot reproduce OS chrome.
+If the strip persists, collect iOS version, model, screen and visual viewport dimensions and safe-area values
+before more layout changes. WebKit https://bugs.webkit.org/show_bug.cgi?id=313800 documents a system-owned
+orphan strip that may be unreachable by any DOM element.

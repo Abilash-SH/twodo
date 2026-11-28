@@ -35,7 +35,19 @@ export function useKeyboard(): void {
       root.setProperty('--vvh', `${height}px`);
       root.setProperty('--vvt', `${top}px`);
       // At rest the standalone app fills the layout viewport itself (CSS inset: 0), never a viewport unit.
-      document.body.classList.toggle('ios-fullscreen', isIOS() && standalone() && !covered && !focused);
+      const installedAtRest = isIOS() && standalone() && !covered && !focused;
+      document.body.classList.toggle('ios-fullscreen', installedAtRest);
+      // Some installed iPhones report a viewport one status-bar short of the physical screen.
+      // Only Explore's non-keyboard scenery may use this extra extent; never resize chat or overlays.
+      // Reject zoom, split-screen, transient keyboard geometry and implausibly large differences.
+      const portrait = matchMedia('(orientation: portrait)').matches;
+      const screenHeight = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+      const screenWidth = portrait ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+      const gap = screenHeight - height;
+      const canExtend = installedAtRest && Math.abs((vv?.scale ?? 1) - 1) < .01
+        && Math.abs(screenWidth - innerWidth) <= 2 && Math.abs(innerHeight - height) <= 2 && Math.abs(top) <= 2
+        && gap > 1 && gap <= 100;
+      root.style.setProperty('--explore-screen-gap', `${canExtend ? gap : 0}px`);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
     const visible = () => { if (!document.hidden) schedule(); };
@@ -51,6 +63,7 @@ export function useKeyboard(): void {
       document.removeEventListener('focusin', schedule); document.removeEventListener('focusout', schedule);
       document.removeEventListener('visibilitychange', visible);
       document.body.classList.remove('kb', 'ios-fullscreen');
+      document.documentElement.style.removeProperty('--explore-screen-gap');
     };
   }, []);
 }

@@ -74,6 +74,31 @@ async def main():
           return root.dataset.exploreEdge === 'true'
             && [root, document.body, document.querySelector('#app')].every(el => getComputedStyle(el).backgroundColor === rgb);
         }""")
+        # Simulate the reported iOS 62px short viewport. Only foreground Explore grows;
+        # the bottom dock stays within the original visible viewport. Restore the browser before other checks.
+        await A.evaluate("""() => {
+          const set = (obj, key, value) => {
+            const old = Object.getOwnPropertyDescriptor(obj, key);
+            Object.defineProperty(obj, key, { configurable: true, value });
+            return () => old ? Object.defineProperty(obj, key, old) : delete obj[key];
+          };
+          const undo = [set(navigator, 'platform', 'MacIntel'), set(navigator, 'maxTouchPoints', 5),
+            set(navigator, 'standalone', true), set(screen, 'width', innerWidth),
+            set(screen, 'height', innerHeight + 62)];
+          window.restoreExploreScreen = () => { undo.reverse().forEach(f => f()); dispatchEvent(new Event('resize')); };
+          dispatchEvent(new Event('resize'));
+        }""")
+        await A.wait_for_function("""() => {
+          const root = document.documentElement;
+          const app = document.querySelector('#app').getBoundingClientRect();
+          const dock = document.querySelector('.courtyard-on .dock-pill').getBoundingClientRect();
+          const stage = document.querySelector('.world-stage').getBoundingClientRect();
+          return root.style.getPropertyValue('--explore-screen-gap') === '62px'
+            && Math.abs(stage.height - (innerHeight + 62)) < 2
+            && Math.abs(app.height - stage.height) < 2 && dock.bottom <= innerHeight;
+        }""")
+        await A.evaluate("() => window.restoreExploreScreen()")
+        await A.wait_for_function("() => document.documentElement.style.getPropertyValue('--explore-screen-gap') === '0px'")
         canvas = A.locator('.world-canvas')
         print('Neon plaza render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
         async def position(page):
