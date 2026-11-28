@@ -1,33 +1,44 @@
-/** Original 3D city art. All local textures are painted once when Explore opens. */
+/** Original 3D city art. All local textures are painted once when Explore opens.
+ *  The look: glass towers whose lit windows glow, neon strips on their edges, holograms, a wet street that reflects
+ *  the neon, under a violet sky. Everything brighter than white blooms (post.ts). Coordinates, rooms, seats and
+ *  obstacles are unchanged (state.ts), so walking, presence and older versions still agree. */
 import * as T from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { cityArt, paintFacade, paintPavers, paintSign, paintWallPanels, seededNoise } from './city-art';
+import { cityArt, paintFacade, paintHolo, paintPavers, paintSign, paintWallPanels, seededNoise } from './city-art';
+import { buildSky, neonEnvironment } from './sky';
 import { BENCH, FOUNTAIN, FURNITURE, MOMENTS_KIOSK, PLAZA_FIXTURES, ROOMS, TASK_TERMINAL, walls, type RoomName } from './state';
 
-export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
-  const art = cityArt(scene, tokens);
-  const { box, mesh, material, texture, ink, color } = art;
+export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration, renderer?: T.WebGLRenderer) {
+  const anisotropy = Math.min(8, renderer?.capabilities.getMaxAnisotropy() || 1);
+  const art = cityArt(scene, tokens, anisotropy);
+  const { box, mesh, material, texture, ink, color, shape } = art;
   const solid = (role: string, options: T.MeshStandardMaterialParameters = {}) =>
-    material(new T.MeshStandardMaterial({ color: color(role), roughness: .72, ...options }));
-  const light = (role: string) => material(new T.MeshBasicMaterial({ color: color(role), toneMapped: false }));
+    material(new T.MeshStandardMaterial({ color: color(role), roughness: .55, ...options }));
+  /** Neon: brighter than white, so it blooms. */
+  const neon = (role: string, boost = 2.6) => material(new T.MeshBasicMaterial({ color: color(role).multiplyScalar(boost), toneMapped: false }));
   const panelMap = texture(128, 128, paintWallPanels);
   panelMap.wrapS = panelMap.wrapT = T.RepeatWrapping;
   panelMap.repeat.set(3, 2);
-  const frame = solid('frame'), panels = solid('panel', { map: panelMap }), chrome = solid('steel', { metalness: .22 });
-  const floor = solid('floor'), textile = solid('cloth'), cushion = solid('cushion');
-  const cyan = light('cyan'), pink = light('pink'), amber = light('amber'), white = light('white');
-  const glass = solid('glass', { roughness: .32, emissive: color('glass'), emissiveIntensity: .65 });
-  const asphalt = solid('asphalt');
+  const frame = solid('frame', { roughness: .42, metalness: .35 }), panels = solid('panel', { map: panelMap, roughness: .5, metalness: .25 });
+  const chrome = solid('steel', { metalness: .8, roughness: .26 });
+  const floor = solid('floor', { roughness: .4, metalness: .2 }), textile = solid('cloth'), cushion = solid('cushion');
+  const podium = solid('podium', { roughness: .38, metalness: .45 }), paint = solid('white', { roughness: .6 });
+  const cyan = neon('cyan'), pink = neon('pink'), amber = neon('amber', 2.2), white = neon('white', 2), violet = neon('violet'), beacon = neon('beacon', 3);
+  const glass = solid('glass', { roughness: .18, metalness: .4, emissive: color('glass'), emissiveIntensity: .8 });
+  const asphalt = solid('asphalt', { roughness: .3, metalness: .55 });
   const floorMap = texture(256, 256, paintPavers);
   floorMap.wrapS = floorMap.wrapT = T.RepeatWrapping;
   floorMap.repeat.set(7, 6);
-  const pavement = solid('pavement', { map: floorMap, roughness: .5 });
+  const pavement = solid('pavement', { map: floorMap, emissiveMap: floorMap, emissive: 0xffffff, emissiveIntensity: .42, roughness: .42, metalness: .18 });
 
-  scene.background = color('sky');
-  scene.fog = new T.Fog(color('sky'), 23, 59);
-  scene.add(new T.HemisphereLight(color('fill'), color('bounce'), 1.9));
-  const key = new T.DirectionalLight(color('key'), 2.15);
+  const sky = buildSky(scene, color);
+  const reflections = renderer ? neonEnvironment(renderer, color) : null;
+  if (reflections) { scene.environment = reflections.texture; scene.environmentIntensity = .35; }
+  scene.background = color('horizon');
+  scene.fog = new T.Fog(color('fog'), 28, 92);
+  scene.add(new T.HemisphereLight(color('fill'), color('bounce'), .5));
+  const key = new T.DirectionalLight(color('key'), .95);
   key.position.set(-5, 11, 8);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -35,22 +46,43 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
   key.shadow.normalBias = .045;
   key.shadow.bias = -.0007;
   scene.add(key);
+  // Neon from behind the plaza outlines people and edges in cyan and pink.
+  const rimCyan = new T.DirectionalLight(color('cyan'), .8), rimPink = new T.DirectionalLight(color('pink'), .65);
+  rimCyan.position.set(-9, 6, -12); rimPink.position.set(10, 5, -9);
+  scene.add(rimCyan, rimPink);
+  for (const [role, intensity, x, y, z, reach] of [
+    ['cyan', 7, FOUNTAIN.x, 1.3, FOUNTAIN.z, 7], ['amber', 7, .1, 2.3, -9.2, 8], ['pink', 6, MOMENTS_KIOSK.x - .5, 2, MOMENTS_KIOSK.z + 1, 6],
+  ] as const) {
+    const lamp = new T.PointLight(color(role), intensity, reach, 2);
+    lamp.position.set(x, y, z);
+    scene.add(lamp);
+  }
 
   function rect(w: number, h: number, x: number, y: number, z: number, surface: T.Material, parent?: T.Object3D) {
     return mesh(new T.PlaneGeometry(w, h), surface, x, y, z, parent);
   }
   function sign(title: string, subtitle: string, role: string, x: number, y: number, z: number, w: number, parent?: T.Object3D) {
     const surface = material(new T.MeshBasicMaterial({
-      map: texture(512, 152, ctx => paintSign(ctx, title, subtitle, ink(role))), toneMapped: false,
+      map: texture(512, 152, ctx => paintSign(ctx, title, subtitle, ink(role))), toneMapped: false, color: new T.Color(1.12, 1.12, 1.12),
     }));
     box(x, y, z - .065, w + .08, w * .297 + .08, .11, frame, parent);
     return rect(w, w * .297, x, y, z, surface, parent);
+  }
+  /** A hologram hanging in front of a tower: light only, no panel behind it. */
+  function holo(title: string, subtitle: string, role: string, x: number, y: number, z: number, w: number, turn: number) {
+    const surface = material(new T.MeshBasicMaterial({
+      map: texture(1024, 512, ctx => paintHolo(ctx, title, subtitle, ink(role))), color: new T.Color(1.12, 1.12, 1.12),
+      transparent: true, depthWrite: false, blending: T.AdditiveBlending, toneMapped: false, side: T.DoubleSide,
+    }));
+    const plane = rect(w, w / 2, x, y, z, surface);
+    plane.rotation.y = turn;
+    plane.receiveShadow = false;
   }
   function ground(w: number, d: number, x: number, y: number, z: number, surface: T.Material) {
     rect(w, d, x, y, z, surface).rotation.x = -Math.PI / 2;
   }
 
-  ground(89, 89, 0, -.08, 0, asphalt);
+  ground(180, 180, 0, -.08, 0, asphalt);
   ground(19.3, 17.1, 0, -.02, -.16, pavement);
   // Edge lighting and crosswalks outline the playable city block.
   for (const x of [-9.45, 9.45]) {
@@ -58,7 +90,7 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
     box(x * .997, .105, 0, .042, .012, 16.65, cyan);
     for (let z = -7; z <= 9; z += 2.8) box(x * 1.22, -.067, z, .067, .01, 1.02, amber);
   }
-  for (let x = -4; x <= 4; x += .5) box(x, -.012, 8.75, .24, .012, 1.4, chrome);
+  for (let x = -4; x <= 4; x += .5) box(x, -.012, 8.75, .24, .012, 1.4, paint);
   for (const x of [-7, 7]) box(x, .16, -8.35, 4.4, .36, .32, frame);
   for (const x of [-7, 7]) box(x, .345, -8.16, 4.3, .037, .035, cyan);
 
@@ -75,12 +107,12 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
       color: color(role), map: pools, transparent: true, depthWrite: false, opacity, blending: T.AdditiveBlending,
     }));
   }
-  const bluePool = spill('cyan', .34), warmPool = spill('amber', .4), pinkPool = spill('pink', .26);
+  const bluePool = spill('cyan', .34), warmPool = spill('amber', .4), pinkPool = spill('pink', .3), violetPool = spill('violet', .3);
   ground(7.1, 8.1, FOUNTAIN.x, .001, FOUNTAIN.z + 1.5, bluePool);
   ground(5.6, 6.5, -5.1, .005, -1.4, warmPool);
   ground(6.2, 6.7, 4.9, .007, -2.3, pinkPool);
   ground(4.6, 6.5, 4.6, .002, 3.6, bluePool);
-  ground(5.5, 6.5, -7.5, .003, 3, warmPool);
+  ground(5.5, 6.5, -7.5, .003, 3, violetPool);
   for (const side of [-1, 1]) {
     for (let z = 1.4; z <= 7; z += 1.6) {
       box(side * 2.14, -.006, z, .033, .008, 1.07, side < 0 ? amber : cyan);
@@ -88,21 +120,60 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
     ground(1.5, 7.4, side * 2.14, .004, 4.2, side < 0 ? warmPool : bluePool);
   }
 
-  const facade = [0, 1, 2].map(i => material(new T.MeshBasicMaterial({
-    map: texture(256, 512, ctx => paintFacade(ctx, i)), toneMapped: false,
-  })));
+  // Glass towers. Each body gets its own window scale (2.6 m a tile) and a random start in the pattern, then all
+  // bodies of one kind are merged into one mesh.
+  const facades = [0, 1, 2].map(i => {
+    const windows = texture(512, 512, ctx => paintFacade(ctx, i));
+    windows.wrapS = windows.wrapT = T.RepeatWrapping;
+    return solid('facade', { roughness: .5, metalness: .5, emissive: 0xffffff, emissiveMap: windows, emissiveIntensity: 1.05 });
+  });
+  const spireGlass = solid('facade', { roughness: .16, metalness: .75 });
+  // Glass seen edge-on mirrors the whole sky: keep the towers' own reflections dimmer than the scene's.
+  if (reflections) for (const surface of [...facades, spireGlass]) { surface.envMap = reflections.texture; surface.envMapIntensity = .22; }
   const random = seededNoise(888);
-  function tower(x: number, z: number, w: number, d: number, h: number, index: number) {
-    box(x, h / 2, z, w, h, d, facade[index % facade.length]);
-    box(x, h + .1, z, w + .13, .18, d + .13, frame);
-    const trim = [cyan, pink, glass][index % 3];
-    box(x, h - .16, z + d * .5 + .04, w * .94, .055, .052, trim);
-    if (index % 2 === 0) box(x + w * .42, h * .55, z + d * .5 + .05, .045, h * .86, .075, cyan);
-    if (index % 3 === 0) {
-      box(x, h + .88, z, .075, 1.5, .075, chrome);
-      box(x, h + 1.65, z, .14, .14, .14, pink);
+  const trims = [cyan, pink, violet, amber];
+  function body(x: number, z: number, w: number, d: number, y0: number, y1: number, kind: number) {
+    const h = y1 - y0, cell = 2.6, g = new T.BoxGeometry(w, h, d), uv = g.getAttribute('uv') as T.BufferAttribute;
+    const ou = random(), ov = random(), sizes = [d, d, 0, 0, w, w];
+    for (let face = 0; face < 6; face++) for (let k = 0; k < 4; k++) {
+      const i = face * 4 + k;
+      if (!sizes[face]) uv.setXY(i, .002, .998);
+      else uv.setXY(i, uv.getX(i) * sizes[face] / cell + ou, uv.getY(i) * h / cell + ov);
     }
-    box(x, 1.45, z + .04, w + .15, 2.9, d + .13, panels);
+    g.translate(x, y0 + h / 2, z);
+    shape(g, facades[kind % facades.length]);
+  }
+  function tower(x: number, z: number, w: number, d: number, h: number, index: number) {
+    const trim = trims[index % trims.length];
+    box(x, 1.45, z + .04, w + .15, 2.9, d + .13, podium);
+    box(x, 2.93, z + .04, w + .22, .06, d + .2, trim);
+    const setback = h > 14 && index % 2 === 0, top = setback ? 2.9 + (h - 2.9) * .7 : h;
+    body(x, z, w, d, 2.9, top, index);
+    const cw = setback ? w * .7 : w, cd = setback ? d * .7 : d;
+    if (setback) {
+      body(x, z, cw, cd, top, h, index + 1);
+      box(x, top + .05, z, w + .08, .1, d + .08, frame);
+      box(x, top + .13, z, w + .1, .04, d + .1, trim);
+    }
+    if (index % 3 !== 1) {
+      // sharp glowing edges up every corner
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) box(x + sx * w / 2, (2.9 + top) / 2, z + sz * d / 2, .07, top - 2.9, .07, trim);
+    } else {
+      for (let y = 6.5; y < top - 1; y += 4.4) box(x, y, z, w + .05, .055, d + .05, trim);
+    }
+    box(x, h + .09, z, cw + .14, .18, cd + .14, frame);
+    box(x, h + .2, z, cw + .16, .045, cd + .16, trim);
+    if (index % 3 === 0) {
+      const spire = new T.ConeGeometry(Math.min(cw, cd) * .5, 3.2, 4, 1);
+      spire.rotateY(Math.PI / 4);
+      spire.translate(x, h + .2 + 1.6, z);
+      shape(spire, spireGlass);
+      box(x, h + 4.1, z, .05, 1.4, .05, chrome);
+      box(x, h + 4.85, z, .16, .16, .16, beacon);
+    } else if (index % 3 === 2) {
+      box(x, h + 1.05, z, .075, 1.7, .075, chrome);
+      box(x, h + 1.95, z, .15, .15, .15, beacon);
+    }
   }
   const blocks = [
     [-16, -12.4, 5.3, 5.0, 12.4], [-9.7, -14.6, 4.9, 4.7, 18.4], [-4.6, -13.9, 3.7, 4.4, 12.1],
@@ -112,11 +183,23 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
     [-14.4, 8.5, 5.1, 4.0, 11.6], [14.5, 8.1, 4.8, 4.2, 14.1],
     [-8, 20, 4.9, 4.1, 16.1], [-1, 21.5, 4.4, 5.0, 12.3], [6, 20.5, 5.5, 4.7, 17.8],
   ] as const;
-  blocks.forEach(([x, z, w, d, h], i) => tower(x, z, w, d, h, i));
-  for (let i = 0; i < 12; i++) tower(-30 + i * 5.35, -23 - 4 * random(), 3 + 1.7 * random(), 4.2, 12 + 17 * random(), i + 1);
-  // Real setbacks, frosted billboards and warm shopfront panels give the skyline a more varied scale.
-  box(.15, 24.1, -17.5, 3.5, 2.0, 3.7, facade[0]);
-  box(.15, 25.16, -17.5, 3.62, .12, 3.78, cyan);
+  // Kept low enough around the plaza that the sky and the planet show above them.
+  blocks.forEach(([x, z, w, d, h], i) => tower(x, z, w, d, h * .7, i));
+  for (let i = 0; i < 12; i++) tower(-30 + i * 5.35, -23 - 4 * random(), 3 + 1.7 * random(), 4.2, 9 + 12 * random(), i + 1);
+  // A ring of far towers fills every horizon; the violet haze softens them into a skyline.
+  const far = seededNoise(5150);
+  for (let i = 0; i < 44; i++) {
+    const a = i / 44 * Math.PI * 2 + far() * .06, r = 44 + far() * 18, x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const w = 4 + far() * 5, d = 4 + far() * 5, h = 8 + far() * 16;
+    body(x, z, w, d, 0, h, i);
+    if (i % 3 === 0) box(x, h + .06, z, w + .1, .12, d + .1, trims[i % trims.length]);
+  }
+  // Holograms over the plaza, one in every direction you look.
+  holo('TWODO', 'TWO SOULS · ONE SPACE', 'pink', .15, 12.4, -14.85, 4.6, 0);
+  holo('SIGNAL', 'CITY LINK · ALL NIGHT', 'cyan', -10.82, 8.2, 2, 4, Math.PI / 2);
+  holo('STARLIGHT', 'ROOFTOP CINEMA', 'violet', 11.24, 8.4, -5, 4, -Math.PI / 2);
+  holo('NEO TWODO', 'WELCOME HOME', 'cyan', -1, 6.2, 18.94, 4.2, Math.PI);
+  // Setbacks, frosted billboards and shopfront panels give the skyline a more varied scale.
   sign('MOONLINE', 'ELEVATED TRANSIT', 'cyan', .1, 7.3, -14.96, 3.7);
   sign('NIGHT MARKET', 'LATE COUNTER', 'amber', -4.6, 4.45, -11.65, 2.7);
   sign('SIGNAL', 'CITY LINK', 'pink', 4.85, 8.6, -12.35, 2.95);
@@ -143,11 +226,11 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
   box(0, 4.34, railZ, 65, .44, 1.92, chrome);
   box(0, 4.61, railZ, 65, .16, .95, frame);
   box(0, 4.48, railZ + .98, 65, .066, .045, cyan);
-  box(0, 4.22, railZ + .98, 65, .032, .045, white);
+  box(0, 4.22, railZ + .98, 65, .032, .045, pink);
   for (const x of [-24, -16, -8, 3.1, 10.8, 18.6, 26]) {
     box(x, 2, railZ, .55, 4.1, .65, panels);
     box(x, 3.92, railZ, 1.25, .42, 1.47, chrome);
-    box(x, 1.85, railZ + .345, .055, 2.8, .04, glass);
+    box(x, 1.85, railZ + .345, .055, 2.8, .04, cyan);
   }
   for (let x = -29; x < 30; x += 1.5) {
     box(x, 4.66, railZ + .9, .035, .29, .037, chrome);
@@ -159,13 +242,28 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
   for (const x of [-2.14, 2.14]) {
     mesh(new RoundedBoxGeometry(4.15, .8, 1.12, 2, .22), chrome, x, 0, 0, train);
     box(x, -.26, .562, 3.84, .057, .028, cyan, train);
-    box(x, .307, .51, 3.8, .046, .035, glass, train);
+    box(x, .307, .51, 3.8, .046, .035, violet, train);
     for (let i = 0; i < 5; i++) box(x + (i - 2) * .65, .055, .566, .56, .262, .034, i === 2 ? white : amber, train);
     box(x, 0, .588, .035, .51, .04, frame, train);
   }
   box(0, -.25, 0, .23, .24, .66, frame, train);
-  box(-4.01, -.13, .46, .15, .09, .135, pink, train);
+  box(-4.01, -.13, .46, .15, .09, .135, beacon, train);
   box(4.01, -.13, .46, .15, .09, .135, white, train);
+
+  // Two sky cars cross above the plaza, glowing underneath. They move with the train (only while the scene draws).
+  const cars: { car: T.Group; speed: number }[] = [];
+  const hull = new RoundedBoxGeometry(1.7, .4, .82, 2, .15);
+  for (const [y, z, speed, start] of [[9.6, -3.5, 5.5, -26], [12.8, 6.5, -4.2, 22]] as const) {
+    const car = new T.Group();
+    car.position.set(start, y, z);
+    scene.add(car);
+    mesh(hull, chrome, 0, 0, 0, car).castShadow = false;
+    box(0, -.23, 0, 1.36, .035, .62, speed > 0 ? cyan : pink, car);
+    box(0, .2, 0, .8, .14, .62, glass, car);
+    box(speed > 0 ? -.86 : .86, 0, 0, .04, .12, .64, beacon, car);
+    box(speed > 0 ? .86 : -.86, .02, 0, .04, .1, .52, white, car);
+    cars.push({ car, speed });
+  }
 
   const roofs = new Map<RoomName, T.Group>();
   for (const [name, room] of Object.entries(ROOMS) as [RoomName, typeof ROOMS[RoomName]][]) {
@@ -207,7 +305,7 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
     box(x, 2.14, back + .11, w - .2, .067, .065, rim);
     for (let i = 0; i < 5; i++) {
       box(x - 1.6 + .8 * i, .63, back + .108, .49, .65, .06, frame);
-      box(x - 1.6 + .8 * i, .93, back + .144, .38, .022, .018, i % 2 ? glass : accent);
+      box(x - 1.6 + .8 * i, .93, back + .144, .38, .022, .018, i % 2 ? violet : accent);
     }
     if (loft) sign('AFTER HOURS', 'JOURNAL LOUNGE', 'amber', x - .68, 1.64, back + .16, 1.86);
     else sign('SERVICE', 'WORKBENCH BAY', 'cyan', x - 1.07, 1.63, back + .16, 1.32);
@@ -245,14 +343,15 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
 
   const { x: fx, z: fz, rx, rz } = FOUNTAIN;
   function basin(radius: number, y: number, depth: number, surface: T.Material) {
-    const pool = mesh(new T.CylinderGeometry(radius, radius, depth, 40), surface, fx, y, fz);
+    const pool = mesh(new T.CylinderGeometry(radius, radius, depth, 48), surface, fx, y, fz);
     pool.scale.set(rx - .23, 1, rz - .23);
   }
   basin(1, .17, .34, frame);
-  basin(.99, .356, .047, cyan);
+  basin(.99, .356, .047, neon('cyan', 1.5));
   basin(.93, .382, .026, glass);
-  basin(.69, .407, .018, solid('water', { roughness: .31, emissive: color('water'), emissiveIntensity: .4 }));
-  // Each slim water jet is static; reflected cyan pools light the paving without a reflection pass.
+  basin(.69, .407, .018, solid('water', { roughness: .08, metalness: .2, emissive: color('water'), emissiveIntensity: .7 }));
+  basin(.16, .62, .5, neon('violet', 1.7));
+  // Each slim water jet is static; cyan light pools light the paving without a reflection pass.
   const jets: T.TubeGeometry[] = [];
   for (let i = 0; i < 12; i++) {
     const angle = i * Math.PI / 6, cx = Math.cos(angle), sz = Math.sin(angle);
@@ -262,17 +361,17 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
   }
   const arcs = mergeGeometries(jets);
   jets.forEach(value => value.dispose());
-  if (arcs) mesh(arcs, cyan, fx, .42, fz);
+  if (arcs) mesh(arcs, neon('cyan', 1.8), fx, .42, fz);
   for (let i = 0; i < 4; i++) box(fx + (i - 1.5) * .069, .78, fz + (i % 2) * .11, .025, .72 + .12 * (i % 2), .025, white);
 
   // Existing seats and obstacle centres remain fixed for compatible two-player movement.
   for (const x of [BENCH.x - 1.03, BENCH.x + 1.03]) box(x, .23, BENCH.z, .12, .45, .62, chrome);
   box(BENCH.x, .5, BENCH.z, 2.63, .12, .66, textile);
   box(BENCH.x, .8, BENCH.z - .3, 2.62, .46, .085, chrome);
-  box(BENCH.x, .522, BENCH.z + .34, 2.6, .035, .045, cyan);
+  box(BENCH.x, .522, BENCH.z + .34, 2.6, .035, .045, pink);
   for (const { x, z } of PLAZA_FIXTURES) {
     box(x, .34, z, .53, .68, .55, frame);
-    box(x, .66, z, .62, .055, .64, chrome);
+    box(x, .66, z, .62, .055, .64, cyan);
     box(x, 1.51, z, .074, 1.65, .074, frame);
     box(x, 2.36, z, .56, .12, .31, chrome);
     box(x, 2.288, z, .5, .04, .26, white);
@@ -300,6 +399,11 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
     advance(seconds: number) {
       train.position.x += seconds * 3.4;
       if (train.position.x > 34) train.position.x -= 68;
+      for (const { car, speed } of cars) {
+        car.position.x += seconds * speed;
+        if (car.position.x > 40) car.position.x -= 80;
+        if (car.position.x < -40) car.position.x += 80;
+      }
     },
     photos(values: readonly (string | null)[], changed: () => void) {
       photoMaterials.forEach((surface, i) => {
@@ -335,8 +439,12 @@ export function buildEnvironment(scene: T.Scene, tokens: CSSStyleDeclaration) {
     dispose() {
       disposed = true;
       photoMaterials.forEach(surface => surface.map?.dispose());
+      hull.dispose();
+      sky.dispose();
+      reflections?.dispose();
       art.dispose();
       key.shadow.map?.dispose();
+      scene.environment = null;
       scene.clear();
     },
   };

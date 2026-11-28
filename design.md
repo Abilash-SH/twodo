@@ -192,6 +192,15 @@ versions. The loft still opens Journal and the garage still opens the workbench 
 locally with batched geometry and static lighting. The train uses the existing render loop while it is awake.
 The city rests behind other screens or when hidden, and the train stands still in Reduce Motion.
 
+**Sharper, 2026-11-28 (second request: "nice graphics, sharp edges and characters").** A violet night over the
+city: a gradient sky with stars, a ringed planet and light streaks. Neon is brighter than white and blooms; signs
+and lit windows glow; tower edges carry neon strips; holograms float in front of towers; the street reflects the
+neon. Your partner has a name plate in their colour; three city residents (dancer, fan, photographer) stand
+outside the walkable plaza. The heads-up display uses cut-corner, opaque panels with one neon edge, condensed
+italic capitals, a pink *Find* and a neon stick; never blur over the city. Static shadows plus a few coloured lamps
+and rim light replace "static lighting only"; rendering still happens only while something moves.
+`docs/explore-city.md`, "Sharper neon city".
+
 ## 6. Characters
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;

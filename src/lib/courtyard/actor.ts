@@ -39,16 +39,56 @@ async function loadRig(urls: readonly string[], signal: AbortSignal) {
   throw new Error('The avatar has no supported human skeleton');
 }
 
-/** Materials are owned by this scene; shared cached model geometry and textures are never disposed here. */
-export async function loadActor(urls: readonly string[], gender: 'm' | 'f', signal: AbortSignal): Promise<Actor> {
-  const { root, rig } = await loadRig(urls, signal);
-  const face = root.getObjectByName('TwodoFace') as T.Mesh | undefined;
+/** A soft dark ellipse under someone's feet: static shadows are drawn once, this follows them for free. */
+function contactShadow(holder: T.Group) {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const cx = c.getContext('2d')!;
+  const gradient = cx.createRadialGradient(32, 32, 1, 32, 32, 31); gradient.addColorStop(0, 'rgba(0,0,0,.3)'); gradient.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = gradient; cx.fillRect(0, 0, 64, 64);
+  const texture = new T.CanvasTexture(c), geometry = new T.PlaneGeometry(.8 / holder.scale.x, .6 / holder.scale.x);
+  const material = new T.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+  const shadow = new T.Mesh(geometry, material); shadow.rotation.x = -Math.PI / 2; shadow.position.y = .015 / holder.scale.x; holder.add(shadow);
+  return () => { texture.dispose(); geometry.dispose(); material.dispose(); };
+}
+function ownMaterials(root: T.Object3D): T.Material[] {
   const owned: T.Material[] = [];
   root.traverse(o => { const mesh = o as T.Mesh; if (!mesh.isMesh) return;
     const copy = (m: T.Material) => { const c = m.clone(); owned.push(c); return c; };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(copy) : copy(mesh.material);
     mesh.castShadow = false; mesh.receiveShadow = true;
   });
+  return owned;
+}
+
+export interface Resident { holder: T.Group; update(dt: number): void; destroy(): void }
+/** Someone who lives in the city: one looping movement (taking a photo, dancing, clapping) on a fixed spot. */
+export async function loadResident(url: string, gender: 'm' | 'f', clip: string, height: number, signal: AbortSignal): Promise<Resident> {
+  const { root, rig } = await loadRig([url], signal);
+  const owned = ownMaterials(root);
+  try {
+    signal.throwIfAborted(); prepare(root);
+    const response = await fetch(asset(`people/motion/${gender}_${clip}.json`), { signal });
+    if (!response.ok) throw new Error('A movement could not load');
+    const motion = parseMotion(await response.json()); if (!motion) throw new Error('A movement was invalid');
+    signal.throwIfAborted();
+    root.rotation.y = -new T.Euler().setFromQuaternion(rig.face, 'YXZ').y;
+    root.position.y = -(rig.hipsW.y - rig.hipsH);
+    const holder = new T.Group(); holder.scale.setScalar(height / rig.height); holder.add(root);
+    const unshadow = contactShadow(holder);
+    const mixer = new T.AnimationMixer(root), action = mixer.clipAction(bake(motion, rig));
+    action.setLoop(T.LoopRepeat, Infinity).play();
+    mixer.update(Math.random() * action.getClip().duration);
+    return {
+      holder,
+      update(dt) { mixer.update(dt); },
+      destroy() { mixer.stopAllAction(); mixer.uncacheRoot(root); owned.forEach(m => m.dispose()); unshadow(); holder.removeFromParent(); },
+    };
+  } catch (error) { owned.forEach(m => m.dispose()); throw error; }
+}
+
+/** Materials are owned by this scene; shared cached model geometry and textures are never disposed here. */
+export async function loadActor(urls: readonly string[], gender: 'm' | 'f', signal: AbortSignal): Promise<Actor> {
+  const { root, rig } = await loadRig(urls, signal);
+  const face = root.getObjectByName('TwodoFace') as T.Mesh | undefined;
+  const owned = ownMaterials(root);
   try {
     signal.throwIfAborted(); prepare(root);
     const loadMotion = async (name: string) => {
@@ -66,11 +106,7 @@ export async function loadActor(urls: readonly string[], gender: 'm' | 'f', sign
     root.position.y = -(rig.hipsW.y - rig.hipsH);
     const holder = new T.Group(); holder.scale.setScalar(1.7 / rig.height); holder.add(root);
     // Static courtyard shadows are drawn once. A cheap contact shadow follows each moving person.
-    const c = document.createElement('canvas'); c.width = c.height = 64; const cx = c.getContext('2d')!;
-    const gradient = cx.createRadialGradient(32, 32, 1, 32, 32, 31); gradient.addColorStop(0, 'rgba(0,0,0,.3)'); gradient.addColorStop(1, 'rgba(0,0,0,0)'); cx.fillStyle = gradient; cx.fillRect(0, 0, 64, 64);
-    const shadowTexture = new T.CanvasTexture(c), shadowGeometry = new T.PlaneGeometry(.8 / holder.scale.x, .6 / holder.scale.x);
-    const shadowMaterial = new T.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false });
-    const shadow = new T.Mesh(shadowGeometry, shadowMaterial); shadow.rotation.x = -Math.PI / 2; shadow.position.y = .015 / holder.scale.x; holder.add(shadow);
+    const unshadow = contactShadow(holder);
     const mixer = new T.AnimationMixer(root), actions = new Map<PoseMode | WorldGesture, T.AnimationAction>();
     const idle = motions[0], sitQ = new Float32Array(idle.bones.length * 4 * 2), hips = new Float32Array([0, -.43, 0, 0, -.43, 0]);
     for (let f = 0; f < 2; f++) idle.bones.forEach((bone, i) => {
@@ -106,7 +142,7 @@ export async function loadActor(urls: readonly string[], gender: 'm' | 'f', sign
         if (reduced) mixer.update(.01);
       },
       update(dt, reduced) { if (!reduced) mixer.update(dt); },
-      destroy() { mixer.stopAllAction(); mixer.uncacheRoot(root); owned.forEach(m => m.dispose()); shadowTexture.dispose(); shadowGeometry.dispose(); shadowMaterial.dispose(); holder.removeFromParent(); },
+      destroy() { mixer.stopAllAction(); mixer.uncacheRoot(root); owned.forEach(m => m.dispose()); unshadow(); holder.removeFromParent(); },
     };
     actor.mode('idle', false); mixer.update(.05);
     return actor;

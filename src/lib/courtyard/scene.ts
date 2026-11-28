@@ -2,8 +2,9 @@
 import * as T from 'three';
 import { makeRenderer } from '../people3d';
 import { reducedMotion } from '../util';
-import { loadActor, type Actor } from './actor';
+import { loadActor, loadResident, type Actor, type Resident } from './actor';
 import { buildEnvironment } from './environment';
+import { makeFinish } from './post';
 import { angleDelta, areaAt, DESTINATIONS, followRoute, moveWithin, PLACES, route, SEATS, SOLIDS, SPAWN, type Point, type PoseMode, type WorldGesture, type WorldPose } from './state';
 import type { LocalPose } from './presence';
 
@@ -17,23 +18,55 @@ export interface WorldScene {
   pose(): LocalPose; destroy(): void;
 }
 interface AvatarSource { urls: readonly string[]; gender: 'm' | 'f' }
-interface Options { slot: 0 | 1; me: AvatarSource; partner: AvatarSource; report(r: SceneReport): void; failure(): void }
+interface Options {
+  slot: 0 | 1; me: AvatarSource; partner: AvatarSource; report(r: SceneReport): void; failure(): void;
+  /** name plates that follow each of you: [yours, your partner's] (either can be missing) */
+  labels?: readonly (HTMLElement | null)[];
+  /** people who live in the city (never the two of you): models to use, in order */
+  residents?: readonly { url: string; gender: 'm' | 'f' }[];
+}
 const OUTDOOR_LOOK_LIFT = .86;
+/** Where the city's residents spend the evening, and what they do there. Outside the walkable plaza, so they never
+ *  change where the two of you can go. */
+const RESIDENT_SPOTS = [
+  { x: -2.4, z: -9.85, yaw: 0, clip: 'dance', height: 1.66 },
+  { x: 10.15, z: .4, yaw: -1.67, clip: 'photo', height: 1.74 },
+  { x: 2.05, z: -9.85, yaw: -Math.PI / 2, clip: 'clap', height: 1.7 },
+] as const;
 export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: Options): WorldScene {
   const created = makeRenderer(canvas); if (!created) throw new Error('3D is unavailable');
   const renderer: T.WebGLRenderer = created;
   let invalidate = () => {};
   let environment: ReturnType<typeof buildEnvironment>;
-  const scene = new T.Scene(), camera = new T.PerspectiveCamera(52, w / h, .08, 70);
-  try { environment = buildEnvironment(scene, getComputedStyle(canvas)); } catch (error) { renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); throw error; }
+  const scene = new T.Scene(), camera = new T.PerspectiveCamera(52, w / h, .08, 150);
+  try { environment = buildEnvironment(scene, getComputedStyle(canvas), renderer); } catch (error) { renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); throw error; }
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
   const abort = new AbortController();
   let player: Actor | null = null, partner: Actor | null = null, livePeer: WorldPose | null = null;
+  const residents: Resident[] = [];
+  const finish = makeFinish(renderer, scene, camera, w, h, Math.min(1.5, devicePixelRatio || 1));
+  canvas.dataset.finish = finish.kind;
+  renderer.info.autoReset = false; // count every pass of a frame, not just the last one
+  renderer.toneMappingExposure = .86;
+  const labelPoint = new T.Vector3();
+  /** Keep a name plate over someone's head: a transform only, never a layout read. */
+  function placeLabel(index: number, actor: Actor | null) {
+    const el = o.labels?.[index]; if (!el) return;
+    if (!actor || portrait) { el.style.opacity = '0'; return; }
+    actor.head.getWorldPosition(labelPoint); labelPoint.y += .27;
+    const distance = labelPoint.distanceTo(camera.position);
+    labelPoint.project(camera);
+    if (labelPoint.z > 1 || Math.abs(labelPoint.x) > 1.15 || labelPoint.y > 1.1 || labelPoint.y < -1.1 || distance > 18) { el.style.opacity = '0'; return; }
+    el.style.transform = `translate3d(${((labelPoint.x * .5 + .5) * size.w).toFixed(1)}px,${((-labelPoint.y * .5 + .5) * size.h).toFixed(1)}px,0)`;
+    el.style.opacity = '1';
+  }
   let position: Point = { ...SPAWN, x: o.slot === 0 ? -.7 : .7 }, yaw = Math.PI, sitting = false, standAt = { ...position }, waveUntil = 0;
-  let movement = { x: 0, y: 0 }, path: Point[] = [], cameraYaw = 0, pitch = .22, size = { w, h };
+  let movement = { x: 0, y: 0 }, path: Point[] = [], cameraYaw = 0, pitch = .14, size = { w, h };
   let active = true, inViewport = true, gone = false, frame = 0, last = 0, settling = 0, mode: PoseMode = 'idle', lastReport = '', rendered = 0, dpr = Math.min(1.5, devicePixelRatio || 1);
   let directLook = false, placementBlend = 0;
+  // A phone that can't keep up draws at its plain pixel ratio instead (once): the neon and bloom stay.
+  let slowFrames = 0, timedFrames = 0;
   let gesture: WorldGesture = 'wave', peerGesture: WorldGesture = 'wave';
   let reactionLeft = 0, peerReactionLeft = 0;
   let portrait = false, room = areaAt(position.x, position.z), portraitYaw = 0;
@@ -92,6 +125,10 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     frame = 0; if (gone || !active || !inViewport || document.hidden) { last = 0; return; }
     // Movement can catch up on slow frames using collision substeps, without skipping camera easing.
     const elapsed = last ? Math.min(.25, (now - last) / 1000) : .016;
+    if (last && dpr > 1) {
+      timedFrames++; if (elapsed > .045) slowFrames++;
+      if (timedFrames >= 40) { if (slowFrames > 24) { dpr = 1; resize(size.w, size.h); } timedFrames = slowFrames = 0; }
+    }
     const dt = Math.min(.05, elapsed);
     const metres = 1.45 * elapsed;
     last = now;
@@ -150,8 +187,11 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     aim.copy(target);
     aim.y += skylineLift;
     directLook = false; placementBlend = Math.max(0, placementBlend - dt); camera.position.copy(eye); camera.lookAt(aim); camera.updateMatrixWorld();
-    if (!reduced) environment.advance(elapsed);
-    try { renderer.render(scene, camera); } catch { fail(); return; }
+    if (!reduced) { environment.advance(elapsed); for (const resident of residents) resident.update(elapsed); }
+    placeLabel(0, player); placeLabel(1, partner);
+    renderer.info.reset();
+    try { finish.render(); } catch { fail(); return; }
+    canvas.dataset.finish = finish.kind; canvas.dataset.dpr = String(dpr);
     rendered++; canvas.dataset.frames = String(rendered); canvas.dataset.x = position.x.toFixed(3); canvas.dataset.z = position.z.toFixed(3); canvas.dataset.mode = mode;
     canvas.dataset.cameraYaw = cameraYaw.toFixed(3);
     canvas.dataset.area = room;
@@ -168,7 +208,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   }
   function wake() { if (!frame && !gone && active && inViewport && !document.hidden) frame = requestAnimationFrame(tick); }
   invalidate = () => { settling = .1; wake(); };
-  function resize(nw: number, nh: number) { size = { w: Math.max(1, nw), h: Math.max(1, nh) }; renderer.setPixelRatio(dpr); renderer.setSize(size.w, size.h, false); camera.aspect = size.w / size.h; camera.updateProjectionMatrix(); wake(); }
+  function resize(nw: number, nh: number) { size = { w: Math.max(1, nw), h: Math.max(1, nh) }; renderer.setPixelRatio(dpr); renderer.setSize(size.w, size.h, false); finish.setSize(size.w, size.h, dpr); camera.aspect = size.w / size.h; camera.updateProjectionMatrix(); wake(); }
   const lost = (event: Event) => { event.preventDefault(); fail(); };
   canvas.addEventListener('webglcontextlost', lost);
   const visibility = () => { if (document.hidden) stop(); else { settling = .3; wake(); } };
@@ -186,7 +226,21 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       settling = .4; report(); wake();
     } catch { if (!gone && index === 0) fail(); }
   });
-  void Promise.all(tasks);
+  // Residents arrive after the two of you, one at a time; they are decoration, so a failure is silent.
+  void Promise.all(tasks).then(async () => {
+    for (const [i, source] of (o.residents || []).slice(0, RESIDENT_SPOTS.length).entries()) {
+      if (gone) return;
+      const spot = RESIDENT_SPOTS[i];
+      try {
+        const resident = await loadResident(source.url, source.gender, spot.clip, spot.height, abort.signal);
+        if (gone) { resident.destroy(); return; }
+        resident.holder.position.set(spot.x, 0, spot.z); resident.holder.rotation.y = spot.yaw;
+        scene.add(resident.holder); residents.push(resident);
+        canvas.dataset.residents = String(residents.length);
+        settling = .3; wake();
+      } catch { if (gone) return; }
+    }
+  });
   return {
     input(x, y) { movement = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }; if (Math.hypot(x, y) > .08) cancelReaction(); settling = .35; wake(); },
     look(dx, dy) { if (portrait) portraitYaw -= dx * .006; else { cameraYaw -= dx * .006; pitch = Math.max(.08, Math.min(.85, pitch + dy * .004)); } directLook = true; settling = .35; wake(); },
@@ -227,6 +281,6 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       const current = sitting ? 'sit' : performance.now() < waveUntil ? 'wave' : mode === 'wave' ? 'idle' : mode;
       return { ...position, yaw, mode: current, ...(current === 'wave' ? { gesture } : {}) };
     },
-    destroy() { if (gone) return; gone = true; stop(); abort.abort(); seen.disconnect(); document.removeEventListener('visibilitychange', visibility); motionMedia.removeEventListener('change', motion); canvas.removeEventListener('webglcontextlost', lost); player?.destroy(); partner?.destroy(); environment.dispose(); renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); },
+    destroy() { if (gone) return; gone = true; stop(); abort.abort(); seen.disconnect(); document.removeEventListener('visibilitychange', visibility); motionMedia.removeEventListener('change', motion); canvas.removeEventListener('webglcontextlost', lost); player?.destroy(); partner?.destroy(); residents.forEach(r => r.destroy()); finish.dispose(); environment.dispose(); renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); },
   };
 }

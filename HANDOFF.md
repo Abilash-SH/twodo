@@ -5,7 +5,17 @@ For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task.
 
 Last updated: 2026-11-28.
 
-## Current session: Neon city in Explore (2026-11-28)
+## Current session: Sharper neon city (2026-11-28, Claude)
+
+- Asked for nicer graphics, sharp edges and characters in the neon city, with a cosmic reference picture. Built on
+  `feat/neon-city-graphics` (from `96290ec`): `lib/courtyard/post.ts` (multisampled HDR, bloom, vignette, tone
+  mapping, plain fallback), `lib/courtyard/sky.ts` (sky, stars, planet, streaks, neon environment map), new
+  towers/holograms/sky cars in `environment.ts` + `city-art.ts`, residents in `actor.ts`, the partner's name plate
+  and HUD in `CourtyardHome.tsx` + `styles/50-neon-city.css`. Details: `docs/explore-city.md`.
+- No data, rules, origin or CSP change. Test 21 now opens its pages with `bypass_csp` (Playwright's string
+  predicates are refused by the app's CSP; before this it failed at its first `wait_for_function` here).
+
+## Earlier session: Neon city in Explore (2026-11-28)
 
 - The user chose a cyber-city setting. [Draft PR #47](https://github.com/Abilash-SH/twodo/pull/47) starts from
   `3c131ac`, with the avatar and Routines changes merged.
