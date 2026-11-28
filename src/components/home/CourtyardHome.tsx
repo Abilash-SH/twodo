@@ -81,13 +81,20 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
     .map(p => ({ url: modelUrl(p), gender: p.look === 'male' ? 'm' as const : 'f' as const })), [myPerson.id, theirPerson.id]);
   useEffect(() => { const t = setInterval(() => setTime(clock()), 20000); return () => clearInterval(t); }, []);
   const tint = report.tint || earlyTint;
-  // The status bar continues the sky while you're here (iOS fills it with the page's theme colour), and goes back to
-  // the app's own colour when you leave.
+  // Request true edge-to-edge via the manifest. On iOS builds that reserve/blur the status bar, paint the actual
+  // document edge as well as the theme meta. Do not let a parked city tint chat, sheets or the keyboard.
   useEffect(() => {
-    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (meta && /^#[0-9a-f]{6}$/i.test(tint)) meta.content = tint;
-  }, [tint]);
-  useEffect(() => () => applyTheme(), []);
+    if (covered || keyboard || !inViewport || !/^#[0-9a-f]{6}$/i.test(tint)) return;
+    const root = document.documentElement;
+    root.style.setProperty('--world-edge-tint', tint);
+    root.dataset.exploreEdge = 'true';
+    applyTheme();
+    return () => {
+      root.style.removeProperty('--world-edge-tint');
+      delete root.dataset.exploreEdge;
+      applyTheme();
+    };
+  }, [tint, covered, keyboard, inViewport]);
 
   useEffect(() => {
     const b = box.current, cv = canvas.current; if (!b || !cv) return;

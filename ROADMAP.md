@@ -258,7 +258,7 @@ and data checks, and a short iPhone checklist.
 - **Sharper neon city (PR #48, merged):** bloom and multisampling, a violet sky with a planet, glass towers with glowing
   windows and neon edges, holograms, reflections, a name plate over your partner and three city residents, and a
   game-style display. Same footprint, presence and controls. `docs/explore-city.md`, "Earlier versions".
-- **Explore by the hour (this PR):** full screen with the status bar in the sky's colour, a couple badge, light and
+- **Explore by the hour:** requested fullscreen with the status bar in the sky's colour, a couple badge, light and
   sky from the phone's clock (sunsets, night, moon, birds), realistic materials with neon only at night, a lakeside
   promenade and south/east streets, and 30 s of ambient life after the last touch. Presence format unchanged; the new
   walks are new positions. `docs/explore-city.md`, "The light follows the hour".
@@ -270,3 +270,7 @@ and data checks, and a short iPhone checklist.
 1. Read `AGENTS.md`, `design.md` and this file.
 2. Take the first ⏭ item. If it needs a schema, storage or security change, write that proposal first.
 3. Reproduce, add a failing test, fix, run the checks in `AGENTS.md`, open one PR, and update this file in it.
+
+- **Explore fullscreen follow-up (2026-11-28):** fullscreen manifest and actual sky-coloured page edge implemented
+  on a review branch; physical iPhone confirmation, build/typecheck and browser regression tests remain pending.
+  See `docs/iphone-validation.md`.

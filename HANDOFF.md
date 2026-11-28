@@ -3,7 +3,19 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-28 (Explore by the hour).
+Last updated: 2026-11-28 (Explore portrait fullscreen).
+
+## Current session: Explore portrait fullscreen (2026-11-28)
+
+- Follow-up to #49: owner showed a fullscreen Home Screen city reference and requested its approach for Twodo.
+  Branch `fix/ios-explore-fullscreen` requests manifest fullscreen, recognizes installed fullscreen mode,
+  keeps fixed-inset/VisualViewport sizing, and paints the actual document edge with the validated city sky
+  tint only while Explore is foregrounded. No storage, sync, encryption, CSP, dependencies or origin changes.
+- The manifest no longer locks orientation; check Android installed mode as well as iPhone. Test 21 now checks
+  manifest display, actual CSS edge colour and restoration. Physical iOS chrome is not covered by Chromium.
+- Build/typecheck/E2E were not run: the execution environment could not resolve GitHub to clone the source.
+  Draft for validation; run the normal AGENTS.md checks and the reference comparison in
+  `docs/iphone-validation.md` before merging. No production deployment.
 
 ## Current session: Explore by the hour (2026-11-28, Claude)
 
