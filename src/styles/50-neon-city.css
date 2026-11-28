@@ -1,0 +1,97 @@
+/* Explore, the neon city (lib/courtyard/*, home/CourtyardHome.tsx; docs/explore-city.md). A violet night, neon that
+   blooms, and a game-style heads-up display: sharp chamfered panels, condensed italic capitals, one neon edge each.
+   The panels are opaque enough to read over the moving city and never blur it (design.md, "Blur"). */
+.courtyard-on {
+  --world-sky: #0f0a2e;
+  --world-zenith: #070417;
+  --world-horizon: #36196a;
+  --world-fog: #1c0e3c;
+  --world-haze: #c0479a;
+  --world-fill: #7b68e0;
+  --world-bounce: #2b1240;
+  --world-key: #cdbdff;
+  --world-asphalt: #0f0b22;
+  --world-pavement: #ffffff;
+  --world-floor: #2a2350;
+  --world-frame: #171134;
+  --world-panel: #b3abe3;
+  --world-steel: #9a95d6;
+  --world-glass: #3b2a8a;
+  --world-water: #2fd6f0;
+  --world-cloth: #3d2f6b;
+  --world-cushion: #a04a8c;
+  --world-cyan: #5ef2ff;
+  --world-pink: #ff5fcf;
+  --world-amber: #ffb54f;
+  --world-white: #eef6ff;
+  --world-violet: #9c6bff;
+  --world-blue: #4f7bff;
+  --world-beacon: #ff3355;
+  --world-podium: #1d1640;
+  --world-facade: #1f1848;
+  --world-border: #4b3f8f;
+  --world-stick-border: #6f5fc4;
+  --world-panel-bg: rgba(14, 9, 36, .88);
+  --world-font: "Avenir Next Condensed", "DIN Condensed", "Arial Narrow", "Roboto Condensed", sans-serif-condensed, var(--round);
+  --bg: #0e0a24;
+  --bg2: #171134;
+  --label: #f4f1ff;
+  --label2: #c9c2ea;
+  --fill: #2a2156;
+}
+
+/* sharp, cut-corner panels */
+.courtyard-on :is(.world-hint, .world-find, .world-bench, .world-destination, .world-reactions, .world-interactions button, .world-toolbar button, .world-fallback button) {
+  border-radius: 0;
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+}
+.courtyard-on :is(.world-find, .world-bench, .world-destination, .world-interactions button, .world-toolbar button, .world-reactions button) {
+  font: italic 800 15px/18px var(--world-font);
+  font-stretch: condensed;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #fff;
+}
+.courtyard-on :is(.world-bench, .world-destination, .world-interactions button, .world-toolbar button) {
+  background: var(--world-panel-bg);
+  box-shadow: inset 0 -2px 0 var(--world-cyan);
+}
+.courtyard-on :is(.world-find, .world-bench, .world-destination, .world-interactions button, .world-toolbar button):focus-visible { outline: 2px solid var(--world-cyan); outline-offset: -4px; }
+.courtyard-on .world-find { background: var(--world-pink); color: #1b0a26; box-shadow: none; }
+.courtyard-on .world-interactions button[aria-pressed="true"] { background: var(--world-cyan); color: #0b0820; }
+.courtyard-on .world-reactions { background: var(--world-panel-bg); box-shadow: inset 0 -2px 0 var(--world-pink); border-radius: 0; }
+
+/* where you are: the location badge, top left */
+.courtyard-on .world-hint {
+  top: 10px; left: 10px; right: auto; max-width: calc(44% - 10px);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 7px 16px 8px 12px; text-align: left;
+  background: var(--world-panel-bg); box-shadow: inset 3px 0 0 var(--world-cyan);
+}
+.world-hint small { font: 800 12px/15px var(--world-font); letter-spacing: 1.6px; text-transform: uppercase; color: var(--world-cyan); }
+.world-hint b { font: italic 900 22px/25px var(--world-font); font-stretch: condensed; text-transform: uppercase; letter-spacing: .5px; color: #fff; }
+.world-hint span { font: 600 12px/15px var(--round); color: var(--label2); white-space: nowrap; }
+.courtyard-on .world-travel { top: 10px; right: 10px; max-width: calc(56% - 14px); flex-wrap: wrap; justify-content: flex-end; }
+.courtyard-on .world-find { flex: 1 0 100%; max-width: max-content; margin-left: auto; }
+.courtyard-on :is(.world-bench, .world-destination) { padding-inline: 10px; }
+
+/* the stick: a neon ring with a bright knob */
+.courtyard-on .world-stick-base { opacity: 1; background: rgba(14, 9, 36, .5); box-shadow: inset 0 0 0 2px var(--world-cyan), 0 0 18px rgba(94, 242, 255, .3); }
+.courtyard-on .world-stick-knob { background: var(--world-cyan); color: #0b0820; box-shadow: 0 0 16px rgba(94, 242, 255, .55); }
+
+/* the bar above the city and the doors below it */
+.courtyard-on .world-toolbar span { font: 700 13px/18px var(--world-font); text-transform: uppercase; letter-spacing: .8px; color: var(--label); }
+.courtyard-on .world-toolbar span[data-presence="live"] { color: var(--world-cyan); }
+.courtyard-on .world-doors button { font: italic 800 15px/20px var(--world-font); text-transform: uppercase; letter-spacing: .6px; }
+.courtyard-on .world-fallback { background: var(--bg); }
+.courtyard-on .world-fallback b { font: italic 900 22px/26px var(--world-font); text-transform: uppercase; }
+
+/* your partner's name plate, kept over their head by the scene (a transform only) */
+.world-plate { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; will-change: transform; transition: opacity var(--dur-quick) linear; }
+.world-plate-in { display: flex; flex-direction: column; align-items: center; gap: 3px; white-space: nowrap; transform: translate(-50%, -100%); }
+.world-plate b { font: italic 900 21px/22px var(--world-font); font-stretch: condensed; text-transform: uppercase; letter-spacing: .6px; color: #fff;
+  text-shadow: 0 2px 0 rgba(10, 6, 28, .85), 0 0 12px var(--pt-c); }
+.world-plate span { padding: 2px 8px; font: 800 12px/15px var(--world-font); text-transform: uppercase; letter-spacing: 1px; color: #fff;
+  background: rgba(12, 8, 30, .82); box-shadow: inset 0 -2px 0 var(--pt-c); }
+.world-plate[data-live="yes"] span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #5effa0; vertical-align: 1px; }
+.world-plate i { width: 0; height: 0; border: 6px solid transparent; border-top-color: var(--pt-c); }

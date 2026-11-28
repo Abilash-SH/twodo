@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { avatarOf } from '@/lib/characters';
 import { Avatars } from '@/lib/avatar3d';
-import { exploreModels, personFor } from '@/lib/people';
+import { PEOPLE, exploreModels, modelUrl, personFor } from '@/lib/people';
 import { L, SMART, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
 import { Sync } from '@/lib/sync';
 import { Moments } from '@/lib/moments';
@@ -29,6 +29,9 @@ const INITIAL: SceneReport = { near: null, area: 'garden', portrait: false, sitt
 const PLACES = { garden: 'Neon Plaza', villa: 'Loft', garage: 'Garage' } as const;
 const REACTIONS = { wave: 'Wave', clap: 'Clap', cheer: 'Cheer' } as const;
 const NEAR_LABELS = { tasks: 'Task patch', workbench: 'Use workbench', moments: 'Open Moments', journal: 'Open journal', partner: 'Open chat' } as const;
+/** Who lives in the city: people the two of you didn't pick, in this order (a dancer, a photographer, a fan). */
+const RESIDENTS = ['f13', 'm12', 'f11', 'm06', 'f05', 'm08'];
+const clock = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
 function TaskPatch() {
   useApp();
@@ -45,6 +48,8 @@ const openTaskPatch = () => openSheet({ title: 'Task patch', right: 'Done', body
 export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   void v;
   const box = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null), stick = useRef<HTMLButtonElement>(null), knob = useRef<HTMLSpanElement>(null);
+  const plate = useRef<HTMLDivElement>(null);
+  const [time, setTime] = useState(clock);
   const world = useRef<WorldScene | null>(null);
   const liveWorld = useRef<ReturnType<typeof joinWorld> | null>(null);
   const [report, setReport] = useState(INITIAL), [failed, setFailed] = useState(false), [attempt, setAttempt] = useState(0);
@@ -64,6 +69,10 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   const canvasKey = `${attempt}:${me}:${myPerson.id}:${theirPerson.id}:${myUrl}:${theirUrl}`;
   const key = Sync.key, space = Sync.space, uid = L.auth?.uid, peer = L.pair?.uid;
   const myPhoto = paired ? Moments.of(me)?.img || null : null, theirPhoto = paired ? Moments.of(pk)?.img || null : null;
+  const residents = useMemo(() => RESIDENTS.map(id => PEOPLE.find(p => p.id === id)!)
+    .filter(p => p && p.id !== myPerson.id && p.id !== theirPerson.id).slice(0, 3)
+    .map(p => ({ url: modelUrl(p), gender: p.look === 'male' ? 'm' as const : 'f' as const })), [myPerson.id, theirPerson.id]);
+  useEffect(() => { const t = setInterval(() => setTime(clock()), 20000); return () => clearInterval(t); }, []);
 
   useEffect(() => {
     const b = box.current, cv = canvas.current; if (!b || !cv) return;
@@ -87,6 +96,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
           me: { urls: exploreModels(myPerson, myUrl), gender: myPerson.look === 'male' ? 'm' : 'f' },
           partner: { urls: exploreModels(theirPerson, theirUrl), gender: theirPerson.look === 'male' ? 'm' : 'f' },
           report(r) { if (!gone) { cv.dataset.ready = r.ready ? 'yes' : 'no'; setReport(r); if (r.ready) clearTimeout(timeout); } }, failure: fail,
+          labels: [null, plate.current], residents,
         });
         world.current = handle; handle.active(activity.current);
       }).catch(fail);
@@ -97,7 +107,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
       if (!resizeFrame) resizeFrame = requestAnimationFrame(resized);
     }); ro.observe(b);
     return () => { gone = true; clearTimeout(timeout); cancelAnimationFrame(resizeFrame); ro.disconnect(); world.current?.destroy(); world.current = null; delete cv.dataset.ready; };
-  }, [canvasKey, myUrl, theirUrl, myPerson, theirPerson, me]);
+  }, [canvasKey, myUrl, theirUrl, myPerson, theirPerson, me, residents]);
   useEffect(() => { world.current?.active(active); }, [active, report.ready]);
   useEffect(() => {
     if (!reaction) return;
@@ -168,14 +178,18 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
     else toChat();
   };
   const status = !paired ? 'Add your partner to meet here' : !active ? 'Paused' : connection === 'unavailable' ? 'Live movement unavailable' : connection === 'offline' ? 'Offline · resting together' : connection === 'connecting' ? 'Connecting · resting avatar' : here ? `${name} is here` : `${name} is resting`;
+  const plateLine = !paired ? 'Not here yet' : here && active ? 'Here now' : 'Resting on the bench';
   return (
     <main className="world-home" aria-label="Neon city, 3D Explore preview">
       <div className="world-toolbar"><button type="button" onClick={leave}>Leave preview</button><span role="status" data-presence={here && active ? 'live' : 'resting'}>{status}</span></div>
       <div className="world-stage no-pan" ref={box}>
         <canvas key={canvasKey} ref={canvas} className="world-canvas" aria-hidden="true" />
+        <div className="world-plate" ref={plate} aria-hidden="true" data-live={here && active ? 'yes' : 'no'}>
+          <div className="world-plate-in"><b>{paired ? name : 'Your partner'}</b><span>{plateLine}</span><i /></div>
+        </div>
         {!report.ready || failed ? <div className="world-fallback" role="status"><b>{failed ? 'Our place couldn’t load' : 'Preparing our place…'}</b><span>{failed ? 'Your to-dos, journal and chat are still available below.' : 'Your controls are ready while the world loads.'}</span>{failed ? <button type="button" onClick={() => setAttempt(n => n + 1)}>Try 3D again</button> : null}</div> : null}
         {report.ready && !failed ? <>
-          <div className="world-hint">{PLACES[report.area]} · drag to look, hold the stick to walk</div>
+          <div className="world-hint"><small>Neo Twodo</small><b>{PLACES[report.area]}</b><span><time>{time}</time> · drag to look</span></div>
           <div className="world-travel">
             <button type="button" className="world-find" onClick={() => world.current?.find()} aria-label={`Find ${name}`}>Find {name}</button>
             <button type="button" className="world-bench" onClick={() => world.current?.bench()}>Bench</button>

@@ -21,7 +21,8 @@ async def main():
                 for entry in state['origins']:
                     if entry['origin'] == 'http://localhost:8003':
                         entry['origin'] = URL.rstrip('/')
-            ctx = await browser.new_context(storage_state=state, viewport={'width':390,'height':844}, is_mobile=True, has_touch=True, device_scale_factor=1, service_workers='block')
+            # bypass_csp: Playwright's wait_for_function evaluates its string predicate, which the app's strict CSP refuses
+            ctx = await browser.new_context(storage_state=state, viewport={'width':390,'height':844}, is_mobile=True, has_touch=True, device_scale_factor=1, service_workers='block', bypass_csp=True)
             pg = await ctx.new_page()
             pg.on('pageerror', lambda e: errors.append(str(e)))
             await pg.goto(URL)
