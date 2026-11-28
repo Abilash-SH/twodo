@@ -67,16 +67,16 @@ export const Auth = {
 const Net = { override: (() => { try { return localStorage.getItem('twodo:noOverride') !== '1'; } catch { return true; } })() };
 type Method = 'GET' | 'PUT' | 'PATCH' | 'DELETE';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function dbReq<T = any>(path: string, { method = 'GET', body, retry = true, keepalive = false }: { method?: Method; body?: unknown; retry?: boolean; keepalive?: boolean } = {}): Promise<T> {
+export async function dbReq<T = any>(path: string, { method = 'GET', body, retry = true, keepalive = false, signal }: { method?: Method; body?: unknown; retry?: boolean; keepalive?: boolean; signal?: AbortSignal } = {}): Promise<T> {
   const tok = await Auth.token();
   const fast = method !== 'GET' && Net.override;
   let res: Response;
   try {
     res = await fetch(`${dbBase()}/${path}.json?auth=${encodeURIComponent(tok)}${fast ? '&x-http-method-override=' + method : ''}`, fast
-      ? { method: 'POST', cache: 'no-store', keepalive, body: JSON.stringify(body === undefined ? null : body) }
-      : { method, cache: 'no-store', keepalive, ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
+      ? { method: 'POST', cache: 'no-store', keepalive, signal, body: JSON.stringify(body === undefined ? null : body) }
+      : { method, cache: 'no-store', keepalive, signal, ...(body !== undefined ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   } catch { const err = new AppError('You’re offline'); err.offline = true; throw err; }
-  if (res.status === 401 && retry && L.auth) { L.auth.exp = 0; return dbReq(path, { method, body, keepalive, retry: false }); }
+  if (res.status === 401 && retry && L.auth) { L.auth.exp = 0; return dbReq(path, { method, body, keepalive, signal, retry: false }); }
   if (!res.ok) { const err = new AppError(res.status === 401 || res.status === 403 ? 'denied' : 'Database error ' + res.status); err.status = res.status; throw err; }
   const j = await res.json();
   if (fast && j && typeof j === 'object' && !Array.isArray(j) && Object.keys(j).length === 1 && typeof j.name === 'string' && j.name[0] === '-'
@@ -84,7 +84,7 @@ export async function dbReq<T = any>(path: string, { method = 'GET', body, retry
     // This server ignored the override and pushed a new child instead: undo that and use normal requests from now on
     Net.override = false; try { localStorage.setItem('twodo:noOverride', '1'); } catch { /* ignore */ }
     await dbReq(`${path ? path + '/' : ''}${j.name}`, { method: 'DELETE' }).catch(() => {});
-    return dbReq(path, { method, body, retry });
+    return dbReq(path, { method, body, retry, signal });
   }
   return j;
 }

@@ -1,0 +1,42 @@
+/* The opt-in courtyard owns its surface; all UI remains opaque over the moving world. */
+:root {
+  --world-sky: #e8e6dc; --world-earth: #746f55; --world-sun: #fff1d8;
+  --world-grass: #89906d; --world-plaster: #d6c7a7; --world-stone: #b6ad94;
+  --world-wood: #897054; --world-wood-dark: #5c4c39; --world-roof: #a38267;
+  --world-water: #829b91; --world-leaf: #6f7c4d;
+}
+[data-theme="dark"] { --world-sky: #343e3d; --world-sun: #e9dbbe; --world-grass: #657350; --world-plaster: #b1a38c; --world-stone: #99917c; --world-leaf: #536844; }
+.world-enter { display: flex; justify-content: space-between; align-items: center; flex: none; min-height: 48px; margin: 8px 0; padding: 8px 16px; border: 0; border-radius: 24px; background: var(--bg2); color: var(--label); font: 600 15px/20px var(--round); }
+.world-enter span { font: 500 12px/18px var(--round); color: var(--label); }
+.courtyard-on { overflow: hidden; background:var(--world-sky); }
+.world-home { position: relative; flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; width: 100%; margin: 0 auto; }
+.courtyard-on .world-home { width:calc(100% + 32px); margin:0 -16px; }
+.world-toolbar { display: flex; align-items: center; justify-content: space-between; flex: none; flex-wrap: wrap; column-gap: 12px; }
+.world-toolbar, .world-doors { padding-inline:16px; }
+.world-toolbar button, .world-toolbar span { font: 500 13px/18px var(--round); color: var(--label); }
+.world-toolbar button { font-size: 15px; line-height:20px; }
+.world-toolbar button { min-height: 44px; padding: 0 8px; border: 0; background: var(--bg2); border-radius: 22px; }
+.world-toolbar span { flex: 1 1 130px; text-align: right; }
+.world-stage { position: relative; flex: 1 1 0; min-height: 180px; overflow: hidden; touch-action: none; background: var(--world-sky); user-select: none; -webkit-user-select: none; }
+.world-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.world-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; padding: 24px; text-align: center; background: var(--bg2); color: var(--label); }
+.world-fallback b { font: 700 20px/25px var(--round); }
+.world-fallback span { font-size: 15px; line-height: 21px; }
+.world-fallback button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 22px; color: var(--label); background: var(--fill); font: inherit; }
+.world-hint { position: absolute; top: 8px; left: 8px; right: 8px; padding: 6px 10px; font-size: 12px; line-height: 18px; color: var(--label); background: var(--bg2); border-radius: 12px; text-align: center; pointer-events: none; }
+.world-travel { position: absolute; right: 8px; top: 48px; display:flex; gap:8px; }
+.world-find, .world-bench { min-height: 44px; padding: 0 12px; border: 0; border-radius: 22px; color: var(--label); background: var(--bg2); font: 600 15px/20px var(--round); }
+.world-stick { position: absolute; left: 32px; bottom: 16px; width: 112px; height: 112px; min-height: 44px; padding: 0; border: 0; background: none; border-radius: 50%; touch-action: none; -webkit-touch-callout: none; }
+.world-stick-base { position: absolute; inset: 0; border-radius: 50%; background: var(--bg2); opacity: .72; }
+.world-stick-knob { position: absolute; inset: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--bg2); color: var(--label); box-shadow: var(--shadow); will-change: transform; }
+.world-interactions { position: absolute; bottom: 12px; right: 8px; max-width: calc(100% - 164px); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.world-interactions button { min-height: 44px; max-width: 100%; padding: 8px 12px; border: 0; border-radius: 22px; color: var(--label); background: var(--bg2); font: 600 15px/20px var(--round); }
+.world-doors { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 8px; flex: none; }
+.world-doors button { min-height: 44px; min-width: 44px; padding: 0 8px; border: 0; background: none; color: var(--label); font: 600 15px/20px var(--round); }
+.world-task-patch { margin: 0; padding: 0; list-style: none; }
+.world-task-patch label { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 0; color: var(--label); font-size: 16px; overflow-wrap: anywhere; }
+.world-task-patch input { flex: none; inline-size: 19px; block-size: 19px; accent-color: var(--label); }
+.world-task-empty { color: var(--label); }
+.courtyard-on .home-dock { position: relative; }
+@media (min-width:700px) { .world-home { max-width: 1000px; } }
+@media (max-height:480px) and (orientation:landscape) { .world-hint { display: none; } .world-travel { top: 8px; } .world-stick { width: 88px; height: 88px; left: 32px; bottom: 8px; } .world-stick-knob { inset: 20px; } .world-stage { min-height: 130px; } .world-toolbar { position: absolute; top: 0; left: 0; z-index: var(--z-header); } .world-toolbar span { display: none; } .world-toolbar button { min-height:44px; } .world-interactions { flex-direction: row; max-width:calc(100% - 144px); flex-wrap:wrap; } .world-doors { justify-content: center; } .courtyard-on .home-dock { padding-top:0; padding-bottom:var(--safe-bottom); } }

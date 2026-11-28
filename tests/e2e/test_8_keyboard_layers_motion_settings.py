@@ -8,11 +8,18 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path=__import__('os').environ.get('CHROME', '/usr/bin/google-chrome'), args=['--no-sandbox'])
         errs = []
+        gpu_diagnostics = []
+        def console(message):
+            if message.type not in ('error', 'warning'): return
+            # Headless SwiftShader readback diagnostics are not application/WebGL validation errors.
+            if message.text.startswith('[.WebGL-') and 'GPU stall due to ReadPixels' in message.text:
+                gpu_diagnostics.append(message.text)
+            else: errs.append('console: ' + message.text)
         async def phone(w=390, h=844, reduced=False):
             ctx = await b.new_context(storage_state='/tmp/twodo-A.json', viewport={'width': w, 'height': h}, device_scale_factor=2, is_mobile=True, has_touch=True, reduced_motion='reduce' if reduced else 'no-preference')
             pg = await ctx.new_page()
             pg.on('pageerror', lambda e: errs.append('pageerror: ' + str(e)))
-            pg.on('console', lambda m: m.type in ('error', 'warning') and errs.append('console: ' + m.text))
+            pg.on('console', console)
             await pg.goto('http://localhost:8003/'); await pg.wait_for_timeout(2300)
             return ctx, pg
         ctx, P = await phone()
@@ -97,6 +104,7 @@ async def main():
         await open_chat(R)
         print('reduce motion chat', await R.evaluate("(() => { const v = document.querySelector('#stack > .chatview'), u = document.querySelector('#stack > .boardview'); return [getComputedStyle(v).transitionProperty, getComputedStyle(v).transform, getComputedStyle(v).opacity, getComputedStyle(u).transform]; })()"), await R.evaluate(TITLES))
         await ctx.close()
+        print('Software GPU readback diagnostics:', len(gpu_diagnostics))
         print('ERRORS:', errs or 'NONE')
         await b.close()
 asyncio.run(main())

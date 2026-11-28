@@ -148,7 +148,7 @@ twodo/
 It knows the same as Firebase does today:
 
 - who has an account, and who is in which space;
-- each record's key (`t:…` for a to-do, `j:…` for a journal page), its size, and when and by whom it changed;
+- each record's key (`t:…` for a to-do, `j:…` for a journal page, `o:a`/`o:b` for each person's latest moment), its size, and when and by whom it changed;
 - the public profile you use to find each other by @username: name, colour and public key.
 
 It never knows a title, a message, a journal page, a photo or anything from a secret list.

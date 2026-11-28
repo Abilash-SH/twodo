@@ -1,6 +1,7 @@
 /* Twodo · Messages (data layer)
    /spaces/{space}/c/m/{id}            = { f: authorUid, u: updatedAt, d: AES-GCM ciphertext }   (only the author can edit/unsend)
-   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at, on } }                       (typing, read receipts, online)
+   /spaces/{space}/c/e/x/{uid}         = { u, d: { typing, read, at, on, poke? } }                (typing, read receipts, online;
+                                                                                                  poke: a reaction from an older Home)
    /spaces/{space}/c/e/rx/{msg}/{uid}  = { u, d: { r } }                                          (tapback reactions)
    Everything is encrypted with the space key; Firebase sees only who wrote and when. */
 import { CFG } from './config';
@@ -12,6 +13,7 @@ import { scheduleRender } from './render';
 import { D, DAY_RE, L, TIME_RE, cNum, cStr, myName, partnerKey } from './store';
 import { Sync } from './sync';
 import { firstWord } from './util';
+import { POKE_MS, isReaction, type ReactionEmoji } from './reactions';
 
 const CHAT_KEY = 'twodo:chat';
 export const REACTS = ['❤️', '😂', '😮', '🥹', '🔥', '👍'];                 // what the picker offers
@@ -36,6 +38,7 @@ export const chatEvents = {
   onState: (): void => {},
   onPartnerReaction: (_m: Msg, _r: string): void => {},
   onReadElsewhere: (): void => {}, // another of your devices read further than this one
+  onPoke: (_e: ReactionEmoji): void => {}, // your partner sent a reaction from Home
 };
 
 export const Chat = {
@@ -46,7 +49,7 @@ export const Chat = {
   chainM: Promise.resolve(), chainE: Promise.resolve(),
   typingOn: false, typingSentAt: 0, partnerTypingUntil: 0, partnerRead: 0, partnerReadAt: 0,
   lastPxD: null as string | null, lastMxD: null as string | null, typingT: undefined as ReturnType<typeof setTimeout> | undefined,
-  presence: null as Presence | null, xAt: 0, xPending: false, saveT: undefined as ReturnType<typeof setTimeout> | undefined,
+  presence: null as Presence | null, xAt: 0, xPending: false, seenPoke: 0, saveT: undefined as ReturnType<typeof setTimeout> | undefined,
   readT: undefined as ReturnType<typeof setTimeout> | undefined,
 
   partnerUid(): string | null { const p = D.people && D.people[partnerKey()]; return (p && p.uid) || (L.pair && L.pair.uid) || null; },
@@ -172,7 +175,7 @@ export const Chat = {
     const pu = this.partnerUid(), pv = pu ? this.eTree.x && this.eTree.x[pu] : undefined;
     if (pv && pv.d !== this.lastPxD) {
       this.lastPxD = pv.d || null;
-      const px = await this.dec<{ typing?: number; read?: number; at?: number; on?: number }>(pv, false);
+      const px = await this.dec<{ typing?: number; read?: number; at?: number; on?: number; poke?: { e?: unknown; at?: unknown } }>(pv, false);
       if (gen !== this.writeGen) return;
       if (px) {
         // a heartbeat we hear live is "now" by our own clock; one from the first snapshot can be old, so trust its time
@@ -185,6 +188,10 @@ export const Chat = {
         if (read !== this.partnerRead) { this.partnerRead = read; this.partnerReadAt = at || Date.now(); }
         clearTimeout(this.typingT);
         if (this.partnerTypingUntil) this.typingT = setTimeout(() => { this.partnerTypingUntil = 0; this.bump(); chatEvents.onState(); }, 6600);
+        // a reaction from Home (2026-11-25: Home shares Moments now; this stays so a partner still on an older
+        // version can send one): played once, only while it is fresh (it is never stored)
+        const pk = px.poke && typeof px.poke === 'object' ? px.poke : null, pat = pk ? cNum(pk.at) : 0;
+        if (pk && isReaction(pk.e) && pat > this.seenPoke && Math.abs(Date.now() - pat) < POKE_MS) { this.seenPoke = pat; chatEvents.onPoke(pk.e); }
       }
     }
     const mv = this.eTree.x && L.auth ? this.eTree.x[L.auth.uid] : undefined;

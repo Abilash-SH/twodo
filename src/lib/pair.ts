@@ -9,6 +9,8 @@ import { Chat } from './chat';
 import { KeyStore, b64, decryptObj, encryptObj, pairKek, randHex, safetyCode, unb64, type PubJwk, type SpaceKey } from './crypto';
 import { confetti, haptic } from './feedback';
 import { AppError, USERNAME_RE, dbGet, dbPatch, normUsername } from './firebase';
+import { Moments } from './moments';
+import { Avatars } from './avatar3d';
 import { scheduleRender } from './render';
 import { D, L, commit, myName, partnerKey, person, save, setPeopleRec } from './store';
 import { Inbox, Sync, type PartnerRequest } from './sync';
@@ -119,7 +121,7 @@ export const Pair = {
       [`users/${me}/private/sk`]: await encryptObj(wrap!, { id: space.id, k: b64(space.raw) }),
     });
     await KeyStore.set({ space });
-    Sync.close(); Chat.clearLocal();
+    Sync.close(); Chat.clearLocal(); void Moments.clear(); void Avatars.clear();
     const pk = partnerKey();
     if (D.people && D.people[pk]) { D.people[pk] = { ...D.people[pk], uid: null }; commit(D.people, { silent: true }); }
     resetSyncFlags();

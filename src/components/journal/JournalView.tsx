@@ -177,10 +177,10 @@ export function JournalView() {
         <span className="jd-badge">{isToday ? null : <Icon name="lock" cls="xs" />}{isToday ? 'Today' : 'Read only'}</span>
         <span className="jd-floor">
           <button type="button" className="jd-char" style={colorVar(person(me).color)} aria-label="You. Waves" onClick={() => play('me', 'wave')}>
-            <Character look={avatarOf(me)} size={150} state={isToday && !mine.length ? 'think' : 'idle'} cls={wave.me} />
+            <Character look={avatarOf(me)} who={me} size={150} state={isToday && !mine.length ? 'think' : 'idle'} cls={wave.me} />
           </button>
           <button type="button" className="jd-char" style={colorVar(person(pk).color)} aria-label={`${pt}. Waves`} onClick={() => play('pt', 'wave')}>
-            <Character look={avatarOf(pk)} size={138} flip cls={wave.pt} />
+            <Character look={avatarOf(pk)} who={pk} size={138} flip cls={wave.pt} />
           </button>
         </span>
       </section>
@@ -188,7 +188,7 @@ export function JournalView() {
         <span className="jd-label">{isToday ? 'Today' : fmt(date, 'wdl', { weekday: 'long' })}</span>
         <h2 className="jd-date">{fmt(date, 'dm', { day: 'numeric', month: 'long' })}</h2>
         <div className="jd-block" style={colorVar(person(me).color)}>
-          <div className="jd-who"><Portrait look={avatarOf(me)} size={32} /><b>Your page</b>{said ? <span className="jd-saved" role="status">Posted</span> : null}</div>
+          <div className="jd-who"><Portrait look={avatarOf(me)} who={me} size={32} /><b>Your page</b>{said ? <span className="jd-saved" role="status">Posted</span> : null}</div>
           {isToday ? <TodayPage today={today} earlier={mine.filter(e => e.id !== page?.id)} onSaved={() => { setSaid(true); play('me', 'happy'); setTimeout(() => setSaid(false), 1800); }} />
             : (<>
               {mine.length ? mine.map(e => <p key={e.id} className="jd-text">{e.text}</p>) : <p className="jd-none">You didn’t write this day.</p>}
@@ -196,7 +196,7 @@ export function JournalView() {
             </>)}
         </div>
         <div className="jd-block theirs" style={colorVar(person(pk).color)}>
-          <div className="jd-who"><Portrait look={avatarOf(pk)} size={32} /><b>{pt}’s page</b></div>
+          <div className="jd-who"><Portrait look={avatarOf(pk)} who={pk} size={32} /><b>{pt}’s page</b></div>
           {theirs.length ? theirs.map(e => <p key={e.id} className="jd-text">{e.text}</p>)
             : <p className="jd-none">{isToday ? `${pt} hasn’t written today yet.` : `${pt} didn’t write this day.`}</p>}
         </div>

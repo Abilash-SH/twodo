@@ -109,12 +109,20 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   count of what's new, never a message's text; it opens your chat). A big rounded "Hello, name!" and, under it, what
   today holds in your character's voice (tap the line for the next thing). Then **one card** (2026-11-18: "just one
   card is enough"): Today, a wide wash of yellow into orange with a dark *Today* badge, how many to-dos are left in big
-  rounded capitals and the next one with a time; the two characters lean in from its right edge, yours first, your
-  partner's turned to you. Tap it to open Today. It counts your to-dos and the shared ones only (2026-11-23): under your name, for both of you,
-  or made by you for no one; your partner's own are left out, and Today opens on the same (its *All* shows theirs). Below, **Send Deiva a reaction**: six soft tiles in a 3 × 2 grid
-  (Love ❤️, Hug 🤗, Kiss 😘, Miss you 🥺, Haha 😂, Proud ✨), each a big emoji with its name. One tap sends that emoji to
-  your partner as a message (it lifts off the tile; a quiet line says "Love sent to Deiva"); Home stays where it is.
-  Before pairing the tiles lead to *Add partner*. Your character and role are changed from Settings. A floating dark bar at the bottom: Home, To-dos, Journal (a dot
+  rounded capitals and the next one with a time, and a sun in a soft circle. Tap it to open Today. It counts your to-dos and the shared ones only (2026-11-23): under your name, for both of you,
+  or made by you for no one; your partner's own are left out, and Today opens on the same (its *All* shows theirs). **Above it, the two
+  of you** (2026-11-25: "Don't stand on the card… animations, movements"): realistic 3D people, full height, standing
+  free on Home's background with a soft shadow at your feet, yours on the left; they move by motion capture (look
+  around, stretch, walk somewhere and turn back, turn to each other and wave). A sideways drag on one of you turns
+  them all the way round; a tap and they wave. `docs/characters.md`, "Moving". Below, **Moments with Deiva** (2026-11-25, in place of reactions:
+  "like Instagram's Instants or Locket, to share images at one tap"): her latest photo, big and rounded like a photo on
+  the fridge, with her picture, when and the caption on dark glass strips (the dock's colour). Under it a row: your
+  own last one (ringed in your colour, once you have shared one), a big shutter in the middle (a ring in `--label`
+  around your colour) and your photo library. The shutter opens the camera in one tap; you see the picture once with
+  an optional caption and *Send to Deiva*. It reaches her Home within seconds (a line on her island) or as a
+  notification. Tapping a photo opens the moments sheet: everything the phone has seen, newest first; only your latest
+  can be removed. With nothing yet, a dashed 16:9 card says where her moments will appear. `docs/moments.md`.
+  Before pairing the card and the shutter lead to *Add partner*. Your character and role are changed from Settings. A floating dark bar at the bottom: Home, To-dos, Journal (a dot
   when your partner wrote today) and Chat (a count), with *Add a to-do* beside it in your colour; it steps aside while
   the task box is up. Ticking to-dos happens on Today. Nothing from a secret list, ever. `docs/characters.md`.
 - **The week (planner).** A ribbon of seven day tiles stays under the title while you scroll; each tile's bar shows
@@ -141,7 +149,38 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   removed) and *Try again*. Home's bar, the top of Home and Back keep working. If everything fails, a plain
   page says the same with *Reload*. Never red, never the framework's blank error page.
 
+### Courtyard preview — approved 2026-11-26
+
+The owner approved a human-scale third-person 3D life-simulation direction, and live movement together online
+with resting avatars offline. `docs/courtyard.md` specifies the first build and its separate encrypted presence
+channel. A visible opt-in preview on Home keeps the existing Home available until physical iPhone validation.
+The world has realistic human models, original plaster/wood/stone/foliage, a following camera, a thumbstick,
+drag-to-look, Find partner, Sit/stand and Wave. Small world objects lead to the existing features; the header and
+ordinary feature controls remain available without walking or WebGL. The preview adds no card-based dashboard.
+Natural environment materials use dedicated `--world-*` tokens; UI uses existing text, surface and motion tokens.
+No blurred layers over the moving world. Use one renderer and stop at rest/coverage/hide; release its resources.
+Reduced Motion removes gait, reactions and camera easing, retaining explicit movement and direct look controls.
+The target image is art direction; it is not a promise of photorealism or a measured iPhone frame rate.
+
+The villa and garage use walkable doorways and solid walls. Inside, the camera comes closer and the occupied
+roof is hidden to keep the player in view. The living room desk opens Journal and the workbench opens the task
+patch. Walk to offers the same destinations without using the stick. The avatar close-up frames the head bone
+with a soft fill light. Wave, Clap and Cheer play once and have a brief text cue on the sending phone.
+
+For Explore's first facial geometry prototypes, keep the existing rig, skin tone, hair and clothing of the
+selected characters. Refine the eyelids, lips and cheeks and use small, distinct smiles during Wave, Clap
+and Cheer. The smile fades back to neutral with the gesture. Reduce Motion holds the neutral face. Use the
+selected original model if the prototype cannot load and give a person's imported avatar priority.
+
 ## 6. Characters
+
+> **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;
+> see `docs/characters.md`, "The 3D people". The drawings below remain as their stand-in while loading and without WebGL.
+> **2026-11-25:** on Home and the character screen they move (motion capture, also Rocketbox) and turn round under a
+> finger; that replaces "still by default" and "no idle loops" there, for the 3D people only. They stop when Home is
+> covered or hidden, rest two minutes after the last touch, and stand still with Reduce Motion (`docs/characters.md`,
+> "Moving").
+
 
 Two original characters, female and male, in a soft 3D style; each of you picks a look, a skin tone and a hair colour,
 and a role (Cheerleader, Calm friend, Cheeky, Poet) for how it talks to you. The hoodie is your colour. The same
@@ -289,5 +328,7 @@ Places where the app does not yet meet this file. Fix them when touching the are
   header). Target: 12 px. Roadmap Phase 6.
 - Priority marks (`!`, `!!`, `!!!`) in task rows use the plain palette blue, orange and red: about 3:1 on a white row.
   Measured while building the planner (test 14 leaves task rows out of its own contrast check for this reason).
+- A sheet header's text button (*Done*) is drawn in your colour: about 2.1:1 for mint or yellow in the light theme.
+  Measured while building Moments (test 18 measures the moments sheet without its header for this reason).
 - Complete, pin and delete on a task are easiest to find by swiping or holding. Roadmap item 8.
 - Phone layouts are stretched on tablets in several screens. Roadmap item 10.

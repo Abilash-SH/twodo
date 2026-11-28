@@ -1,7 +1,7 @@
 /* Twodo · icons (Lucide), keeping the app's own .i sizing classes so the design system sizes them */
 import {
   ArrowUp, Bell, Calendar, CalendarArrowUp, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, CircleEllipsis, CircleX, Clock, Cloud,
-  BookHeart, CalendarDays, Copy, Delete, Download, FileText, Flag, Hand, Heart, House, Inbox, KeyRound, Lightbulb, List, Lock, LockOpen, Menu, MessageCircle, Moon, Pause, Pencil, Pin,
+  BookHeart, CalendarDays, Copy, Delete, Download, FileText, Flag, Hand, Heart, House, Images, Inbox, KeyRound, Lightbulb, List, Lock, LockOpen, Menu, MessageCircle, Moon, Pause, Pencil, Pin,
   Play, Plus, Repeat, Reply, ScanFace, Search, Settings, ShieldCheck, Share, SlidersHorizontal, Smartphone, Sofa, Sparkles, SquareCheck, Sun, Sunrise, Tag, Timer,
   Trash2, Upload, User, X, type LucideIcon,
 } from 'lucide-react';
@@ -12,7 +12,7 @@ const ICONS = {
   flag: Flag, person: User, heart: Heart, pin: Pin, trash: Trash2, check: Check, tray: Inbox, tag: Tag, bell: Bell, timer: Timer, share: Share,
   x: X, xcircle: CircleX, lock: Lock, note: FileText, list: List, copy: Copy, edit: Pencil, play: Play, pause: Pause, cloud: Cloud, key: KeyRound,
   sparkles: Sparkles, download: Download, upload: Upload, sun: Sun, phone: Smartphone, chat: MessageCircle, menu: Menu, home: House,
-  week: CalendarDays, journal: BookHeart, sliders: SlidersHorizontal, camera: Camera, bulb: Lightbulb, hand: Hand, unlock: LockOpen, faceid: ScanFace, backspace: Delete, shield: ShieldCheck,
+  week: CalendarDays, journal: BookHeart, sliders: SlidersHorizontal, camera: Camera, bulb: Lightbulb, hand: Hand, unlock: LockOpen, faceid: ScanFace, backspace: Delete, shield: ShieldCheck, images: Images,
 } satisfies Record<string, LucideIcon>;
 export type IconName = keyof typeof ICONS;
 

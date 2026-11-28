@@ -23,38 +23,27 @@
 .home-v2 .board.home { gap: 6px; }
 .home-hello { padding: 18px 4px 0; }
 .home-hi { margin: 0; font: 800 34px/41px var(--round); letter-spacing: -.4px; color: var(--label); overflow-wrap: anywhere; }
+.home-h { margin: 0 2px 10px; font: 700 20px/25px var(--round); color: var(--label); }
 .home-line { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
 .home-v2 .home-line .say { flex: 1 1 auto; margin: 0; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--soft); font-size: 16px; line-height: 21px; }
 .home-v2 .home-line .say-n { flex: none; margin-left: auto; }
 
-/* ---------- Home's one card: today, with the two of you leaning in from the side ---------- */
-.home-card { position: relative; display: flex; align-items: flex-end; width: 100%; min-height: 212px; margin: 14px 0 4px; padding: 0; border: 0;
+/* ---------- Home's one card: today (the two of you stand above it, free: 45-people.css) ---------- */
+.home-card { position: relative; display: flex; align-items: flex-end; width: 100%; min-height: 150px; margin: 0 0 4px; padding: 0; border: 0;
   border-radius: 30px; overflow: hidden; text-align: left; color: #1B1730; font: inherit;
   background-color: var(--c-orange); background-image: linear-gradient(150deg, color-mix(in srgb, var(--c-yellow) 55%, #FFFFFF) 0%, var(--c-orange) 100%);
   box-shadow: 0 1px 2px rgba(27,23,48,.08), 0 22px 40px -22px rgba(120,60,20,.55); transition: transform var(--dur-quick) var(--ease-out); }
 .home-card:active { transform: scale(.98); }
 .home-card:focus-visible { outline: 3px solid var(--label); outline-offset: 3px; }
-.home-card-txt { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; max-width: 58%; padding: 20px; }
+.home-card-txt { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; max-width: 74%; padding: 20px; }
+.home-card-ic { position: absolute; right: 18px; top: 18px; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%;
+  background: color-mix(in srgb, #FFFFFF 45%, transparent); color: #1B1730; }
+.home-card-ic .i { width: 30px; height: 30px; stroke-width: 2; }
 .home-card-badge { align-self: flex-start; margin-bottom: 8px; padding: 5px 12px; border-radius: 999px; background: #1B1730; color: #FFFFFF;
   font: 800 12px/16px var(--round); letter-spacing: 1px; text-transform: uppercase; }
 .home-card-title { font: 900 27px/30px var(--round); letter-spacing: -.3px; text-transform: uppercase; overflow-wrap: anywhere; }
 .home-card-sub { font-size: 15px; line-height: 20px; font-weight: 600; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.home-card-art { position: absolute; right: -6px; bottom: -10px; display: flex; align-items: flex-end; }
-.home-card-art .hc-who + .hc-who { margin-left: -26px; }
-.hc-who { display: block; }
 
-/* ---------- send a reaction ---------- */
-.home-react { margin-top: 18px; }
-.home-h { margin: 0 2px 10px; font: 700 20px/25px var(--round); color: var(--label); }
-.home-react-sent { min-height: 18px; margin: 10px 0 0; text-align: center; font-size: 13px; line-height: 18px; font-weight: 700; color: var(--soft); }
-.react-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.react { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 86px; padding: 8px 4px; border: 0;
-  border-radius: 22px; background: var(--bg2); color: var(--label); font: inherit; box-shadow: 0 1px 2px rgba(27,23,48,.06), 0 12px 24px -18px rgba(27,23,48,.4);
-  transition: transform var(--dur-quick) var(--ease-bounce); -webkit-tap-highlight-color: transparent; }
-.react:active { transform: scale(.92); }
-.react-e { position: relative; font-size: 34px; line-height: 40px; }
-.react-fly { position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none; }
-.react-l { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--soft); }
 .home-line { width: 100%; padding: 0; border: 0; background: none; font: inherit; text-align: left; color: inherit; }
 
 /* ---------- the floating bar: Home, To-dos, Journal, Chat, and Add a to-do beside it ---------- */
@@ -74,7 +63,7 @@
   background: var(--me-c); color: var(--on-color); box-shadow: 0 16px 32px -14px rgba(27,23,48,.6); pointer-events: auto; }
 .home-v2 .dock-add .i { width: 26px; height: 26px; stroke-width: 2.4; }
 @media (max-width: 359px) { .home-v2 .dock-tab, .boardview .dock-tab.fab-btn, .home-v2 .dock-tab.tray-btn { width: 48px; } .home-v2 .dock-add { width: 56px; height: 56px; } }
-@media (prefers-reduced-motion: reduce) { .home-card, .react { transition: opacity var(--dur-quick) linear; } }
+@media (prefers-reduced-motion: reduce) { .home-card { transition: opacity var(--dur-quick) linear; } }
 
 /* ---------- when part of a screen fails (AreaBoundary): a quiet note, the rest keeps working ---------- */
 .area-fail { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 16px 0; padding: 18px 16px; border-radius: 22px;
@@ -89,3 +78,7 @@
   padding: max(80px, calc(env(safe-area-inset-top) + 56px)) 24px 24px; }
 .chat-fail-in h2 { margin: 0; font: 700 22px/28px var(--round); color: var(--label); }
 .chat-fail-in p { margin: 0; font-size: 15px; line-height: 20px; color: var(--label); }
+
+/* ---------- a reaction's burst (lib/reactions.ts): emoji over the whole screen, never taking taps ---------- */
+.react-burst .rb-e { position: absolute; display: block; line-height: 1; will-change: transform, opacity; }
+.react-burst .rb-big { font-size: 120px; }

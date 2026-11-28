@@ -27,7 +27,7 @@ for (const f of files.filter(f => f.endsWith('.html'))) {
   }
   const csp = [
     "default-src 'self'", `script-src 'self' ${[...hashes].join(' ')}`.trim(), "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:",
-    "font-src 'self'", "media-src 'self' data: blob:", `connect-src ${[...connect].join(' ')}`, "worker-src 'self'", "manifest-src 'self'",
+    "font-src 'self'", "media-src 'self' data: blob:", `connect-src ${[...connect].join(' ')} blob:`, "worker-src 'self'", "manifest-src 'self'",
     "object-src 'none'", "base-uri 'self'", "form-action 'none'", "frame-src 'none'",
   ].join('; ');
   if (html.includes('http-equiv="Content-Security-Policy"')) throw new Error(`${f} already has a CSP`);
@@ -36,7 +36,8 @@ for (const f of files.filter(f => f.endsWith('.html'))) {
 }
 
 const rel = p => relative(OUT, p).split(sep).join('/');
-const shell = files.map(rel).filter(p => p !== 'sw.js' && !p.endsWith('.txt') && !p.endsWith('.map') && p !== '.nojekyll')
+// the 3D people (public/people) are not part of the shell: only the two you use are downloaded, then kept (sw.js)
+const shell = files.map(rel).filter(p => p !== 'sw.js' && !p.endsWith('.txt') && !p.endsWith('.map') && p !== '.nojekyll' && !p.startsWith('people/') && !p.startsWith('world/'))
   .sort().map(p => (p === 'index.html' ? './' : p));
 const h = createHash('sha256');
 for (const f of files.filter(f => rel(f) !== 'sw.js').sort()) h.update(rel(f)).update(readFileSync(f));

@@ -1,0 +1,46 @@
+[
+  {
+    "file": "grass.jpg",
+    "asset": "grass_ground",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grass_ground/grass_ground_diff_1k.jpg",
+    "source_md5": "299047258586c762735b7284d3c662c3",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "changes": "Resized/recompressed; grass saturation reduced.",
+    "sha256": "1025031bd3155bbf7e34979705b372e7c52470d2a5e3f245cfaeb933af1f5441",
+    "bytes": 171172
+  },
+  {
+    "file": "plaster.jpg",
+    "asset": "grey_plaster",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/grey_plaster/grey_plaster_diff_1k.jpg",
+    "source_md5": "42d2ffe5338fcc0065e28076cbe15eba",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "changes": "Resized/recompressed; grass saturation reduced.",
+    "sha256": "481de64b59e68fe23418e2c4f77f121e48f375ce74b03cef0bb7a8450536ea36",
+    "bytes": 282956
+  },
+  {
+    "file": "wood.jpg",
+    "asset": "dark_wood",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/dark_wood/dark_wood_diff_1k.jpg",
+    "source_md5": "47fa883f1bb33acc5711245f64b75975",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "changes": "Resized/recompressed; grass saturation reduced.",
+    "sha256": "6ef51bf15e0509a08bd758cd3564d1a2d9707a1f4edbb5df39d69da8e303f9df",
+    "bytes": 151375
+  },
+  {
+    "file": "stone.jpg",
+    "asset": "rock_boulder_cracked",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_boulder_cracked/rock_boulder_cracked_diff_1k.jpg",
+    "source_md5": "2eee29ef1257ce79569e4be0b76cd1ad",
+    "license": "CC0-1.0",
+    "license_url": "https://polyhaven.com/license",
+    "changes": "Resized/recompressed; grass saturation reduced.",
+    "sha256": "e1b6b6d5b71e9491e8d643a8defe8f033d740b16cc435a1abe6aa7b023c9e652",
+    "bytes": 222830
+  }
+]

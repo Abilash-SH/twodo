@@ -7,11 +7,10 @@
    Nothing is stored for Home itself; characters and roles live in the people record (docs/characters.md).
    Privacy: everything here comes from liveTasks(), the chat and the shared journal, so nothing from a secret list
    (content, titles, counts) can appear, and the character never mentions one. It never shows a message's text. */
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Chat, type Msg } from '@/lib/chat';
 import { avatarOf, dayLine, lines, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
-import { EASE, MS, calm } from '@/lib/motion';
 import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
 import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, mineOrShared, partnerKey, person, sortTasks } from '@/lib/store';
@@ -29,7 +28,10 @@ import { openSettings } from '../settings/Settings';
 import { AreaBoundary } from '../ui/AreaBoundary';
 import { colorVar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
-import { Character, Portrait } from './Character';
+import { Portrait } from './Character';
+import { HomeMoments } from './Moments';
+import { HomePeople } from './People';
+import { CourtyardHome } from './CourtyardHome';
 
 /* ---------- what is on the board (plain data, so it is easy to check) ---------- */
 interface MsgNote { kind: 'invite' | 'request' | 'sent' | 'hello' | 'new' | 'waiting' | 'failed' | 'last'; who: PersonKey; text: string; n: number; when: string }
@@ -97,22 +99,13 @@ const paired = () => !!(L.pair && L.pair.status === 'paired');
 const unreadNow = () => (paired() && Chat.ready() ? Chat.unread() : 0);
 const toPartner = () => (paired() ? ChatCtl.open() : openInviteSheet());
 
-/** The reactions you can send from Home: one emoji each, sent to your partner like a message */
-export const REACTIONS = [
-  { e: '❤️', label: 'Love' }, { e: '🤗', label: 'Hug' }, { e: '😘', label: 'Kiss' },
-  { e: '🥺', label: 'Miss you' }, { e: '😂', label: 'Haha' }, { e: '✨', label: 'Proud' },
-] as const;
-
-/** Home's one card: today, with the two of you on it. A tap opens Today. */
+/** Home's one card: today. A tap opens Today. (The two of you stand above it, free: People.tsx.) */
 function TodayCard({ b }: { b: Board }) {
   const title = b.today ? `${plural(b.today, 'to-do')} left` : 'Nothing today';
   const sub = b.next ? `${b.next.time} · ${b.next.title}` : b.overdue ? `${b.overdue} left from before` : b.today ? 'Tap to see them' : 'Enjoy it, or add something';
   return (
     <button type="button" className="home-card" onClick={() => openSmart('today')} aria-label={`Today. ${title}. ${sub}. Opens Today`}>
-      <span className="home-card-art" aria-hidden="true">
-        <span className="hc-who" style={colorVar(color(L.me))}><Character look={avatarOf(L.me)} size={132} /></span>
-        <span className="hc-who" style={colorVar(color(partnerKey()))}><Character look={avatarOf(partnerKey())} size={122} flip /></span>
-      </span>
+      <span className="home-card-ic" aria-hidden="true"><Icon name="sun" /></span>
       <span className="home-card-txt">
         <span className="home-card-badge">Today</span>
         <b className="home-card-title">{title}</b>
@@ -122,41 +115,10 @@ function TodayCard({ b }: { b: Board }) {
   );
 }
 
-/** Send your partner a reaction: one tap, it goes like a message (with a little lift-off on your side) */
-function Reactions({ pt }: { pt: string }) {
-  const ok = paired(), [sent, setSent] = useState(''), last = useRef(0);
-  const send = (e: string, label: string, el: HTMLElement) => {
-    if (!ok) return openInviteSheet();
-    const now = Date.now(); if (now - last.current < 700) return; // one at a time
-    last.current = now;
-    if (!ChatCtl.sendReaction(e)) return;
-    haptic('success'); setSent(`${label} sent to ${pt}`);
-    const fly = el.querySelector<HTMLElement>('.react-fly');
-    if (fly) fly.animate(calm() ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'translateY(0) scale(1)' }, { opacity: 0, transform: 'translateY(-64px) scale(1.6)' }],
-      { duration: MS.page + MS.standard, easing: EASE.out });
-    setTimeout(() => setSent(s => (s === `${label} sent to ${pt}` ? '' : s)), 2200);
-  };
-  return (
-    <section className="home-react" aria-label={ok ? `Send ${pt} a reaction` : 'Reactions'}>
-      <h2 className="home-h">{ok ? `Send ${pt} a reaction` : 'Add your partner to send reactions'}</h2>
-      <div className="react-row">
-        {REACTIONS.map(r => (
-          <button key={r.label} type="button" className="react" aria-label={ok ? `Send ${pt} ${r.label.toLowerCase()} ${r.e}` : 'Add your partner'}
-            onClick={ev => send(r.e, r.label, ev.currentTarget)}>
-            <span className="react-e" aria-hidden="true">{r.e}<span className="react-fly">{r.e}</span></span>
-            <span className="react-l">{r.label}</span>
-          </button>
-        ))}
-      </div>
-      <p className="home-react-sent" role="status">{sent}</p>
-    </section>
-  );
-}
-
 /** Home's content only draws again when the data changes (or the connection does), never when a screen slides over it. */
 const Notes = memo(function Notes({ v, online }: { v: number; online: boolean }) {
   void v;
-  const b = boardData(), me = L.me, pk = partnerKey(), pt = firstWord(person(pk).name);
+  const b = boardData(), me = L.me;
   const role = roleOf(me), said = lines(b.facts, role);
   said[0] = dayLine(b.facts, role);
   const [i, setI] = useState(0);
@@ -170,14 +132,18 @@ const Notes = memo(function Notes({ v, online }: { v: number; online: boolean })
           {said.length > 1 ? <span className="say-n" aria-hidden="true">{(i % said.length) + 1}/{said.length}</span> : null}
         </button>
       </div>
+      <AreaBoundary area="Home’s people" compact>
+        <HomePeople vibe={{ free: !b.today && !b.overdue, unread: b.facts.unread > 0, ptDone: !!b.facts.doneByPt }} />
+      </AreaBoundary>
       <TodayCard b={b} />
-      <Reactions pt={pt} />
+      <HomeMoments v={v} />
     </main>
   );
 });
 
 export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
   const v = useApp();
+  const [exploring, setExploring] = useState(false);
   const update = useStore(updateStore).ready, adding = useStore(boardAdd);
   const ok = paired(), me = L.me, pk = partnerKey();
   const warn = Sync.state === 'error' || !!(L.auth && L.auth.expired), todoDot = liveTasks().some(SMART.today.match);
@@ -189,25 +155,28 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
     return () => { removeEventListener('online', net); removeEventListener('offline', net); };
   }, []);
   return (
-    <section className={`${cls} boardview home-v2${adding ? ' adding' : ''}`} data-vid={entry.id}>
+    <section className={`${cls} boardview home-v2${adding ? ' adding' : ''}${exploring ? ' courtyard-on' : ''}`} data-vid={entry.id}>
       <header className="home-top">
         <h1 className="board-title">Home</h1>
         <AreaBoundary area="Home’s top" compact>
         <button className="fab-btn home-me" type="button" aria-label="Settings" onClick={() => openSettings()} style={colorVar(color(me))}>
-          <Portrait look={avatarOf(me)} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
+          <Portrait look={avatarOf(me)} who={me} size={46} /><i className={`fab-dot${warn ? ' warn' : ''}`} hidden={!warn && !update} />
         </button>
         <span className="home-me-txt"><b>{firstWord(person(me).name)}</b><span>{ok ? `with ${pt}` : 'Just you, for now'}</span></span>
         <button className="home-pt" type="button" style={colorVar(color(pk))} onClick={toPartner}
           aria-label={ok ? `${pt}${unread ? `, ${unread} new` : ''}. Open your chat` : 'Add your partner'}>
-          <Portrait look={avatarOf(pk)} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
+          <Portrait look={avatarOf(pk)} who={pk} size={32} /><span className="home-pt-name">{ok ? pt : 'Add partner'}</span>
           {unread ? <b className="home-n" aria-hidden="true">{unread > 9 ? '9+' : unread}</b> : null}
         </button>
         </AreaBoundary>
       </header>
-      <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
+      {exploring ? <AreaBoundary area="Our place"><CourtyardHome v={v} leave={() => setExploring(false)} /></AreaBoundary> : <>
+        <button type="button" className="world-enter" onClick={() => setExploring(true)}>Explore our place <span>3D preview</span></button>
+        <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
+      </>}
       <nav className="board-tray home-dock" aria-label="Main">
         <div className="dock-pill">
-          <button className="dock-tab on" type="button" aria-label="Home" aria-current="page"><Icon name="home" /></button>
+          <button className="dock-tab on" type="button" aria-label="Home" aria-current="page" onClick={() => setExploring(false)}><Icon name="home" /></button>
           <button className="fab-btn dock-tab" type="button" aria-label="To-dos and reminders" onClick={() => navTo({ type: 'todos' })}><Icon name="todo" /><i className="fab-dot" hidden={!todoDot} /></button>
           <button className="fab-btn dock-tab" type="button" aria-label={posted ? 'Journal, new today' : 'Journal'} onClick={() => openJournal()}><Icon name="journal" /><i className="fab-dot" hidden={!posted} /></button>
           <button className="tray-btn chat dock-tab" type="button" onClick={toPartner}

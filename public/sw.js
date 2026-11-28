@@ -28,7 +28,16 @@ self.addEventListener('fetch', e => {
   e.respondWith(caches.open(VERSION).then(async cache => {
     // this version's own files, as downloaded together; anything else (not part of the app shell) from the network
     const hit = await cache.match(e.request, { ignoreSearch: true });
-    return hit || fetch(e.request);
+    if (hit) return hit;
+    // a 3D person (people/*.glb, *.jpg) and their movements (people/motion/*.json) are downloaded once, when first
+    // shown, and kept for this version
+    if (/\/people\/(?:[a-z0-9]+\.(?:glb|jpg)|explore\/(?:f07|m17)\.glb|motion\/[fm]_[a-z0-9]+\.json)$/.test(url.pathname)
+        || /\/world\/(?:grass|plaster|wood|stone)\.jpg$/.test(url.pathname)) {
+      const r = await fetch(e.request);
+      if (r.ok) await cache.put(e.request, r.clone());
+      return r;
+    }
+    return fetch(e.request);
   }));
 });
 
@@ -56,9 +65,11 @@ self.addEventListener('push', e => {
     let msg = {}; try { msg = e.data ? e.data.json() : {}; } catch (err) { /* ignore */ }
     let r = null; try { r = await decryptReminder(msg); } catch (err) { /* wrong key → generic text */ }
     const chat = (r && r.k === 'chat') || String(msg.id || '').startsWith('chat_');
-    await self.registration.showNotification(r ? (chat ? r.t : `⏰ ${r.t}`) : chat ? '💬 New message' : '⏰ Reminder', {
-      body: r ? r.b : chat ? 'Open the app to read it.' : 'You have a task due.', tag: chat ? 'chat' : 'rem-' + (msg.id || Date.now()),
-      icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: chat ? './#chat' : './' },
+    const moment = (r && r.k === 'moment') || String(msg.id || '').startsWith('moment_'); // a photo shared from Home
+    await self.registration.showNotification(r ? (chat || moment ? r.t : `⏰ ${r.t}`) : chat ? '💬 New message' : moment ? '📸 A new moment' : '⏰ Reminder', {
+      body: r ? r.b : chat ? 'Open the app to read it.' : moment ? 'Open the app to see it.' : 'You have a task due.',
+      tag: chat ? 'chat' : moment ? 'moment' : 'rem-' + (msg.id || Date.now()),
+      icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { url: chat ? './#chat' : moment ? './#moments' : './' },
     });
   })());
 });
@@ -66,7 +77,7 @@ self.addEventListener('notificationclick', e => {
   e.notification.close();
   const url = (e.notification.data && e.notification.data.url) || './';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-    for (const c of list) if ('focus' in c) { if (url.includes('#chat')) c.postMessage({ open: 'chat' }); return c.focus(); }
+    for (const c of list) if ('focus' in c) { if (url.includes('#chat')) c.postMessage({ open: 'chat' }); else if (url.includes('#moments')) c.postMessage({ open: 'moments' }); return c.focus(); }
     return self.clients.openWindow(url);
   }));
 });

@@ -3,7 +3,76 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-18.
+Last updated: 2026-11-27.
+
+## Current session: Explore face prototypes (2026-11-27)
+
+- PR #44 merged at `4c3135e`. The avatar work is on `feat/explore-avatar-faces`.
+- The two Explore prototypes refine the jaw, cheeks, eyelids and lips on the MIT Rocketbox `f07` and `m17`
+  rigs. Explore drives a smile and brow shape with the existing Wave, Clap and Cheer clips.
+- `docs/explore-faces.md` records the asset provenance, file sizes, regeneration and physical iPhone checklist.
+  Read `handoff.json` for test results and before-and-after captures. Imports take priority, missing prototypes
+  use the selected original, and Reduce Motion holds the neutral face.
+- Review on a physical iPhone before expanding this treatment to additional choices or outside Explore.
+
+## Previous session: walkable villa and garage (2026-11-27)
+
+- PR #43 merged at `88146ad`. The follow-up was [PR #44](https://github.com/Abilash-SH/twodo/pull/44)
+  on `feat/explore-villa`, with work tracked in `handoff.json`.
+- Explore now has a living room and garage. Walk through the openings, or use **Walk to**. The living room desk
+  opens Journal and the workbench opens the existing task patch. Shared collision geometry keeps walking and
+  the camera clear of the walls. **React** plays Wave, Clap or Cheer for both people while present.
+- **View avatar** uses the head bone for close-up framing and adds a soft fill light. Default faces still use
+  the existing rigs. Continue with realistic, original rigged face assets under documented reuse rights.
+  Personal GLB import remains available through Settings.
+- Read `docs/explore-villa.md` for the layout and compatibility decision. World presence uses the Firebase rules
+  introduced in #43. Use the same version on both phones for indoor presence.
+- The final isolated Chromium run passed tests 1 and 21 with no page errors. It covered indoor presence,
+  both shortcuts, delayed-frame Cheer, Clap, keyboard focus, landscape, Reduce Motion and WebGL fallback.
+  Movement now advances through collision substeps independently of camera easing, and reaction taps request
+  an immediate encrypted pose write.
+- In the broader Chromium run, 14 of 19 tests passed. Test 6 timed out clicking Settings, test 7 failed a
+  back swipe, test 9 timed out after passing several navigation checks, test 10 failed a delivery assertion,
+  and test 13 timed out after passing Home checks. The local logs and test numbers are recorded in `handoff.json`.
+- The deferred face work should start with two self-contained GLBs, documented rights, and a supported humanoid rig.
+  Compare face and full-body views in both phone orientations, retarget every reaction, check the import override,
+  and measure asset cost and device performance before replacing the defaults.
+- Before expanding the preview, check doorway and close-up framing, reaction playback, orientation changes,
+  and two-player indoor movement on physical iPhones. Production rule publication is unverified.
+
+## Previous session: courtyard preview (2026-11-26)
+
+- Latest remote main verified at `bb96a06` (#42 merged). Earlier state/history below is retained; #39/#41/#42
+  are merged, and the old reply-flick regression noted below was fixed by pausing the people behind screens.
+- Owner explicitly chose **web app, Home first**, rejected card layouts, then approved a realistic third-person
+  life-simulation courtyard. Both partners should move live online, with a resting avatar offline. Approved
+  reference art is an aspiration, not a working-game screenshot. No code/art from the unrelated inspiration site.
+- [PR #43](https://github.com/Abilash-SH/twodo/pull/43) was built on **`feat/courtyard-preview`**, branched from
+  current main. Home gets an opt-in **Explore our
+  place · 3D preview**; the existing Home and its improvements remain available. No work in mobile/Supabase.
+- `docs/courtyard.md` was written before implementing the new presence channel. New Firebase path
+  `spaces/{space}/world/{uid}` carries only a latest encrypted virtual pose, owner-written/member-readable.
+  Uses unchanged `encryptObj`/`decryptObj`, new validation scopes in `cleanRecord`; no saved record kind or key
+  changes. Publish the new rules manually before live presence can work against production Firebase.
+- Reuses the licensed human/own-avatar and mocap pipeline. Original courtyard geometry, four optimized CC0
+  surface maps and procedural fallbacks, third-person camera, dual-touch stick/look, bounded pathfinding,
+  sit/stand/wave, a compact task patch and existing Moments camera/library, Journal and Chat controls.
+  One renderer, static environment shadow map, contact shadows for people, no unchanged-heartbeat redraw.
+- Browser test 21 passed in isolation on the textured build. It checks two-account movement, sitting, pauses,
+  lease expiry, keyboard focus, task completion, taking and sending a Moment, landscape, Reduce Motion and
+  WebGL fallback. Simulated context loss recovers on a fresh canvas. The opening portrait view drew 109 calls
+  and about 25,000 triangles in Chromium's software renderer. The retry of a failed presence write while its
+  receive stream stays healthy is covered by the protocol test.
+- Eighteen of the nineteen existing browser scripts passed across the suite and focused reruns. Test 13 passed
+  Home navigation, secret-list isolation, contrast, offline recovery and avatar settings before its time limit.
+  Its remaining unpaired and sign-out flows did not finish in that run.
+- Default Turbopack cannot bind its CSS worker IPC port in this cloud environment, even outside the command
+  sandbox. Supported webpack build succeeds: `IS_WEBPACK_TEST=1 npm run build`; test build likewise
+  `IS_WEBPACK_TEST=1 sh scripts/build-test.sh`. No package/bundler configuration changed in the repository.
+- `tests/performance.cjs` on main lacked its newly imported reactions dependency; its test double is now supplied,
+  and the original zero-GET/cache/optimistic-write assertions pass. This changes no chat runtime behaviour.
+- Physical iPhone fidelity, frame pacing, memory/thermal use, real Firebase rule deployment and two physical
+  phones remain unverified. Keep the opt-in preview until these are reviewed.
 
 ## The project in short
 
@@ -18,22 +87,24 @@ Last updated: 2026-11-18.
     `docs/architecture.md`; the rules are `mobile/AGENTS.md`. It replaces the web app at the end (phase 6).
 - Every prompt the owner has given is in `docs/prompts.md`, kept as history.
 
-## State on 2026-11-18 (evening)
+## State on 2026-11-25
 
-`main` is at `b3967a8`. **Merged:** #23 (this file), #24 and #25 (the iPhone app's characters, Home and day-page
-journal), #26 and #27 (the same characters and Home on the web app), #29 (Codex: the web journal by date) and #30
-(Codex: an error boundary around the chat).
+`main` is at `8c4f10a`. **Merged since 2026-11-18:** #31 (containment and the error page), #32 (the web journal by
+day), #33 (the crash on reopening the chat), #34 (journal: a plain box and Post), #35 (Home: one Today card), #36
+(reactions that burst live, never in the chat) and #37 (realistic 3D people from Microsoft Rocketbox).
 
 **Open:**
-- #31 `fix/home-crash-containment` (Claude): contains the reported crash and shows what failed (see the crash section at
-  the end). Merge it first; it also fixes #30's note covering Home after Back.
-- #32 `feat/web-journal-day` (Claude, built on #31): the web journal by day, designed like the app's, with test 15
-  rewritten. Merge after #31.
+- #38 `fix/home-my-tasks` (Claude): Home and Today show only your to-dos and the shared ones. Waiting for the owner.
+- #39 `feat/moments` (Claude, 2026-11-25): Moments in place of Home's reactions (see "2026-11-25 Moments" at the end).
+  It touches `BoardView.tsx` and test 13 next to #38; whichever merges second needs a small rebase.
+- #40 merged into `feat/moments` by mistake (it was stacked on #39); #41 brings it to `main`.
+- `feat/own-avatar` (Claude): your own 3D avatar from a selfie, synced encrypted (needs a rules paste).
 - #28 (Codex, work in progress): the Supabase encrypted-data schema and membership RLS. Reviewed (a comment on the PR:
   `public.digest` breaks joining on Supabase, default grants, movable rows, a join token that never expires, …).
 
-**Known broken on `main`:** browser test 15 (journal) still checks the old thread; #29 changed the screen without
-updating it. #32 fixes it.
+**Known broken on `main`:** browser test 6's *short angled reply flick* (in the chat) fails since #37: it passes at
+`a705c8f` (before the 3D people) and fails at `8c4f10a`. Cause: the 3D people kept drawing behind the chat (software
+WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a screen or sheet covers Home).
 
 **Sample data to replace in phases 2 and 3** (nothing in the app is stored or sent yet):
 - `mobile/src/features/people.ts`: the two of you (`SAMPLE_PEOPLE`, names "Abilash" and "Deiva"), kept in memory so
@@ -55,10 +126,12 @@ updating it. #32 fixes it.
 
 ## What to do next, in order
 
-1. **The crash on Home's top-right picture:** after #31 merges, the owner taps it again on
-   his iPhone. If a note or the *Twodo stopped for a moment* page appears, its code line names the error: fix that
-   cause with a test that reproduces it. Then decide with him whether to keep the notes as they are.
-2. **The web journal:** after #32 merges, check it on the owner's iPhone (its PR checklist).
+1. **Your own avatar from a selfie:** built in `feat/own-avatar` (owner chose option 1: synced automatically). **The
+   owner must paste the updated `firebase.rules.json` into the Firebase console** (new `spaces/$space/av` path); until
+   then importing works on the importing phone only and the app says it couldn't send. See `docs/own-avatar.md`.
+2. **#38 and Moments:** the owner checks them on his iPhone (their PR checklists). The crash on reopening the chat
+   (#33) and the journal by day (#32) are merged; if the *Twodo stopped for a moment* page ever appears again, its
+   code line names the error.
 3. **#28** (Supabase schema and RLS): Codex, or whoever continues it, works through the review comment, then the
    adversarial RLS tests, and checks it against `docs/architecture.md`, section 2, before it is merged.
 4. **The iPhone app:** check the TestFlight build against the PR checklists of #24 and #25 and fix what the owner
@@ -154,3 +227,48 @@ updating it. #32 fixes it.
   (`fix/chat-reopen-crash`): pushing the chat first removes a chat that is still leaving; NavStack never draws a chat
   entry as a page; an unknown list page shows "Nothing here" instead of failing. Test 13 checks it (it fails without
   the fix).
+
+## 2026-11-18 Home reactions (data decision, rule 13)
+
+- Asked for: reactions on Home that are "not sent in the chat, something reactive".
+- No new path, key or rule: a reaction rides on your live presence record (`/spaces/{space}/c/e/x/{uid}`, the one
+  that already carries typing, read and online), as `poke: { e, at }` inside the same AES-GCM ciphertext. The
+  receiving app plays each `at` once, only within a minute (`POKE_MS`), and only for the six known emoji
+  (`isReaction`). It is never stored or shown in the chat. Older app versions ignore the extra field.
+- Limit: a reaction reaches your partner only if their app is open (or opens within a minute). No push for it.
+- Realistic 3D characters (option A): built in `feat/realistic-3d-people` from Microsoft Rocketbox (MIT). See
+  `docs/characters.md`, "The 3D people". The iPhone app (`mobile/`) still has the drawn characters.
+
+## 2026-11-25 Moments (data decision, rule 13)
+
+- Asked for, in place of Home's reactions ("the reactions is not great"): "something like Instagram's Instants or
+  Locket to share images at one tap". The full decision is `docs/moments.md`; in short:
+- **Server:** only the latest moment of each of you, as one more record in the encrypted records: `r/o:a` and
+  `r/o:b` (kind `moment`: a JPEG data URL of at most 140,000 characters, a caption of 80, `at`). A new one replaces
+  the last. Removing writes a `deleted` marker with the same `at`. The worst case is 144,008 characters encrypted,
+  under the 200,000 the rules allow, so **no Firebase rules change**. Older app versions ignore the record.
+- **Phone:** a new IndexedDB, `twodo-moments`, keeps the newest 60 moments the phone has seen (read back through
+  `cleanRecord`). Not in `twodo:data`. Cleared on unpair, another account, and erase. No existing store changes.
+- **Notification:** one more kind of encrypted push entry, `rem/{space}/moment_<uid>`, sent by the reminders job
+  ("📸 Abilash · Shared a moment"; nothing about the photo). Tapping it opens the moments sheet.
+- **Privacy:** the photo is re-drawn and saved as a new JPEG (long side 960 px or less), so location and camera
+  details never leave the phone.
+- **Reactions:** nothing sends one any more; receiving stays for a partner still on an older version.
+
+## 2026-11-25 The people move
+
+- Asked for: "realistic 3D where it turns 360 degree… Don't stand on the card, I want them to have some animations,
+  movements like that". Built in `feat/people-stage`: `components/home/People.tsx`, `lib/stage3d.ts`, `lib/mocap.ts`,
+  `public/people/motion/` (Rocketbox motion capture, MIT, made with `scripts/people/motions_blender.py`). The Today card
+  is text only now. Details: `docs/characters.md`, "Moving".
+- No new data, storage key, origin, rule or CSP change. `sw.js` also keeps `people/motion/*.json` once downloaded.
+- The journal and the picker's cards still use the older single-person canvases (`lib/people3d.ts`).
+- To rebuild the clips you need the Rocketbox repo's `Assets/Animations` (a sparse clone of
+  github.com/microsoft/Microsoft-Rocketbox) and Blender 4; the command is in the script's header.
+
+## 2026-11-25 Your own avatar (data decision, rule 13)
+
+- Owner's choice: "1)", the avatar reaches the partner's phone by itself. Full decision: `docs/own-avatar.md`.
+- New: people record field `model: { h, n }`; database path `spaces/{space}/av/{uid}/{h12}/{i}` (encrypted pieces,
+  needs the rules change); IndexedDB `twodo-people`. Test 20 (needs an Avaturn .glb; Avaturn's sample is not in the
+  repo: it has no license).
