@@ -7,10 +7,11 @@ async def main():
     async with async_playwright() as p:
         b = await p.chromium.launch(executable_path=__import__('os').environ.get('CHROME', '/usr/bin/google-chrome'), args=['--no-sandbox'])
         errs = []
+        expected_wrong_password = {'active': False}
         ctx = await b.new_context(storage_state='/tmp/twodo-A.json', viewport={'width': 1280, 'height': 800})
         A = await ctx.new_page()
         A.on('pageerror', lambda e: errs.append('pageerror: ' + str(e)))
-        A.on('console', lambda m: m.type == 'error' and errs.append('console: ' + m.text))
+        A.on('console', lambda m: m.type == 'error' and not (expected_wrong_password['active'] and '400' in m.text and 'accounts:signInWithPassword' in m.location.get('url', '')) and errs.append('console: ' + m.text))
         await A.goto(URL); await A.wait_for_timeout(2300)
         q = lambda s: A.evaluate(s)
         await A.screenshot(path='/tmp/twodo-desk_board.png')
@@ -64,8 +65,10 @@ async def main():
         await A.click('.sheet.open .group.danger .cell:has-text("Sign out")'); await A.wait_for_timeout(500)
         await A.click('.alert button[data-r="1"]'); await A.wait_for_timeout(1500)
         print('gate', await q("[!!document.getElementById('ob'), (document.querySelector('#ob h1')||{}).textContent, (document.querySelector('#gEmail')||{}).value]"))
+        expected_wrong_password['active'] = True
         await A.fill('#gPass', 'wrong password'); await A.click('[data-p="signin"] [data-submit]'); await A.wait_for_timeout(3500)
         print('wrong pw', await q("document.querySelector('#ob .err').textContent"))
+        expected_wrong_password['active'] = False
         await A.fill('#gPass', 'password 123'); await A.click('[data-p="signin"] [data-submit]'); await A.wait_for_timeout(5000)
         print('signed in', await q("[!!document.getElementById('ob'), (document.querySelector('.board-title')||{}).textContent, document.getElementById('isl').innerText.split('\\n')[0]]"), await q(TITLES))
         # the conversation is back too

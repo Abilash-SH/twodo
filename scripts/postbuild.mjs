@@ -37,7 +37,7 @@ for (const f of files.filter(f => f.endsWith('.html'))) {
 
 const rel = p => relative(OUT, p).split(sep).join('/');
 // the 3D people (public/people) are not part of the shell: only the two you use are downloaded, then kept (sw.js)
-const shell = files.map(rel).filter(p => p !== 'sw.js' && !p.endsWith('.txt') && !p.endsWith('.map') && p !== '.nojekyll' && !p.startsWith('people/'))
+const shell = files.map(rel).filter(p => p !== 'sw.js' && !p.endsWith('.txt') && !p.endsWith('.map') && p !== '.nojekyll' && !p.startsWith('people/') && !p.startsWith('world/'))
   .sort().map(p => (p === 'index.html' ? './' : p));
 const h = createHash('sha256');
 for (const f of files.filter(f => rel(f) !== 'sw.js').sort()) h.update(rel(f)).update(readFileSync(f));

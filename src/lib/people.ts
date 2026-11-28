@@ -26,3 +26,11 @@ export function personFor(a: AvatarLook): Person3 {
 }
 export const modelUrl = (p: Person3): string => asset(`people/${p.id}.glb`);
 export const faceUrl = (p: Person3): string => asset(`people/${p.id}.jpg`);
+
+/** The two facial geometry prototypes share the selected person's original rig and colour textures. */
+export function exploreModels(p: Person3, imported?: string): string[] {
+  const sources = imported ? [imported] : [];
+  if (p.id === 'f07' || p.id === 'm17') sources.push(asset(`people/explore/${p.id}.glb`));
+  sources.push(modelUrl(p));
+  return sources;
+}

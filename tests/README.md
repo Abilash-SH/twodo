@@ -13,6 +13,8 @@ python3 tests/e2e/test_1_pair_and_chat.py      # creates both accounts and pairs
 for t in $(ls tests/e2e/test_*.py | sort -t_ -k2 -n | tail -n +2); do python3 "$t" || break; done   # every other test, in order
 node tests/velocity.cjs
 node tests/performance.cjs
+node tests/courtyard.cjs
+python3 tests/test_courtyard_rules.py
 ```
 `test_4_offline_onboarding.py` needs a build without Firebase settings (no accounts), served on port 8004:
 `NEXT_PUBLIC_FIREBASE_API_KEY= NEXT_PUBLIC_FIREBASE_DATABASE_URL= NEXT_PUBLIC_BASE_PATH= npm run build`.
@@ -23,6 +25,21 @@ geometry, focus retention, encrypted long-passcode round trips and changes, over
 swipes, and text contrast for every palette pair. Test 6 refreshes bubble geometry
 after reply dismissal because the reply bar changes the available message area.
 Set `CHROME=/usr/bin/chromium` if Chromium is installed instead of Google Chrome.
+
+Test 21 covers the opt-in courtyard after test 1: simultaneous two-finger movement/look, live partner positions
+and a clap, entering and leaving the villa and garage, opening Journal and the workbench, the avatar close-up,
+collision-safe travel to the bench, sitting/standing, expired presence after a sheet opens, rendering pause,
+Chat keyboard retention, task completion, camera preview/send, feature doors, landscape, Reduce Motion and
+context loss/retry and no-WebGL fallback. It uses `/tmp/mo/sunset.jpg`, as test 18 does. `tests/courtyard.cjs`
+checks indoor routes, movement on delayed frames and protocol bounds, actual AES-GCM payload privacy, stale sequences, coalesced serialized writes,
+heartbeat expiry, denied channels and cleanup. `test_courtyard_rules.py` tests the hand-translated mock rules;
+it is not a substitute for publishing/testing the production Firebase rules. See `docs/courtyard.md`.
+The courtyard checks also load the two Explore face GLBs with Three.js and verify the new vertex attributes,
+skin weights, expression curves, neutral Reduce Motion, import priority and fallback to the original models.
+
+Where Turbopack's CSS-worker IPC port is blocked by the execution environment, use Next's webpack test selector:
+`IS_WEBPACK_TEST=1 sh scripts/build-test.sh` (or `IS_WEBPACK_TEST=1 npm run build`). The repository's default build
+and production hosting configuration remain unchanged. Record which bundler was actually tested.
 
 Every test starts on the board (Home when signed in); `tests/e2e/helpers.py` has `open_chat()` and `back_home()`.
 
@@ -85,7 +102,7 @@ reaches your partner's Home and round picture by itself; "Use a Twodo person aga
 of the database. Needs an avatar file: `AVATAR=/path/to/avatar.glb` (any Avaturn export; by default Avaturn's sample
 at `/tmp/avt/a/public/default_model.glb`, never committed) and `/tmp/mo/sunset.jpg`.
 
-Test 21 covers routines (docs/routines.md): the five to start with; punching today's hole and an earlier day this
+Test 22 covers routines (docs/routines.md): the five to start with; punching today's hole and an earlier day this
 week, never a day to come; punches reaching the other phone as a dot in that person's colour; a routine only your
 partner keeps being read-only; the week's quilt (a patch you both kept is stitched) and its receipt (no streaks);
 forged or damaged cards dropped or cut down when read; text contrast for every colour in light and dark.

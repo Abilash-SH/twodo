@@ -5,6 +5,75 @@ For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task.
 
 Last updated: 2026-11-28.
 
+## Current session: Explore face prototypes (2026-11-27)
+
+- PR #44 merged at `4c3135e`. The avatar work is on `feat/explore-avatar-faces`.
+- The two Explore prototypes refine the jaw, cheeks, eyelids and lips on the MIT Rocketbox `f07` and `m17`
+  rigs. Explore drives a smile and brow shape with the existing Wave, Clap and Cheer clips.
+- `docs/explore-faces.md` records the asset provenance, file sizes, regeneration and physical iPhone checklist.
+  Read `handoff.json` for test results and before-and-after captures. Imports take priority, missing prototypes
+  use the selected original, and Reduce Motion holds the neutral face.
+- Review on a physical iPhone before expanding this treatment to additional choices or outside Explore.
+
+## Previous session: walkable villa and garage (2026-11-27)
+
+- PR #43 merged at `88146ad`. The follow-up was [PR #44](https://github.com/Abilash-SH/twodo/pull/44)
+  on `feat/explore-villa`, with work tracked in `handoff.json`.
+- Explore now has a living room and garage. Walk through the openings, or use **Walk to**. The living room desk
+  opens Journal and the workbench opens the existing task patch. Shared collision geometry keeps walking and
+  the camera clear of the walls. **React** plays Wave, Clap or Cheer for both people while present.
+- **View avatar** uses the head bone for close-up framing and adds a soft fill light. Default faces still use
+  the existing rigs. Continue with realistic, original rigged face assets under documented reuse rights.
+  Personal GLB import remains available through Settings.
+- Read `docs/explore-villa.md` for the layout and compatibility decision. World presence uses the Firebase rules
+  introduced in #43. Use the same version on both phones for indoor presence.
+- The final isolated Chromium run passed tests 1 and 21 with no page errors. It covered indoor presence,
+  both shortcuts, delayed-frame Cheer, Clap, keyboard focus, landscape, Reduce Motion and WebGL fallback.
+  Movement now advances through collision substeps independently of camera easing, and reaction taps request
+  an immediate encrypted pose write.
+- In the broader Chromium run, 14 of 19 tests passed. Test 6 timed out clicking Settings, test 7 failed a
+  back swipe, test 9 timed out after passing several navigation checks, test 10 failed a delivery assertion,
+  and test 13 timed out after passing Home checks. The local logs and test numbers are recorded in `handoff.json`.
+- The deferred face work should start with two self-contained GLBs, documented rights, and a supported humanoid rig.
+  Compare face and full-body views in both phone orientations, retarget every reaction, check the import override,
+  and measure asset cost and device performance before replacing the defaults.
+- Before expanding the preview, check doorway and close-up framing, reaction playback, orientation changes,
+  and two-player indoor movement on physical iPhones. Production rule publication is unverified.
+
+## Previous session: courtyard preview (2026-11-26)
+
+- Latest remote main verified at `bb96a06` (#42 merged). Earlier state/history below is retained; #39/#41/#42
+  are merged, and the old reply-flick regression noted below was fixed by pausing the people behind screens.
+- Owner explicitly chose **web app, Home first**, rejected card layouts, then approved a realistic third-person
+  life-simulation courtyard. Both partners should move live online, with a resting avatar offline. Approved
+  reference art is an aspiration, not a working-game screenshot. No code/art from the unrelated inspiration site.
+- [PR #43](https://github.com/Abilash-SH/twodo/pull/43) was built on **`feat/courtyard-preview`**, branched from
+  current main. Home gets an opt-in **Explore our
+  place · 3D preview**; the existing Home and its improvements remain available. No work in mobile/Supabase.
+- `docs/courtyard.md` was written before implementing the new presence channel. New Firebase path
+  `spaces/{space}/world/{uid}` carries only a latest encrypted virtual pose, owner-written/member-readable.
+  Uses unchanged `encryptObj`/`decryptObj`, new validation scopes in `cleanRecord`; no saved record kind or key
+  changes. Publish the new rules manually before live presence can work against production Firebase.
+- Reuses the licensed human/own-avatar and mocap pipeline. Original courtyard geometry, four optimized CC0
+  surface maps and procedural fallbacks, third-person camera, dual-touch stick/look, bounded pathfinding,
+  sit/stand/wave, a compact task patch and existing Moments camera/library, Journal and Chat controls.
+  One renderer, static environment shadow map, contact shadows for people, no unchanged-heartbeat redraw.
+- Browser test 21 passed in isolation on the textured build. It checks two-account movement, sitting, pauses,
+  lease expiry, keyboard focus, task completion, taking and sending a Moment, landscape, Reduce Motion and
+  WebGL fallback. Simulated context loss recovers on a fresh canvas. The opening portrait view drew 109 calls
+  and about 25,000 triangles in Chromium's software renderer. The retry of a failed presence write while its
+  receive stream stays healthy is covered by the protocol test.
+- Eighteen of the nineteen existing browser scripts passed across the suite and focused reruns. Test 13 passed
+  Home navigation, secret-list isolation, contrast, offline recovery and avatar settings before its time limit.
+  Its remaining unpaired and sign-out flows did not finish in that run.
+- Default Turbopack cannot bind its CSS worker IPC port in this cloud environment, even outside the command
+  sandbox. Supported webpack build succeeds: `IS_WEBPACK_TEST=1 npm run build`; test build likewise
+  `IS_WEBPACK_TEST=1 sh scripts/build-test.sh`. No package/bundler configuration changed in the repository.
+- `tests/performance.cjs` on main lacked its newly imported reactions dependency; its test double is now supplied,
+  and the original zero-GET/cache/optimistic-write assertions pass. This changes no chat runtime behaviour.
+- Physical iPhone fidelity, frame pacing, memory/thermal use, real Firebase rule deployment and two physical
+  phones remain unverified. Keep the opt-in preview until these are reviewed.
+
 ## The project in short
 
 - Twodo is a private to-do list, chat and journal for two people: the owner (Abilash) and his partner. In tests and
@@ -211,7 +280,7 @@ WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a scree
   (https://claude.ai/artifact/Hz8n4hXX14MutkUmfBaaED): bead strings, punch cards, a day ring; a receipt and a quilt.
   The owner picked punch cards, and both summaries.
 - Built in `feat/routines`: `lib/routines.ts`, `views/RoutinesView.tsx` (both screens), `sheets/RoutineSheet.tsx`,
-  `46-routines.css`, test 21. Full decision: `docs/routines.md`.
+  `48-routines.css`, test 22. Full decision: `docs/routines.md`.
 - New records `routine` (`r:<id>`) and `punch` (`w:<week>-<who>`); no new storage key, origin, rule or CSP change.
   Only your own cards are pushed or imported from a backup.
 - Not done: a reminder to punch, Home showing routines (Home keeps one card), the iPhone app (`mobile/`).

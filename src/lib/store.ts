@@ -1,6 +1,7 @@
 /* Twodo · state, persistence and data helpers.
    D = synced data (tasks, lists, the two of you), L = this device only (settings, account, view prefs). */
 import { scheduleRender } from './render';
+import { cleanEnvelope, cleanPose } from './courtyard/state';
 import type { AvatarLook, Data, Goal, JournalEntry, List, Local, Moment, Mood, PeopleRec, Person, PersonKey, Punch, Rec, Routine, Task } from './types';
 import { addDays, dayDiff, firstWord, fromYmd, PALETTE, REPEATS, todayStr, uid, ymd, type Color, type Repeat } from './util';
 
@@ -56,7 +57,12 @@ export function cleanPerson(p: unknown, d: Person): Person {
   if (o.model !== undefined) { const m = o.model as Loose | null; if (m && typeof m === 'object' && typeof m.h === 'string' && /^[0-9a-f]{64}$/.test(m.h) && Number.isInteger(m.n) && (m.n as number) >= 1 && (m.n as number) <= 48) o.model = { h: m.h, n: m.n as number }; else delete o.model; } // your own avatar (docs/own-avatar.md)
   return o;
 }
-export function cleanRecord(r: unknown): Rec | null {
+export function cleanRecord(r: unknown, scope: 'courtyard'): import('./courtyard/state').WorldPose | null;
+export function cleanRecord(r: unknown, scope: 'courtyard-envelope'): import('./courtyard/state').WorldEnvelope | null;
+export function cleanRecord(r: unknown): Rec | null;
+export function cleanRecord(r: unknown, scope?: 'courtyard' | 'courtyard-envelope'): Rec | import('./courtyard/state').WorldPose | import('./courtyard/state').WorldEnvelope | null {
+  if (scope === 'courtyard') return cleanPose(r);
+  if (scope === 'courtyard-envelope') return cleanEnvelope(r);
   if (!r || typeof r !== 'object' || Array.isArray(r)) return null;
   const q = r as Loose;
   if (q.kind === 'people' || q.id === 'people') {
