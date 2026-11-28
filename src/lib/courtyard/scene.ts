@@ -18,26 +18,29 @@ export interface WorldScene {
 }
 interface AvatarSource { urls: readonly string[]; gender: 'm' | 'f' }
 interface Options { slot: 0 | 1; me: AvatarSource; partner: AvatarSource; report(r: SceneReport): void; failure(): void }
+const OUTDOOR_LOOK_LIFT = .86;
 export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: Options): WorldScene {
   const created = makeRenderer(canvas); if (!created) throw new Error('3D is unavailable');
   const renderer: T.WebGLRenderer = created;
   let invalidate = () => {};
   let environment: ReturnType<typeof buildEnvironment>;
   const scene = new T.Scene(), camera = new T.PerspectiveCamera(52, w / h, .08, 70);
-  try { environment = buildEnvironment(scene, renderer, getComputedStyle(canvas), () => invalidate()); } catch (error) { renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); throw error; }
+  try { environment = buildEnvironment(scene, getComputedStyle(canvas)); } catch (error) { renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); throw error; }
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
   const abort = new AbortController();
   let player: Actor | null = null, partner: Actor | null = null, livePeer: WorldPose | null = null;
   let position: Point = { ...SPAWN, x: o.slot === 0 ? -.7 : .7 }, yaw = Math.PI, sitting = false, standAt = { ...position }, waveUntil = 0;
-  let movement = { x: 0, y: 0 }, path: Point[] = [], cameraYaw = 0, pitch = .35, size = { w, h };
+  let movement = { x: 0, y: 0 }, path: Point[] = [], cameraYaw = 0, pitch = .22, size = { w, h };
   let active = true, inViewport = true, gone = false, frame = 0, last = 0, settling = 0, mode: PoseMode = 'idle', lastReport = '', rendered = 0, dpr = Math.min(1.5, devicePixelRatio || 1);
   let directLook = false, placementBlend = 0;
   let gesture: WorldGesture = 'wave', peerGesture: WorldGesture = 'wave';
   let reactionLeft = 0, peerReactionLeft = 0;
   let portrait = false, room = areaAt(position.x, position.z), portraitYaw = 0;
-  const target = new T.Vector3(position.x, 1.05, position.z), eye = new T.Vector3(position.x, 2.65, position.z + 4.5);
+  const target = new T.Vector3(position.x, 1.25, position.z), eye = new T.Vector3(position.x, 2.3, position.z + 4.6);
   const nearPoint = new T.Vector3(), nextEye = new T.Vector3(), lookTarget = new T.Vector3(), offset = new T.Vector3();
+  const aim = new T.Vector3();
+  let skylineLift = OUTDOOR_LOOK_LIFT;
   const portraitTarget = new T.Vector3();
   let updatePortraitTarget = false;
   const cameraRay = new T.Ray(), hit = new T.Vector3(), direction = new T.Vector3();
@@ -129,7 +132,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       updatePortraitTarget = false;
     }
     if (portrait) lookTarget.copy(portraitTarget);
-    else lookTarget.set(position.x, 1.05, position.z);
+    else lookTarget.set(position.x, room === 'garden' ? 1.25 : 1.05, position.z);
     target.lerp(lookTarget, reduced ? 1 : 1 - Math.exp(-dt * 10));
     const bearing = portrait ? portraitYaw : cameraYaw, incline = portrait ? .045 : pitch;
     offset.set(Math.sin(bearing) * Math.cos(incline), Math.sin(incline), Math.cos(bearing) * Math.cos(incline))
@@ -142,7 +145,12 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       faceFill.position.set(eye.x - .65, eye.y + .35, eye.z);
       faceFill.target.position.copy(lookTarget);
     }
-    directLook = false; placementBlend = Math.max(0, placementBlend - dt); camera.position.copy(eye); camera.lookAt(target); camera.updateMatrixWorld();
+    const lift = !portrait && room === 'garden' ? OUTDOOR_LOOK_LIFT : 0;
+    skylineLift = reduced ? lift : T.MathUtils.lerp(skylineLift, lift, 1 - Math.exp(-dt * 9));
+    aim.copy(target);
+    aim.y += skylineLift;
+    directLook = false; placementBlend = Math.max(0, placementBlend - dt); camera.position.copy(eye); camera.lookAt(aim); camera.updateMatrixWorld();
+    if (!reduced) environment.advance(elapsed);
     try { renderer.render(scene, camera); } catch { fail(); return; }
     rendered++; canvas.dataset.frames = String(rendered); canvas.dataset.x = position.x.toFixed(3); canvas.dataset.z = position.z.toFixed(3); canvas.dataset.mode = mode;
     canvas.dataset.cameraYaw = cameraYaw.toFixed(3);
@@ -155,7 +163,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     const reacting = reactionLeft > 0 || peerReactionLeft > 0;
     reactionLeft = Math.max(0, reactionLeft - elapsed);
     peerReactionLeft = Math.max(0, peerReactionLeft - elapsed);
-    const cameraBusy = eye.distanceTo(nextEye) > .003 || target.distanceTo(lookTarget) > .003;
+    const cameraBusy = eye.distanceTo(nextEye) > .003 || target.distanceTo(lookTarget) > .003 || Math.abs(lift - skylineLift) > .003;
     if (walking || peerBusy || inputLength > .08 || path.length || cameraBusy || reacting || settling > 0) wake(); else last = 0;
   }
   function wake() { if (!frame && !gone && active && inViewport && !document.hidden) frame = requestAnimationFrame(tick); }

@@ -1,0 +1,40 @@
+/* The city stays at night in both app themes. Its controls use opaque, high-contrast surfaces. */
+.courtyard-on {
+  --world-sky: #10172c;
+  --world-fill: #bddef9;
+  --world-bounce: #795877;
+  --world-key: #ffe7cd;
+  --world-asphalt: #263141;
+  --world-pavement: #b7c6d9;
+  --world-floor: #364b60;
+  --world-frame: #202d42;
+  --world-panel: #425570;
+  --world-steel: #687e96;
+  --world-glass: #224f72;
+  --world-water: #143950;
+  --world-cloth: #374f6c;
+  --world-cushion: #7c506e;
+  --world-cyan: #65e5fb;
+  --world-pink: #f38acc;
+  --world-amber: #ffbd79;
+  --world-white: #e4f8ff;
+  --world-border: #3a516b;
+  --world-stick-border: #526e88;
+  --bg: #111a2b;
+  --bg2: #172437;
+  --label: #f2f7ff;
+  --label2: #bac9dc;
+  --fill: #273b54;
+}
+.courtyard-on .world-stage {
+  border-block: 1px solid var(--world-border);
+}
+.courtyard-on .world-toolbar button,
+.courtyard-on .world-travel > :is(button, select),
+.courtyard-on .world-interactions button,
+.courtyard-on .world-reactions {
+  box-shadow: inset 0 0 0 1px var(--world-border);
+}
+.courtyard-on .world-hint { color: var(--world-white); }
+.courtyard-on .world-stick-base { opacity: .9; box-shadow: inset 0 0 0 1px var(--world-stick-border); }
+.courtyard-on .world-stick-knob { background: var(--fill); color: var(--world-cyan); }

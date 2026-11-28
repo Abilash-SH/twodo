@@ -9,7 +9,10 @@ export const LEASE_MS = 12000;
 export const SPAWN: Point = { x: 0, z: 5.4 };
 export const BENCH: Point = { x: 4.2, z: 2.6 };
 export const SEATS = [{ x: 3.65, z: 2.6 }, { x: 4.75, z: 2.6 }];
-export const TREES: Point[] = [{ x: -7.6, z: 1 }, { x: -7.5, z: 5.3 }, { x: 7.85, z: -2 }, { x: 6.9, z: 5.8 }, { x: -.5, z: -7 }, { x: 8.4, z: -6.8 }];
+export const FOUNTAIN = { x: .2, z: -.6, rx: 2.05, rz: 1.6 };
+export const MOMENTS_KIOSK = { x: 7.85, z: -2 };
+export const TASK_TERMINAL = { x: -7.5, z: 5.3 };
+export const PLAZA_FIXTURES: Point[] = [{ x: -7.6, z: 1 }, TASK_TERMINAL, MOMENTS_KIOSK, { x: 6.9, z: 5.8 }, { x: -.5, z: -7 }, { x: 8.4, z: -6.8 }];
 export interface Solid extends Point { w: number; d: number; h: number }
 export interface Room { minX: number; maxX: number; back: number; front: number; doorLeft: number; doorRight: number }
 export const ROOMS = {
@@ -36,7 +39,7 @@ export function areaAt(x: number, z: number): RoomName | 'garden' {
   return 'garden';
 }
 export const PLACES = {
-  partner: { x: 4.2, z: 3.9 }, tasks: { x: -4.6, z: 3.5 }, moments: { x: 4.4, z: -1.5 },
+  partner: { x: 4.2, z: 3.9 }, tasks: { x: -4.6, z: 3.5 }, moments: { x: 6.65, z: -1.55 },
   journal: { x: -3.7, z: -5.8 }, workbench: { x: 5.55, z: -5.8 },
 };
 export const DESTINATIONS = {
@@ -56,8 +59,8 @@ export const SOLIDS: Solid[] = [
 export function walkable(x: number, z: number): boolean {
   return Number.isFinite(x) && Number.isFinite(z) && Math.abs(x) < 9 && Math.abs(z) < 8
     && !SOLIDS.some(b => Math.abs(x - b.x) < b.w / 2 + .25 && Math.abs(z - b.z) < b.d / 2 + .25)
-    && ((x - .2) / 2.05) ** 2 + ((z + .6) / 1.6) ** 2 > 1
-    && !TREES.some(t => Math.hypot(x - t.x, z - t.z) < .6);
+    && ((x - FOUNTAIN.x) / FOUNTAIN.rx) ** 2 + ((z - FOUNTAIN.z) / FOUNTAIN.rz) ** 2 > 1
+    && !PLAZA_FIXTURES.some(t => Math.hypot(x - t.x, z - t.z) < .6);
 }
 export const angleDelta = (a: number, b: number): number => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 export function moveWithin(p: Point, dx: number, dz: number): Point {
