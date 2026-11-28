@@ -83,7 +83,8 @@ export const Sync = {
   getRec(k: string): Rec | null | undefined {
     if (k === 'people') return D.people;
     const id = k.slice(2);
-    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : k[0] === 'j' ? D.journal[id] : k[0] === 'o' ? Moments.rec(id) : null;
+    return k[0] === 't' ? D.tasks[id] : k[0] === 'l' ? D.lists[id] : k[0] === 'g' ? D.goals[id] : k[0] === 'j' ? D.journal[id] : k[0] === 'o' ? Moments.rec(id)
+      : k[0] === 'r' ? D.routines[id] : k[0] === 'w' ? D.punches[id] : null;
   },
   localU(k: string): number { const r = this.getRec(k); return r ? (r.updatedAt || 0) : 0; },
   isPrivate(r: Rec): boolean {
@@ -109,6 +110,8 @@ export const Sync = {
     else if (obj.kind === 'task') { this.noteTask(local as Task | undefined, obj); D.tasks[obj.id] = obj; }
     else if (obj.kind === 'list') D.lists[obj.id] = obj as List;
     else if (obj.kind === 'goal') D.goals[obj.id] = obj;
+    else if (obj.kind === 'routine') D.routines[obj.id] = obj;
+    else if (obj.kind === 'punch') D.punches[obj.id] = obj;
     else if (obj.kind === 'journal') {
       if (obj.private) return; // nobody can put a page into your private journal
       this.notePage(local as JournalEntry | undefined, obj); D.journal[obj.id] = obj;
@@ -146,6 +149,8 @@ export const Sync = {
     for (const id in D.lists) keys.push('l:' + id);
     for (const id in D.tasks) keys.push('t:' + id);
     for (const id in D.goals) keys.push('g:' + id);
+    for (const id in D.routines) keys.push('r:' + id);
+    for (const id in D.punches) if (D.punches[id].who === L.me) keys.push('w:' + id); // only your own cards: your partner sends theirs
     for (const id in D.journal) if (!D.journal[id].private) keys.push('j:' + id);
     if (Moments.latest[L.me]) keys.push('o:' + L.me); // only your own moment: your partner sends theirs
     for (const k of keys) {

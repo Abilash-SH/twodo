@@ -15,7 +15,7 @@ import { flushSync } from 'react-dom';
 import { closeMenu } from './menu';
 import { createStore } from './store';
 
-export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips' | 'week' | 'journal' | 'character';
+export type ViewType = 'home' | 'chat' | 'todos' | 'smart' | 'list' | 'search' | 'tips' | 'week' | 'journal' | 'character' | 'routines' | 'routineweek';
 export interface Spec { type: ViewType; key?: SmartKey; id?: string }
 export interface Entry { id: number; spec: Spec; phase: 'in' | 'idle' | 'out' }
 export const navState = createStore<{ entries: Entry[] }>({ entries: [] });
@@ -80,6 +80,8 @@ export function viewTitle(spec: Spec): string {
   if (spec.type === 'todos') return 'To-dos';
   if (spec.type === 'week') return 'Week';
   if (spec.type === 'journal') return 'Journal';
+  if (spec.type === 'routines') return 'Routines';
+  if (spec.type === 'routineweek') return 'Your week';
   if (spec.type === 'character') return 'Your character';
   if (spec.type === 'list') { const l = D.lists[spec.id!]; return l ? l.name : 'Secret'; } // a locked secret list isn't loaded
   if (spec.key === 'us') return `${firstWord(person('a').name)} & ${firstWord(person('b').name)}`;
@@ -167,6 +169,14 @@ function revealChat(): void {
 export const openSmart = (key: SmartKey): void => { pushView({ type: 'smart', key }); };
 /** The journal: "Us" (shared) or "Just me" (private, behind the passcode) */
 export function openJournal(): void { if (topSpec().type === 'journal') return; pushView({ type: 'journal' }); }
+/** Routines: today's punch cards (docs/routines.md) */
+export function openRoutines(): void { if (topSpec().type === 'routines') return; pushView({ type: 'routines' }); }
+/** the week's summary, the quilt and the receipt: a week's Monday (this week when not given) */
+export function openRoutineWeek(week?: string): void {
+  if (topSpec().type === 'routineweek') return;
+  viewPrefs('routineweek').week = week && DAY_RE.test(week) ? week : thisWeek();
+  pushView({ type: 'routineweek' });
+}
 /** pick your character and its role (from Home or Settings) */
 export function openCharacter(): void { if (topSpec().type === 'character') return; pushView({ type: 'character' }); }
 /** The planner always opens on this week, at today */

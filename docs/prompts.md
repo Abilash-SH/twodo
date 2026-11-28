@@ -188,3 +188,11 @@ Settings). Instead of reactions:
 > May be something like instagrams instant or locket to share images at one tap.
 
 Outcome: Moments (`feat/moments`, `docs/moments.md`); the 3D people from your selfies are next (`HANDOFF.md`).
+
+2026-11-28 (design mode):
+> Give me some mockups for the ToDo lists, which should not look like a normal iphone or android apps one. Should be
+> unique and different from the state of art also, will creae daily routine in the app And will mark it as done
+> everyday for example, Like gym Steps No sugar Walk Home food And every week we will have a summary of everything.
+
+Five mockups on a design canvas; the owner picked "B · Punch cards" for every day and "Both" summaries (the quilt,
+then the receipt). Outcome: routines (`feat/routines`, `docs/routines.md`).

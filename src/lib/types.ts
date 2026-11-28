@@ -49,8 +49,21 @@ export interface JournalEntry {
 export interface Moment {
   kind: 'moment'; id: PersonKey; who: PersonKey; img: string; caption: string; at: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
 }
-export type Rec = Task | List | PeopleRec | Goal | JournalEntry | Moment;
-export interface Data { tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null; goals: Record<string, Goal>; journal: Record<string, JournalEntry> }
+/** A daily routine (docs/routines.md): one habit, shared by the two of you; `who` says who keeps it */
+export interface Routine {
+  kind: 'routine'; id: string; name: string; emoji: string; color: Color; who: PersonKey | 'both';
+  order: number; createdAt: number; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
+}
+/** One person's punch card for one week (docs/routines.md). id = `${week}-${who}`; only its owner writes it.
+ *  days: routine id → 7 bits, bit 0 = Monday … bit 6 = Sunday */
+export interface Punch {
+  kind: 'punch'; id: string; week: string; who: PersonKey; days: Record<string, number>; updatedAt: number; deleted: boolean; _s?: 1; ghost?: 1;
+}
+export type Rec = Task | List | PeopleRec | Goal | JournalEntry | Moment | Routine | Punch;
+export interface Data {
+  tasks: Record<string, Task>; lists: Record<string, List>; people: PeopleRec | null; goals: Record<string, Goal>; journal: Record<string, JournalEntry>;
+  routines: Record<string, Routine>; punches: Record<string, Punch>;
+}
 
 export interface Settings { theme: 'auto' | 'light' | 'dark'; accent: string; haptics: boolean; sounds: boolean; confetti: boolean; notify: boolean; dmy: boolean }
 export interface AuthState { uid: string; idToken: string; refresh: string; exp: number; email?: string; username?: string; expired?: boolean }
