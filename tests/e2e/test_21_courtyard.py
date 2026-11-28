@@ -1,4 +1,5 @@
-"""The opt-in world: real avatars, two-finger movement/look, paired presence, pause, doors and fallback.
+"""The opt-in world: real avatars, two-finger movement/look, paired presence, pause, doors and fallback; full screen
+with the status bar taking the sky's colour, the lakeside walk, and the city resting after its half minute of life.
 Run test 1 first. Uses its two accounts and the same local Firebase; never production.
 """
 import asyncio
@@ -27,6 +28,8 @@ async def main():
             pg.on('pageerror', lambda e: errors.append(str(e)))
             await pg.goto(URL)
             await pg.locator('.world-enter').wait_for(timeout=15000)
+            await pg.wait_for_function("() => !document.body.classList.contains('launching')")  # the splash has its own colour
+            pg.theme_before = await pg.evaluate("() => document.querySelector('meta[name=theme-color]').content")
             await pg.click('.world-enter')
             await pg.locator('.world-canvas[data-ready="yes"]').wait_for(timeout=45000)
             return ctx, pg
@@ -49,9 +52,16 @@ async def main():
             setTimeout(() => { window.requestAnimationFrame = nextFrame; }, 1900);
         }""")
         await B.wait_for_function("window.seenWorldReactions.has('cheer')", timeout=18000)
-        assert await A.locator('.world-destination option').all_text_contents() == ['Walk to', 'Neon Plaza', 'Loft', 'Garage']
+        assert await A.locator('.world-destination option').all_text_contents() == ['Walk to', 'Plaza', 'Lakeside', 'Loft', 'Garage']
         await A.locator('.world-reaction-status').wait_for(state='hidden')
-        await A.screenshot(path=SHOTS / 'twodo-neon-plaza.png')
+        await A.screenshot(path=SHOTS / 'twodo-city-plaza.png')
+        # Full screen: the city fills the phone, Home's header gives way to the badge, the status bar takes the sky.
+        stage = await A.locator('.world-stage').bounding_box()
+        assert stage['y'] <= 0.5 and stage['height'] >= 843 and stage['width'] >= 389, stage
+        assert not await A.locator('.home-top').is_visible()
+        assert ' & ' in await A.locator('.world-couple b').inner_text()
+        tint = await A.evaluate("() => document.querySelector('meta[name=theme-color]').content")
+        assert tint.lower() != A.theme_before.lower() and tint.startswith('#'), (tint, A.theme_before)
         canvas = A.locator('.world-canvas')
         print('Neon plaza render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
         async def position(page):
@@ -100,11 +110,16 @@ async def main():
         await A.screenshot(path=SHOTS / 'twodo-city-garage.png')
         await workbench.click()
         await A.locator('.sheet.open [data-s="done"]').click()
+        await A.locator('.world-destination').select_option('lake')
+        await A.locator('.world-hint b', has_text='Lakeside').wait_for(timeout=75000)
+        await A.wait_for_function("() => +document.querySelector('.world-canvas').dataset.x < -14", timeout=30000)
+        await A.screenshot(path=SHOTS / 'twodo-city-lake.png')
         await A.locator('.world-destination').select_option('garden')
         await A.locator('.world-canvas[data-area="garden"]').wait_for(timeout=75000)
         print('PASS: live cheer and clap, indoor presence, villa and garage doors, journal desk, workbench, avatar close-up', flush=True)
-        # Demand rendering rests rather than spinning the GPU behind unchanged scenery.
-        await A.wait_for_timeout(1500)
+        # The city stays alive for half a minute after the last touch, then rests rather than spinning the GPU.
+        await A.locator('.world-canvas[data-ambient="off"]').wait_for(timeout=45000)
+        await A.wait_for_timeout(300)
         f1 = int(await canvas.get_attribute('data-frames'))
         await A.wait_for_timeout(700)
         f2 = int(await canvas.get_attribute('data-frames'))
@@ -172,7 +187,7 @@ async def main():
             }),
         })''')
         assert dimensions['fits'] and all(r and r['top'] >= 0 and r['bottom'] <= 390 for r in dimensions['bounds']), dimensions
-        await A.screenshot(path=SHOTS / 'twodo-neon-plaza-landscape.png')
+        await A.screenshot(path=SHOTS / 'twodo-city-landscape.png')
         await A.set_viewport_size({'width':390,'height':844})
         await A.emulate_media(reduced_motion='reduce')
         await A.locator('.world-stick').focus()
@@ -181,6 +196,8 @@ async def main():
         assert await position(A)!=at
         await A.locator('.world-toolbar button').click()
         assert await A.locator('.world-enter').is_visible()
+        # Leaving gives the status bar back to the app.
+        assert (await A.evaluate("() => document.querySelector('meta[name=theme-color]').content")).lower() == A.theme_before.lower()
         await A.locator('.world-enter').click()
         await A.locator('.world-canvas[data-ready="yes"]').wait_for(timeout=30000)
         await A.locator('.world-canvas').dispatch_event('webglcontextlost')

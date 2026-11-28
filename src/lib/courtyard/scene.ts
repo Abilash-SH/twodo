@@ -1,15 +1,25 @@
-/** Imperative game loop: no React updates while walking/looking, no background render loop. */
+/** Imperative game loop: no React updates while walking/looking. The city draws while something moves, then for
+ *  half a minute after your last touch so birds, clouds and the train go on living (never with Reduce Motion), then
+ *  rests; once a minute it redraws only to follow the sun. */
 import * as T from 'three';
 import { makeRenderer } from '../people3d';
 import { reducedMotion } from '../util';
 import { loadActor, loadResident, type Actor, type Resident } from './actor';
-import { buildEnvironment } from './environment';
-import { makeFinish } from './post';
-import { angleDelta, areaAt, DESTINATIONS, followRoute, moveWithin, PLACES, route, SEATS, SOLIDS, SPAWN, type Point, type PoseMode, type WorldGesture, type WorldPose } from './state';
+import { daylight } from './daylight';
+import { buildEnvironment, type Phase } from './environment';
+import { makeFinish, onScreen } from './post';
+import {
+  angleDelta, areaAt, BUILDINGS, DESTINATIONS, followRoute, moveWithin, outdoorAt, PHOTOGRAPHER, PLACES, route, SEATS, SOLIDS, SPAWN,
+  type Outdoor, type Point, type PoseMode, type RoomName, type WorldGesture, type WorldPose,
+} from './state';
 import type { LocalPose } from './presence';
 
 export type Place = keyof typeof PLACES;
-export interface SceneReport { near: Place | null; area: keyof typeof DESTINATIONS; portrait: boolean; sitting: boolean; canSit: boolean; ready: boolean; partnerReady: boolean }
+export interface SceneReport {
+  near: Place | null; area: RoomName | 'garden'; portrait: boolean; sitting: boolean; canSit: boolean; ready: boolean; partnerReady: boolean;
+  /** the part of the city you're in, the colour of the sky at the top of the screen, and the time of day */
+  where?: Outdoor | RoomName; tint?: string; phase?: Phase;
+}
 export interface WorldScene {
   input(x: number, y: number): void; look(dx: number, dy: number): void; find(): void; bench(): void; react(gesture: WorldGesture): void; sit(): void;
   visit(place: keyof typeof DESTINATIONS): void; viewAvatar(): void;
@@ -26,11 +36,15 @@ interface Options {
   residents?: readonly { url: string; gender: 'm' | 'f' }[];
 }
 const OUTDOOR_LOOK_LIFT = .86;
+/** how long the city stays awake after your last touch, and its frame interval meanwhile (about 30 a second) */
+const AMBIENT_MS = 30000, AMBIENT_FRAME = 33;
+/** a phone held upright sees a narrow slice of the city at 52°: open the view up a little in portrait */
+const fov = (w: number, h: number) => w < h ? 62 : 52;
 /** Where the city's residents spend the evening, and what they do there. Outside the walkable plaza, so they never
  *  change where the two of you can go. */
 const RESIDENT_SPOTS = [
   { x: -2.4, z: -9.85, yaw: 0, clip: 'dance', height: 1.66 },
-  { x: 10.15, z: .4, yaw: -1.67, clip: 'photo', height: 1.74 },
+  { x: PHOTOGRAPHER.x, z: PHOTOGRAPHER.z, yaw: -Math.PI / 2, clip: 'photo', height: 1.74 }, // at the lake railing
   { x: 2.05, z: -9.85, yaw: -Math.PI / 2, clip: 'clap', height: 1.7 },
 ] as const;
 export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: Options): WorldScene {
@@ -38,7 +52,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   const renderer: T.WebGLRenderer = created;
   let invalidate = () => {};
   let environment: ReturnType<typeof buildEnvironment>;
-  const scene = new T.Scene(), camera = new T.PerspectiveCamera(52, w / h, .08, 150);
+  const scene = new T.Scene(), camera = new T.PerspectiveCamera(fov(w, h), w / h, .08, 600);
   try { environment = buildEnvironment(scene, getComputedStyle(canvas), renderer); } catch (error) { renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); throw error; }
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
@@ -49,6 +63,21 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   canvas.dataset.finish = finish.kind;
   renderer.info.autoReset = false; // count every pass of a frame, not just the last one
   renderer.toneMappingExposure = .86;
+  // The hour: sampled at most every 50 seconds (and at once when Reduce Motion changes).
+  let lightAt = -1e9, tint = '', phase: Phase = 'Afternoon';
+  function light(now: number) {
+    if (now - lightAt < 50000) return;
+    lightAt = now;
+    const date = new Date(), d = daylight(date);
+    environment.setDaylight(d, reducedMotion.matches, date.getHours());
+    const look = environment.look();
+    renderer.toneMappingExposure = look.exposure;
+    finish.setBloom(look.bloom);
+    tint = onScreen(look.sky, look.exposure, finish.kind);
+    phase = look.phase;
+    canvas.dataset.sun = d.elevation.toFixed(1);
+  }
+  light(performance.now());
   const labelPoint = new T.Vector3();
   /** Keep a name plate over someone's head: a transform only, never a layout read. */
   function placeLabel(index: number, actor: Actor | null) {
@@ -77,17 +106,22 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   const portraitTarget = new T.Vector3();
   let updatePortraitTarget = false;
   const cameraRay = new T.Ray(), hit = new T.Vector3(), direction = new T.Vector3();
-  const cameraSolids = SOLIDS.filter(s => s.h >= 2).map(s => new T.Box3(
+  const cameraSolids = [...SOLIDS.filter(s => s.h >= 2), ...BUILDINGS].map(s => new T.Box3(
     new T.Vector3(s.x - s.w / 2 - .1, 0, s.z - s.d / 2 - .1),
     new T.Vector3(s.x + s.w / 2 + .1, s.h, s.z + s.d / 2 + .1),
   ));
   const faceFill = new T.DirectionalLight(0xfff1e1, 0);
   scene.add(faceFill, faceFill.target);
+  // after dark, a soft light that travels with the camera keeps the two of you visible (it reaches a few metres)
+  const nightFill = new T.PointLight(0xdfe6ff, 0, 7, 2);
+  scene.add(nightFill);
   const restingSeat = SEATS[o.slot === 0 ? 1 : 0], ownSeat = SEATS[o.slot];
   const peerPosition = new T.Vector3(restingSeat.x, 0, restingSeat.z);
   const fail = () => { if (gone) return; stop(); o.failure(); };
+  let touchedAt = performance.now(), ambientTimer = 0;
+  const touched = () => { touchedAt = performance.now(); };
   function cancelReaction() { reactionLeft = 0; waveUntil = 0; }
-  function stop() { cancelAnimationFrame(frame); frame = 0; last = 0; movement = { x: 0, y: 0 }; path = []; cancelReaction(); peerReactionLeft = 0; }
+  function stop() { cancelAnimationFrame(frame); frame = 0; clearTimeout(ambientTimer); ambientTimer = 0; last = 0; movement = { x: 0, y: 0 }; path = []; cancelReaction(); peerReactionLeft = 0; }
   function nearest(): Place | null {
     let result: Place | null = null, distance = 2;
     for (const [name, p] of Object.entries(PLACES) as [Place, Point][]) {
@@ -97,7 +131,10 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     return result;
   }
   function report() {
-    const value = { near: nearest(), area: room, portrait, sitting, canSit: Math.hypot(position.x - PLACES.partner.x, position.z - PLACES.partner.z) < 2, ready: !!player, partnerReady: !!partner }, key = JSON.stringify(value);
+    const value: SceneReport = {
+      near: nearest(), area: room, portrait, sitting, canSit: Math.hypot(position.x - PLACES.partner.x, position.z - PLACES.partner.z) < 2,
+      ready: !!player, partnerReady: !!partner, where: room === 'garden' ? outdoorAt(position.x, position.z) : room, tint, phase,
+    }, key = JSON.stringify(value);
     if (key !== lastReport) { lastReport = key; o.report(value); }
   }
   function stand() { if (sitting) { sitting = false; position = { ...standAt }; settling = .4; placementBlend = .35; updatePortraitTarget = true; } }
@@ -108,6 +145,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     stand();
     path = route(position, point);
     settling = .4;
+    touched();
     wake();
   }
   function constrainCamera(to: T.Vector3) {
@@ -123,6 +161,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
   }
   function tick(now: number) {
     frame = 0; if (gone || !active || !inViewport || document.hidden) { last = 0; return; }
+    light(now);
     // Movement can catch up on slow frames using collision substeps, without skipping camera easing.
     const elapsed = last ? Math.min(.25, (now - last) / 1000) : .016;
     if (last && dpr > 1) {
@@ -178,6 +217,8 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     nextEye.y = Math.max(1.1, nextEye.y); eye.lerp(nextEye, reduced || directLook ? 1 : 1 - Math.exp(-dt * 12));
     constrainCamera(eye);
     faceFill.intensity = portrait ? .8 : 0;
+    nightFill.intensity = portrait ? 0 : environment.look().fill;
+    nightFill.position.set(eye.x, eye.y + .5, eye.z);
     if (portrait) {
       faceFill.position.set(eye.x - .65, eye.y + .35, eye.z);
       faceFill.target.position.copy(lookTarget);
@@ -204,17 +245,23 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     reactionLeft = Math.max(0, reactionLeft - elapsed);
     peerReactionLeft = Math.max(0, peerReactionLeft - elapsed);
     const cameraBusy = eye.distanceTo(nextEye) > .003 || target.distanceTo(lookTarget) > .003 || Math.abs(lift - skylineLift) > .003;
-    if (walking || peerBusy || inputLength > .08 || path.length || cameraBusy || reacting || settling > 0) wake(); else last = 0;
+    const ambient = !reduced && now - touchedAt < AMBIENT_MS;
+    canvas.dataset.ambient = ambient ? 'on' : 'off';
+    if (walking || peerBusy || inputLength > .08 || path.length || cameraBusy || reacting || settling > 0) wake();
+    else if (ambient) { if (!ambientTimer) ambientTimer = window.setTimeout(() => { ambientTimer = 0; wake(); }, AMBIENT_FRAME); }
+    else last = 0;
   }
   function wake() { if (!frame && !gone && active && inViewport && !document.hidden) frame = requestAnimationFrame(tick); }
   invalidate = () => { settling = .1; wake(); };
-  function resize(nw: number, nh: number) { size = { w: Math.max(1, nw), h: Math.max(1, nh) }; renderer.setPixelRatio(dpr); renderer.setSize(size.w, size.h, false); finish.setSize(size.w, size.h, dpr); camera.aspect = size.w / size.h; camera.updateProjectionMatrix(); wake(); }
+  function resize(nw: number, nh: number) { size = { w: Math.max(1, nw), h: Math.max(1, nh) }; renderer.setPixelRatio(dpr); renderer.setSize(size.w, size.h, false); finish.setSize(size.w, size.h, dpr); camera.aspect = size.w / size.h; camera.fov = fov(size.w, size.h); camera.updateProjectionMatrix(); wake(); }
   const lost = (event: Event) => { event.preventDefault(); fail(); };
   canvas.addEventListener('webglcontextlost', lost);
-  const visibility = () => { if (document.hidden) stop(); else { settling = .3; wake(); } };
+  const visibility = () => { if (document.hidden) stop(); else { settling = .3; touched(); wake(); } };
+  // once a minute, follow the sun (one frame) if nothing else is drawing
+  const clock = window.setInterval(() => { if (!frame && !ambientTimer) { settling = 0; wake(); } }, 60000);
   document.addEventListener('visibilitychange', visibility);
   const seen = new IntersectionObserver(es => { inViewport = es[es.length - 1].isIntersecting; if (inViewport) wake(); else stop(); }); seen.observe(canvas);
-  const motion = () => { settling = .3; wake(); }, motionMedia = matchMedia('(prefers-reduced-motion: reduce)'); motionMedia.addEventListener('change', motion);
+  const motion = () => { settling = .3; lightAt = -1e9; wake(); }, motionMedia = matchMedia('(prefers-reduced-motion: reduce)'); motionMedia.addEventListener('change', motion);
   resize(w, h);
   const tasks = [o.me, o.partner].map(async (person, index) => {
     try {
@@ -242,8 +289,8 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     }
   });
   return {
-    input(x, y) { movement = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }; if (Math.hypot(x, y) > .08) cancelReaction(); settling = .35; wake(); },
-    look(dx, dy) { if (portrait) portraitYaw -= dx * .006; else { cameraYaw -= dx * .006; pitch = Math.max(.08, Math.min(.85, pitch + dy * .004)); } directLook = true; settling = .35; wake(); },
+    input(x, y) { movement = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }; if (Math.hypot(x, y) > .08) cancelReaction(); settling = .35; touched(); wake(); },
+    look(dx, dy) { if (portrait) portraitYaw -= dx * .006; else { cameraYaw -= dx * .006; pitch = Math.max(.08, Math.min(.85, pitch + dy * .004)); } directLook = true; settling = .35; touched(); wake(); },
     find() {
       if (!livePeer || livePeer.mode === 'sit') { travel(PLACES.partner); return; }
       const dx = position.x - livePeer.x, dz = position.z - livePeer.z;
@@ -254,7 +301,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
     },
     bench() { travel(PLACES.partner); },
     visit(place) { travel(DESTINATIONS[place]); },
-    viewAvatar() { if (!player) return; portrait = !portrait; updatePortraitTarget = portrait; portraitYaw = yaw; path = []; settling = .35; report(); wake(); },
+    viewAvatar() { if (!player) return; portrait = !portrait; updatePortraitTarget = portrait; portraitYaw = yaw; path = []; settling = .35; touched(); report(); wake(); },
     react(next) {
       if (!player) return;
       stand();
@@ -262,9 +309,10 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       gesture = next;
       waveUntil = performance.now() + 1300;
       reactionLeft = reducedMotion.matches ? .1 : 1.3;
+      touched();
       wake();
     },
-    sit() { if (!player) return; cancelReaction(); if (sitting) stand(); else if (Math.hypot(position.x - PLACES.partner.x, position.z - PLACES.partner.z) < 2) { standAt = { ...position }; position = { ...ownSeat }; yaw = 0; sitting = true; path = []; placementBlend = .35; updatePortraitTarget = true; } settling = .5; report(); wake(); },
+    sit() { if (!player) return; cancelReaction(); if (sitting) stand(); else if (Math.hypot(position.x - PLACES.partner.x, position.z - PLACES.partner.z) < 2) { standAt = { ...position }; position = { ...ownSeat }; yaw = 0; sitting = true; path = []; placementBlend = .35; updatePortraitTarget = true; } settling = .5; touched(); report(); wake(); },
     peer(p) {
       const newGesture = p?.mode === 'wave' && (livePeer?.mode !== 'wave' || p.gesture !== livePeer.gesture || p.session !== livePeer.session);
       if (newGesture) { peerGesture = p.gesture || 'wave'; peerReactionLeft = reducedMotion.matches ? .1 : 1.3; }
@@ -273,7 +321,7 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       livePeer = p;
       if (changed || newGesture) { settling = .4; wake(); }
     },
-    active(on) { active = on; if (!on) stop(); else { settling = .4; wake(); } },
+    active(on) { active = on; if (!on) stop(); else { settling = .4; touched(); wake(); } },
     resize,
     photos(values) { if (!gone) environment.photos(values, () => { settling = .1; wake(); }); },
     pose() {
@@ -281,6 +329,6 @@ export function mountWorld(canvas: HTMLCanvasElement, w: number, h: number, o: O
       const current = sitting ? 'sit' : performance.now() < waveUntil ? 'wave' : mode === 'wave' ? 'idle' : mode;
       return { ...position, yaw, mode: current, ...(current === 'wave' ? { gesture } : {}) };
     },
-    destroy() { if (gone) return; gone = true; stop(); abort.abort(); seen.disconnect(); document.removeEventListener('visibilitychange', visibility); motionMedia.removeEventListener('change', motion); canvas.removeEventListener('webglcontextlost', lost); player?.destroy(); partner?.destroy(); residents.forEach(r => r.destroy()); finish.dispose(); environment.dispose(); renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); },
+    destroy() { if (gone) return; gone = true; stop(); clearInterval(clock); abort.abort(); seen.disconnect(); document.removeEventListener('visibilitychange', visibility); motionMedia.removeEventListener('change', motion); canvas.removeEventListener('webglcontextlost', lost); player?.destroy(); partner?.destroy(); residents.forEach(r => r.destroy()); finish.dispose(); environment.dispose(); renderer.dispose(); if (!renderer.getContext().isContextLost()) renderer.forceContextLoss(); },
   };
 }

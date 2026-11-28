@@ -255,9 +255,13 @@ and data checks, and a short iPhone checklist.
 - **Neon city (draft PR #47):** the user chose a cyber-city setting. A tower skyline, elevated train, fountain, loft and
   motor bay replace the village scenery within the same walkable footprint. `docs/explore-city.md` records
   the visual and device checks.
-- **Sharper neon city (this PR):** bloom and multisampling, a violet sky with a planet, glass towers with glowing
+- **Sharper neon city (PR #48, merged):** bloom and multisampling, a violet sky with a planet, glass towers with glowing
   windows and neon edges, holograms, reflections, a name plate over your partner and three city residents, and a
-  game-style display. Same footprint, presence and controls. `docs/explore-city.md`, "Sharper neon city".
+  game-style display. Same footprint, presence and controls. `docs/explore-city.md`, "Earlier versions".
+- **Explore by the hour (this PR):** full screen with the status bar in the sky's colour, a couple badge, light and
+  sky from the phone's clock (sunsets, night, moon, birds), realistic materials with neon only at night, a lakeside
+  promenade and south/east streets, and 30 s of ambient life after the last touch. Presence format unchanged; the new
+  walks are new positions. `docs/explore-city.md`, "The light follows the hour".
 - **Next art milestone:** compare the prototypes to the originals on a physical iPhone before expanding to
   additional looks or changing characters outside Explore.
 

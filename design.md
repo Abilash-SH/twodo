@@ -201,6 +201,20 @@ italic capitals, a pink *Find* and a neon stick; never blur over the city. Stati
 and rim light replace "static lighting only"; rendering still happens only while something moves.
 `docs/explore-city.md`, "Sharper neon city".
 
+**By the hour, 2026-11-28 (third request: full screen, a badge, realistic light, a real sky, a bigger map).** This
+replaces the violet night and most of the neon above. Explore is full screen: the city runs under the status bar
+and the bottom bar, and the status bar takes the colour of the sky at the top of the screen (the theme colour),
+never the app's light background. Home's header steps aside for a **couple badge** (both faces overlapping, both
+first names, a green dot and "… is here" when your partner is live); the place and the time of day ("Sunset ·
+5:40 PM", "Lakeside") sit under it, and the way out is a round × top right. The light follows the phone's clock:
+blue days with soft shadows, gold and pink sunsets, a navy night with stars, the moon, lit windows and street lamps.
+Surfaces are real materials (glass, concrete, charcoal, granite, wood, water); signs are charcoal with one coloured
+bar and white letters. Neon is a night accent only and bloom stays subtle. Birds fly by day and at sunset. Panels
+are calm: rounded (14 px; the badge and × are pills), a dark translucent fill with a hairline edge, the app's
+rounded type in sentence case, a white *Find* and a white stick knob; still never blur over the city. The city
+stays awake for 30 seconds after the last touch, then rests; with Reduce Motion nothing drifts and there are no
+birds. `docs/explore-city.md`, "The light follows the hour".
+
 ## 6. Characters
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;

@@ -43,8 +43,46 @@ export const PLACES = {
   journal: { x: -3.7, z: -5.8 }, workbench: { x: 5.55, z: -5.8 },
 };
 export const DESTINATIONS = {
-  garden: SPAWN, villa: { x: -5.1, z: -4.7 }, garage: { x: 4.9, z: -5.05 },
+  garden: SPAWN, villa: { x: -5.1, z: -4.7 }, garage: { x: 4.9, z: -5.05 }, lake: { x: -15.2, z: 2.2 },
 };
+/** Where you can walk outdoors (2026-11-28): the plaza as before, a lakeside promenade to the west, and walks along
+ *  the streets to the south and east. Poses outside the plaza are only understood by this version onwards. */
+export const REGIONS = [
+  { minX: -9, maxX: 9, minZ: -8, maxZ: 8 },
+  { minX: -19.3, maxX: -8.9, minZ: -7.6, maxZ: 13.3 },
+  { minX: -19.3, maxX: 12.2, minZ: 7.9, maxZ: 13.3 },
+  { minX: 8.9, maxX: 12.2, minZ: -7.6, maxZ: 13.3 },
+] as const; // each overlaps the plaza a little, so its edge is never a gap
+/** the railing above the lake, and the far side of the walks (the street kerbs) */
+export const LAKE_EDGE = -19.65, SOUTH_KERB = 13.55, EAST_KERB = 12.45;
+/** trees in planters and benches looking over the lake; lamp posts are thin and kept apart like plaza fixtures */
+export const TREES: Point[] = [
+  { x: -11.8, z: -5.4 }, { x: -11.8, z: -1.2 }, { x: -11.8, z: 3 }, { x: -11.8, z: 7.2 }, { x: -11.8, z: 11.4 },
+  { x: -17.3, z: -3.6 }, { x: -17.3, z: .6 }, { x: -17.3, z: 4.8 }, { x: -17.3, z: 9 },
+  { x: -6, z: 12.4 }, { x: 1, z: 12.4 }, { x: 8, z: 12.4 }, { x: 11.4, z: -5 }, { x: 11.4, z: 1.5 }, { x: 11.4, z: 8 },
+];
+export const LAKE_BENCHES: Point[] = [{ x: -18.75, z: -1.4 }, { x: -18.75, z: 7 }];
+export const STREET_LAMPS: Point[] = [
+  { x: -14.4, z: -6.2 }, { x: -14.4, z: -.6 }, { x: -14.4, z: 5 }, { x: -14.4, z: 10.6 },
+  { x: -10.4, z: 12.9 }, { x: -2.5, z: 12.9 }, { x: 4.5, z: 12.9 }, { x: 11.9, z: 12.9 }, { x: 11.9, z: -1.8 },
+];
+/** a resident who stands at the railing taking photos of the lake */
+export const PHOTOGRAPHER: Point = { x: -18.85, z: 2.9 };
+/** buildings around the walks: only the camera uses them (it never ends up inside one) */
+export const BUILDINGS: Solid[] = [
+  { x: -16, z: -12.4, w: 5.3, d: 5, h: 8.7 }, { x: -9.7, z: -14.6, w: 4.9, d: 4.7, h: 12.9 }, { x: -4.6, z: -13.9, w: 3.7, d: 4.4, h: 8.5 },
+  { x: .15, z: -17.5, w: 4.7, d: 5, h: 16.2 }, { x: 4.85, z: -14.8, w: 4, d: 4.8, h: 10.6 }, { x: 10, z: -14.2, w: 4.6, d: 4.9, h: 13 },
+  { x: 19, z: -11, w: 5, d: 5, h: 14 }, { x: 19.2, z: -3, w: 5, d: 5.5, h: 10 }, { x: 19.5, z: 5, w: 5, d: 5, h: 16 }, { x: 19, z: 13, w: 5, d: 4.5, h: 11 },
+  { x: -14.5, z: 21, w: 5.2, d: 4.4, h: 9.5 }, { x: -8, z: 20, w: 4.9, d: 4.1, h: 11.3 }, { x: -1, z: 21.5, w: 4.4, d: 5, h: 8.6 }, { x: 6, z: 20.5, w: 5.5, d: 4.7, h: 12.5 },
+  { x: 13, z: 21, w: 4.8, d: 4.4, h: 15 },
+];
+export type Outdoor = 'plaza' | 'lake' | 'south' | 'east';
+/** which part of the city a point outdoors is in */
+export function outdoorAt(x: number, z: number): Outdoor {
+  if (x < -9.2) return 'lake';
+  if (x > 9.2 && z < 8.2) return 'east';
+  return z > 8.2 ? 'south' : 'plaza';
+}
 export const FURNITURE = {
   sofa: { x: -6.8, z: -5.85, w: .89, d: 1.9, h: .85 },
   desk: { x: -3.22, z: -6.48, w: 1.15, d: .76, h: .82 },
@@ -55,12 +93,17 @@ export const SOLIDS: Solid[] = [
   ...Object.values(ROOMS).flatMap(walls),
   ...Object.values(FURNITURE),
   { ...BENCH, w: 2.7, d: .85, h: 1.1 },
+  ...TREES.map(t => ({ ...t, w: 1.15, d: 1.15, h: .55 })),
+  ...LAKE_BENCHES.map(b => ({ ...b, w: .7, d: 1.9, h: .9 })),
+  { ...PHOTOGRAPHER, w: .55, d: .55, h: 1.7 },
 ];
 export function walkable(x: number, z: number): boolean {
-  return Number.isFinite(x) && Number.isFinite(z) && Math.abs(x) < 9 && Math.abs(z) < 8
+  return Number.isFinite(x) && Number.isFinite(z)
+    && REGIONS.some(r => x > r.minX && x < r.maxX && z > r.minZ && z < r.maxZ)
     && !SOLIDS.some(b => Math.abs(x - b.x) < b.w / 2 + .25 && Math.abs(z - b.z) < b.d / 2 + .25)
     && ((x - FOUNTAIN.x) / FOUNTAIN.rx) ** 2 + ((z - FOUNTAIN.z) / FOUNTAIN.rz) ** 2 > 1
-    && !PLAZA_FIXTURES.some(t => Math.hypot(x - t.x, z - t.z) < .6);
+    && !PLAZA_FIXTURES.some(t => Math.hypot(x - t.x, z - t.z) < .6)
+    && !STREET_LAMPS.some(t => Math.hypot(x - t.x, z - t.z) < .4);
 }
 export const angleDelta = (a: number, b: number): number => Math.atan2(Math.sin(b - a), Math.cos(b - a));
 export function moveWithin(p: Point, dx: number, dz: number): Point {
@@ -88,32 +131,46 @@ export function followRoute(position: Point, path: Point[], metres: number): Poi
   }
   return position;
 }
-const STEP = .4, HALF = 24, SIZE = 49;
-const point = (id: number): Point => ({ x: (id % SIZE - HALF) * STEP, z: (Math.floor(id / SIZE) - HALF) * STEP });
+// The route grid covers every walkable region at 40 cm, with the plaza's points exactly where they were.
+const STEP = .4, X0 = -20, Z0 = -8.4, NX = 84, NZ = 56, CELLS = NX * NZ;
+const point = (id: number): Point => ({ x: +(X0 + (id % NX) * STEP).toFixed(2), z: +(Z0 + Math.floor(id / NX) * STEP).toFixed(2) });
+let open: Uint8Array | null = null;
+function walkableCells(): Uint8Array {
+  if (!open) { open = new Uint8Array(CELLS); for (let id = 0; id < CELLS; id++) { const p = point(id); open[id] = walkable(p.x, p.z) ? 1 : 0; } }
+  return open;
+}
 function nearest(p: Point): number {
+  const cells = walkableCells();
   let best = -1, dist = Infinity;
-  for (let id = 0; id < SIZE * SIZE; id++) { const q = point(id), d = (p.x - q.x) ** 2 + (p.z - q.z) ** 2; if (d < dist && walkable(q.x, q.z)) { best = id; dist = d; } }
+  for (let id = 0; id < CELLS; id++) { if (!cells[id]) continue; const q = point(id), d = (p.x - q.x) ** 2 + (p.z - q.z) ** 2; if (d < dist) { best = id; dist = d; } }
   return best;
 }
-/** A bounded A* route. Diagonals cannot cut through an obstacle's corner. */
+/** A bounded A* route over a binary heap. Diagonals cannot cut through an obstacle's corner. */
 export function route(from: Point, to: Point): Point[] {
   if (![from.x, from.z, to.x, to.z].every(Number.isFinite)) return [];
-  const first = nearest(from), goal = nearest(to); if (first < 0 || goal < 0) return [];
-  const open = new Set([first]), came = new Map<number, number>(), cost = new Map([[first, 0]]);
-  const h = (id: number) => Math.hypot(id % SIZE - goal % SIZE, Math.floor(id / SIZE) - Math.floor(goal / SIZE));
-  for (let count = 0; open.size && count < SIZE * SIZE; count++) {
-    let current = -1, best = Infinity;
-    for (const id of open) { const f = cost.get(id)! + h(id); if (f < best) { current = id; best = f; } }
-    if (current === goal) { const ids = [current]; while (came.has(ids[ids.length - 1])) ids.push(came.get(ids[ids.length - 1])!); return ids.reverse().map(point); }
-    open.delete(current);
+  const cells = walkableCells(), first = nearest(from), goal = nearest(to); if (first < 0 || goal < 0) return [];
+  const cost = new Float64Array(CELLS).fill(Infinity), came = new Int32Array(CELLS).fill(-1), done = new Uint8Array(CELLS);
+  const gx = goal % NX, gz = Math.floor(goal / NX);
+  const h = (id: number) => Math.hypot(id % NX - gx, Math.floor(id / NX) - gz);
+  const heap: number[] = [], f = new Float64Array(CELLS);
+  const push = (id: number) => { heap.push(id); let i = heap.length - 1; while (i > 0) { const up = (i - 1) >> 1; if (f[heap[up]] <= f[id]) break; heap[i] = heap[up]; i = up; } heap[i] = id; };
+  const pop = () => { const top = heap[0], last = heap.pop()!; if (heap.length) { let i = 0; for (;;) { const l = i * 2 + 1, r = l + 1; let m = i; const fm = () => f[m === i ? last : heap[m]];
+    if (l < heap.length && f[heap[l]] < fm()) m = l; if (r < heap.length && f[heap[r]] < fm()) m = r; if (m === i) break; heap[i] = heap[m]; i = m; } heap[i] = last; } return top; };
+  cost[first] = 0; f[first] = h(first); push(first);
+  while (heap.length) {
+    const current = pop();
+    if (done[current]) continue;
+    done[current] = 1;
+    if (current === goal) { const ids = [current]; while (came[ids[ids.length - 1]] >= 0) ids.push(came[ids[ids.length - 1]]); return ids.reverse().map(point); }
+    const cx = current % NX, cz = Math.floor(current / NX);
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-      const x = current % SIZE + dx, z = Math.floor(current / SIZE) + dz;
-      if (x < 0 || z < 0 || x >= SIZE || z >= SIZE) continue;
-      const next = z * SIZE + x, p = point(next);
-      if (!walkable(p.x, p.z)) continue;
-      if (dx && dz) { const a = point(current + dx), b = point(current + dz * SIZE); if (!walkable(a.x, a.z) || !walkable(b.x, b.z)) continue; }
-      const n = cost.get(current)! + Math.hypot(dx, dz);
-      if (n < (cost.get(next) ?? Infinity)) { cost.set(next, n); came.set(next, current); open.add(next); }
+      const x = cx + dx, z = cz + dz;
+      if (x < 0 || z < 0 || x >= NX || z >= NZ) continue;
+      const next = z * NX + x;
+      if (!cells[next] || done[next]) continue;
+      if (dx && dz && (!cells[current + dx] || !cells[current + dz * NX])) continue;
+      const n = cost[current] + Math.hypot(dx, dz);
+      if (n < cost[next]) { cost[next] = n; came[next] = current; f[next] = n + h(next); push(next); }
     }
   }
   return [];

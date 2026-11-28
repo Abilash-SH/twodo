@@ -1,22 +1,31 @@
-/** The night above the neon city: a violet gradient dome, stars, a ringed planet and a few streaks of light, all
- *  painted on the phone. Also the city's reflections: a small room of coloured light panels turned into an
- *  environment map, so glass, chrome and the wet street pick up neon instead of grey. */
+/** The sky over Explore, following the phone's clock (daylight.ts): a gradient dome with the sun and its glow, a
+ *  warm band along the horizon at sunset, stars and the moon at night, and clouds lit by the time of day. Its
+ *  colours also become the city's reflections (an environment map made from the dome alone). All painted on the
+ *  phone; nothing is downloaded. */
 import * as T from 'three';
 import { seededNoise } from './city-art';
-
-type Ink = (name: string) => T.Color;
+import type { Daylight } from './daylight';
 
 const DOME_VERTEX = [
   'varying vec3 vDir;',
   'void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
 ].join('\n');
 const DOME_FRAGMENT = [
-  'uniform vec3 zenith; uniform vec3 horizon; uniform vec3 glow; varying vec3 vDir;',
+  'uniform vec3 zenith; uniform vec3 horizon; uniform vec3 glow; uniform vec3 sunColor; uniform vec3 sunDir;',
+  'uniform float glowStrength; uniform float band; uniform float sunUp;',
+  'varying vec3 vDir;',
   'void main() {',
-  '  float h = clamp(vDir.y, -.25, 1.0);',
-  '  vec3 c = mix(horizon, zenith, smoothstep(-.02, .62, h));',
-  '  c += glow * exp(-abs(h - .035) * 11.0) * .55;',
-  '  c += glow * .35 * exp(-abs(h - .2) * 4.0) * smoothstep(.2, -.6, vDir.z);',
+  '  vec3 d = normalize(vDir);',
+  '  float h = d.y;',
+  '  vec3 c = mix(horizon, zenith, pow(clamp(h, 0.0, 1.0), .5));',
+  '  c = mix(c, horizon * .45, smoothstep(0.0, -.2, h));',
+  '  float s = max(dot(d, sunDir), 0.0);',
+  '  c += glow * (pow(s, 5.0) * .28 + pow(s, 48.0) * .55) * glowStrength;',
+  '  vec2 flatDir = normalize(d.xz + 1e-5), flatSun = normalize(sunDir.xz + 1e-5);',
+  '  float toward = pow(max(dot(flatDir, flatSun), 0.0), 2.5);',
+  '  c += glow * toward * exp(-abs(h - .02) * 9.0) * band;',
+  '  float disc = smoothstep(.99985, .99993, dot(d, sunDir));',
+  '  c = mix(c, sunColor * 6.0, disc * sunUp);',
   '  gl_FragColor = vec4(c, 1.0);',
   '  #include <tonemapping_fragment>',
   '  #include <colorspace_fragment>',
@@ -34,125 +43,118 @@ function canvasTexture(w: number, h: number, paint: (c: CanvasRenderingContext2D
   return map;
 }
 
-export function buildSky(scene: T.Scene, ink: Ink) {
+/** where the moon hangs: low over the lake to the west (18° up), so you see it from the promenade */
+export const MOON = new T.Vector3(-.947, .309, .083).normalize();
+
+export function buildSky(scene: T.Scene) {
   const disposables: { dispose(): void }[] = [];
   const keep = <D extends { dispose(): void }>(d: D) => { disposables.push(d); return d; };
   const sky = new T.Group();
   sky.name = 'sky';
   scene.add(sky);
 
-  const dome = new T.Mesh(keep(new T.SphereGeometry(110, 32, 18)), keep(new T.ShaderMaterial({
-    uniforms: { zenith: { value: ink('zenith') }, horizon: { value: ink('horizon') }, glow: { value: ink('haze') } },
-    vertexShader: DOME_VERTEX, fragmentShader: DOME_FRAGMENT, side: T.BackSide, depthWrite: false, fog: false,
-  })));
+  const uniforms = {
+    zenith: { value: new T.Color() }, horizon: { value: new T.Color() }, glow: { value: new T.Color() }, sunColor: { value: new T.Color() },
+    sunDir: { value: new T.Vector3(0, 1, 0) }, glowStrength: { value: 1 }, band: { value: 0 }, sunUp: { value: 1 },
+  };
+  const domeGeometry = keep(new T.SphereGeometry(130, 48, 24));
+  const domeMaterial = keep(new T.ShaderMaterial({ uniforms, vertexShader: DOME_VERTEX, fragmentShader: DOME_FRAGMENT, side: T.BackSide, depthWrite: false, fog: false }));
+  const dome = new T.Mesh(domeGeometry, domeMaterial);
   dome.renderOrder = -10;
   sky.add(dome);
+  // the same dome on its own, for the reflections
+  const reflectionScene = new T.Scene();
+  reflectionScene.add(new T.Mesh(domeGeometry, domeMaterial));
 
-  // Stars: fixed, brighter than white so the brightest ones bloom a little.
   const random = seededNoise(4242), points: number[] = [];
-  for (let i = 0; i < 760; i++) {
-    const y = .06 + Math.pow(random(), .7) * .94, a = random() * Math.PI * 2, r = Math.sqrt(1 - y * y);
-    points.push(Math.cos(a) * r * 100, y * 100, Math.sin(a) * r * 100);
+  for (let i = 0; i < 900; i++) {
+    const y = .05 + Math.pow(random(), .7) * .95, a = random() * Math.PI * 2, r = Math.sqrt(1 - y * y);
+    points.push(Math.cos(a) * r * 120, y * 120, Math.sin(a) * r * 120);
   }
   const starGeometry = keep(new T.BufferGeometry());
   starGeometry.setAttribute('position', new T.Float32BufferAttribute(points, 3));
-  const stars = new T.Points(starGeometry, keep(new T.PointsMaterial({
-    color: new T.Color(1.6, 1.6, 1.75), size: 1.7, sizeAttenuation: false, fog: false, depthWrite: false, transparent: true, opacity: .85,
-  })));
+  const starMaterial = keep(new T.PointsMaterial({ color: new T.Color(1.4, 1.4, 1.5), size: 1.6, sizeAttenuation: false, fog: false, depthWrite: false, transparent: true, opacity: 0 }));
+  const stars = new T.Points(starGeometry, starMaterial);
   stars.renderOrder = -9;
   sky.add(stars);
 
-  // A ringed planet low over the skyline, painted once.
-  const planetMap = keep(canvasTexture(512, 512, c => {
-    const body = c.createRadialGradient(212, 206, 18, 256, 256, 150);
-    body.addColorStop(0, '#ffd9f1');
-    body.addColorStop(.45, '#e37bc6');
-    body.addColorStop(.85, '#6b3aa6');
-    body.addColorStop(1, '#2a1458');
-    c.save();
-    c.beginPath(); c.arc(256, 256, 150, 0, Math.PI * 2); c.clip();
-    c.fillStyle = body; c.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 9; i++) {
-      c.fillStyle = i % 2 ? 'rgba(255,214,240,.12)' : 'rgba(56,20,96,.18)';
-      c.fillRect(0, 150 + i * 26, 512, 9 + (i % 3) * 4);
-    }
-    const shade = c.createLinearGradient(120, 120, 400, 400);
-    shade.addColorStop(0, 'rgba(0,0,0,0)'); shade.addColorStop(1, 'rgba(10,4,30,.55)');
-    c.fillStyle = shade; c.fillRect(0, 0, 512, 512);
-    c.restore();
-    c.save();
-    c.translate(256, 256); c.rotate(-.32); c.scale(1, .26);
-    for (const [r, w, a] of [[222, 10, .75], [200, 6, .5], [242, 4, .4]] as const) {
-      c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2);
-      c.strokeStyle = `rgba(124,244,255,${a})`; c.lineWidth = w; c.stroke();
-    }
-    c.restore();
-    // the ring passes in front of the planet's lower half
-    c.save();
-    c.beginPath(); c.rect(0, 256, 512, 256); c.clip();
-    c.translate(256, 256); c.rotate(-.32); c.scale(1, .26);
-    c.beginPath(); c.arc(0, 0, 222, 0, Math.PI); c.strokeStyle = 'rgba(190,250,255,.9)'; c.lineWidth = 10; c.stroke();
-    c.restore();
+  const moonMap = keep(canvasTexture(128, 128, c => {
+    const g = c.createRadialGradient(64, 64, 20, 64, 64, 64);
+    g.addColorStop(0, 'rgba(255,250,235,.35)'); g.addColorStop(1, 'rgba(255,250,235,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 128, 128);
+    c.beginPath(); c.arc(64, 64, 22, 0, Math.PI * 2); c.fillStyle = '#f4efe2'; c.fill();
+    for (const [x, y, r] of [[58, 58, 5], [71, 66, 4], [62, 74, 3], [70, 54, 2.5]]) { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = 'rgba(170,165,150,.45)'; c.fill(); }
   }));
-  const planet = new T.Sprite(keep(new T.SpriteMaterial({ map: planetMap, color: new T.Color(1.25, 1.2, 1.3), fog: false, depthWrite: false, transparent: true })));
-  planet.position.set(-26, 45, -75);
-  planet.scale.setScalar(30);
-  planet.renderOrder = -8;
-  sky.add(planet);
+  const moonMaterial = keep(new T.SpriteMaterial({ map: moonMap, color: new T.Color(1.6, 1.6, 1.55), fog: false, depthWrite: false, transparent: true, opacity: 0 }));
+  const moon = new T.Sprite(moonMaterial);
+  moon.position.copy(MOON).multiplyScalar(118);
+  moon.scale.setScalar(13);
+  moon.renderOrder = -8;
+  sky.add(moon);
 
-  // Long diagonal streaks of light, like comets crossing the sky.
-  const streakMap = keep(canvasTexture(256, 16, c => {
-    const g = c.createLinearGradient(0, 0, 256, 0);
-    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.75, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,1)');
-    c.fillStyle = g; c.fillRect(0, 6, 256, 4);
-    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(0, 4, 256, 8);
+  // Soft clouds, painted once, tinted by the hour and by how close they are to the sun.
+  const cloudMap = keep(canvasTexture(256, 128, c => {
+    const r = seededNoise(77);
+    for (let i = 0; i < 26; i++) {
+      const x = 40 + r() * 176, y = 58 + (r() - .5) * 34, s = 16 + r() * 30;
+      const g = c.createRadialGradient(x, y, 0, x, y, s);
+      g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g; c.fillRect(x - s, y - s, s * 2, s * 2);
+    }
   }));
-  const streakGeometry = keep(new T.PlaneGeometry(1, 1));
-  for (const [x, y, z, length, tilt, tint] of [
-    [24, 42, -70, 46, -.42, 'cyan'], [-8, 52, -82, 34, -.36, 'amber'], [52, 30, -40, 30, -.5, 'pink'],
-  ] as const) {
-    const streak = new T.Mesh(streakGeometry, keep(new T.MeshBasicMaterial({
-      map: streakMap, color: ink(tint).multiplyScalar(1.6), transparent: true, depthWrite: false, blending: T.AdditiveBlending, fog: false,
-    })));
-    streak.position.set(x, y, z);
-    streak.scale.set(length, length * .045, 1);
-    streak.lookAt(0, y * .4, 0);
-    streak.rotateZ(tilt);
-    streak.renderOrder = -7;
-    sky.add(streak);
+  const clouds = new T.Group();
+  sky.add(clouds);
+  const cloudParts: { material: T.SpriteMaterial; dir: T.Vector3 }[] = [];
+  const cr = seededNoise(31);
+  for (let i = 0; i < 11; i++) {
+    const a = i / 11 * Math.PI * 2 + cr() * .4, dist = 95 + cr() * 22, y = 34 + cr() * 30;
+    const material = keep(new T.SpriteMaterial({ map: cloudMap, fog: false, depthWrite: false, transparent: true, opacity: .8 }));
+    const sprite = new T.Sprite(material);
+    sprite.position.set(Math.cos(a) * dist, y, Math.sin(a) * dist);
+    sprite.scale.set(34 + cr() * 30, 13 + cr() * 9, 1);
+    sprite.renderOrder = -7;
+    clouds.add(sprite);
+    cloudParts.push({ material, dir: sprite.position.clone().normalize() });
   }
 
-  return { dispose() { disposables.forEach(d => d.dispose()); sky.removeFromParent(); } };
+  const sunDir = new T.Vector3(), at = new T.Vector3(), white = new T.Color(1, 1, 1), dusk = new T.Color(), warm = new T.Color(), lit = new T.Color();
+  return {
+    reflectionScene,
+    /** colour the sky for this moment */
+    update(d: Daylight) {
+      sunDir.set(d.sun[0], d.sun[1], d.sun[2]);
+      uniforms.sunDir.value.copy(sunDir);
+      uniforms.zenith.value.set(d.zenith); uniforms.horizon.value.set(d.horizon);
+      uniforms.glow.value.set(d.glow); uniforms.sunColor.value.set(d.sunColor);
+      uniforms.glowStrength.value = .35 + d.day * .65;
+      uniforms.band.value = d.golden * .9;
+      uniforms.sunUp.value = d.elevation > -1.2 ? 1 : 0;
+      starMaterial.opacity = d.night * .9;
+      moonMaterial.opacity = d.night;
+      dusk.set(d.zenith).lerp(warm.set(d.horizon), .3).multiplyScalar(1.3);
+      warm.set(d.glow);
+      // the clock's rotation of the cloud ring changes which clouds face the sun: measure in world space
+      clouds.updateMatrixWorld();
+      for (const [i, part] of cloudParts.entries()) {
+        part.dir.copy(clouds.children[i].getWorldPosition(at)).normalize();
+        const near = Math.pow(Math.max(0, part.dir.dot(sunDir)), 2);
+        lit.copy(white).lerp(warm, Math.min(1, d.golden * (.55 + near)));
+        part.material.color.copy(dusk).lerp(lit, Math.max(d.day, d.golden * .9)).multiplyScalar(.75 + d.day * .45 + near * d.golden * .8);
+        part.material.opacity = .55 + d.day * .3 - d.night * .2;
+      }
+    },
+    /** clouds drift slowly while the city is awake */
+    drift(seconds: number) { clouds.rotation.y += seconds * .0025; },
+    dispose() { disposables.forEach(item => item.dispose()); sky.removeFromParent(); },
+  };
 }
 
-/** Coloured light panels in a dark room, blurred into the city's environment map. */
-export function neonEnvironment(renderer: T.WebGLRenderer, ink: Ink): T.WebGLRenderTarget | null {
+/** The dome alone, blurred into an environment map: glass and water reflect this hour's sky. */
+export function skyReflections(renderer: T.WebGLRenderer, reflectionScene: T.Scene): T.WebGLRenderTarget | null {
   let pmrem: T.PMREMGenerator | null = null;
-  const room = new T.Scene(), parts: { dispose(): void }[] = [];
   try {
-    const box = new T.BoxGeometry(1, 1, 1);
-    parts.push(box);
-    const shell = new T.MeshBasicMaterial({ color: ink('zenith'), side: T.BackSide });
-    parts.push(shell);
-    const walls = new T.Mesh(box, shell);
-    walls.scale.set(30, 16, 30);
-    walls.position.y = 6;
-    room.add(walls);
-    const panel = (tint: string, strength: number, x: number, y: number, z: number, w: number, h: number, d: number) => {
-      const surface = new T.MeshBasicMaterial({ color: ink(tint).multiplyScalar(strength) });
-      parts.push(surface);
-      const piece = new T.Mesh(box, surface);
-      piece.position.set(x, y, z); piece.scale.set(w, h, d);
-      room.add(piece);
-    };
-    panel('cyan', 2.2, -13, 4, -4, .4, 7, 9);
-    panel('pink', 2.2, 13, 4, -2, .4, 6, 8);
-    panel('violet', 1.6, 0, 13, -6, 16, .4, 6);
-    panel('amber', 1.4, 4, 2, -13, 8, 3, .4);
-    panel('blue', 1.6, -5, 5, 13, 9, 6, .4);
-    panel('haze', 1, 0, 1, 13, 26, 1.2, .4);
     pmrem = new T.PMREMGenerator(renderer);
-    return pmrem.fromScene(room, .035);
+    return pmrem.fromScene(reflectionScene, .02, .1, 300);
   } catch { return null; }
-  finally { parts.forEach(p => p.dispose()); pmrem?.dispose(); }
+  finally { pmrem?.dispose(); }
 }

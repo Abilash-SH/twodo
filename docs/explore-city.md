@@ -1,72 +1,87 @@
-# Neon city in Explore
+# The city in Explore
 
-Explore opens in a walkable night plaza with an illuminated fountain, layered towers, a photo kiosk, warm
-street-front windows and an elevated Moonline train. The **Loft** is a lounge with the existing Journal desk.
-The **Garage** retains the workbench and opens the task patch. **Walk to** lists Neon Plaza, Loft and Garage.
-The bench, Moments, Chat, avatar close-up and paired reactions use their existing controls.
+Explore is a modern city by a lake, lit by the phone's own clock. You arrive on a granite plaza with a fountain, a
+bench, the night kitchen under an elevated train, a photo kiosk and towers of glass, concrete and charcoal. West of
+the plaza a wooden promenade runs along the lake, with trees, benches and street lamps; walks follow the streets to
+the south and east. The **Loft** keeps the Journal desk and the **Garage** the workbench (it opens the task patch).
+**Walk to** lists Plaza, Lakeside, Loft and Garage. The bench, Moments, Chat, the avatar close-up and paired
+reactions use their existing controls.
 
-## Build and compatibility
+## The light follows the hour (2026-11-28, third request)
 
-The city uses original geometry and procedurally painted pavers, windows and signs. Explore generates them
-when it opens. Boxes that share a material render in batches. Coloured light pools suggest reflections on
-the pavement. The train moves with the existing scene frames and stops when the scene rests or Reduce
-Motion is enabled. The city palette is scoped to Explore and its controls stay legible over the scene.
+Asked for: full screen like other city apps, no white strip at the top, a badge instead of the two names across the
+top, realistic rather than flashy lights, a real sky by the time of day with sunsets and birds, and a bigger map.
 
-The plaza, room footprints, paths and virtual position bounds retain their original coordinates. The visible
-area names use the existing internal area IDs. The photo kiosk sits beside the garage on an existing fixture.
-The same encrypted presence channel, input and task and journal entry points carry through. City rendering
-adds no network origins, database fields, storage keys or requests for environment artwork.
+- **The sun** (`lib/courtyard/daylight.ts`): from the phone's local time and date only, at a fixed latitude of 20°
+  (−25° when the time zone is in the southern hemisphere), with solar noon at 12:18 standard time and summer time
+  taken into account. That puts sunsets within minutes of real ones across most of a time zone (about 17:45 in
+  southern India in late November). **No location is read**, and nothing about the time is stored or sent.
+- **The sky** (`sky.ts`): a dome coloured by the sun's height (blue by day, gold and pink at sunset, a city's navy
+  at night, never black), the sun's disc and glow, a warm band along the horizon around sunset, clouds lit by the
+  hour, stars and the moon at night (the moon hangs low over the lake to the west). The dome alone becomes the
+  reflections, so glass and water show this hour's sky; they are remade only when the sky's colours change.
+- **The light**: the sun casts the shadows by day and the moon at night; the sky's own light fills them. Windows
+  light up after sunset (about half of them, warm or cool, some with blinds down), shop fronts glow, street lamps and
+  their pools come on, billboards light from inside. Neon is a night accent only (the train's edge, a line along the
+  plaza, the loft and garage), and the bloom is close to none by day and soft at night. A soft light travels with
+  the camera after dark, so the two of you stay visible.
+- **Birds** (`birds.ts`): pigeons looping over the plaza, gulls over the lake and a far flock beyond it, by day and
+  at sunset only. One instanced mesh; the wings beat in the vertex shader.
+- **The lake**: rippled water that catches the sun (the ripples drift slowly), a seawall, a glass railing, a far
+  shore about 300 m away with its own skyline (hazy by day, lit windows at night).
+- **Full screen**: the city runs under the status bar and under the bar at the bottom. Home's header gives way to a
+  badge with both faces, both first names and whether your partner is here; the place and the time of day sit
+  below it; the way out (×) is top right. The doors (Task patch, Moments, camera, photos) sit above the bar, the
+  stick and actions above them; in landscape the doors stack above the stick so the middle stays clear.
+- **The status bar**: iOS fills it with the page's theme colour, which was the app's light background (the white
+  strip). While Explore is open the theme colour is the sky at the top of the screen, worked out the way the frame
+  is (exposure, vignette, ACES tone mapping); leaving Explore gives the app's colour back (`applyTheme`).
+
+### Staying alive, then resting
+
+The city draws while something moves, then for **30 seconds after your last touch** at about 30 frames a second,
+so birds, clouds, the train, the water and the residents go on living; then it rests and draws nothing
+(`data-ambient` on the canvas says which). Once a minute it draws a single frame to follow the sun. With Reduce
+Motion there is no ambient time, the birds are hidden and nothing drifts. Behind another screen, in the background
+or off screen, nothing draws at all, as before.
+
+### The bigger map and what it means for data
+
+`state.ts` documents the walkable regions: the plaza as before, the promenade (x −19.3 to −8.9), the south walk
+(z 7.9 to 13.3) and the east walk (x 8.9 to 12.2), each overlapping the plaza a little so their seams are never a
+gap; trees, benches, the photographer and lamp posts are obstacles. A walk from any landmark to any other still
+finishes within 20 seconds (`tests/courtyard.cjs`).
+
+Presence is unchanged: the same encrypted pose, the same fields and bounds checks (`cleanPose` uses `walkable()`).
+A pose on the promenade is simply a new position. A phone still on the previous version rejects such a pose as out of
+bounds and shows its partner resting on the bench until they walk back onto the plaza; the app updates both phones
+on their next launch. No storage keys, records, network origins or requests were added; the textures are painted
+on the phone.
+
+### Cost
+
+The opening phone-sized Chromium render is about 85–120 draw calls (including the post-processing passes) and
+70,000 triangles, plus three residents' models (same origin). The shadow map is drawn once and again only when the
+sun or moon has moved half a degree; the reflections only when the sky's colours change.
 
 ## Physical iPhone checklist
 
-1. Open **Home → Explore our place** and turn the camera around the plaza. Check that the buttons are legible
-   in portrait and landscape and that the skyline, fountain and train read clearly.
-2. Use **Walk to → Loft** and open Journal at the desk. Walk back out through the doorway. Enter Garage and
-   use the workbench, then return to Neon Plaza.
-3. With both phones in Explore, check that movement and Wave, Clap and Cheer appear for both people. Open
-   Chat and come back. With Reduce Motion enabled, check that the train stays still as you move.
-4. Check a return visit on the same device for entrance time and walking frame pacing.
+1. Open **Home → Explore our place**: the city fills the screen, the status bar shows the sky's colour (not white),
+   and the badge shows both your names and faces. Leave with × and the status bar is the app's colour again.
+2. At midday the city is daylit, signs read as printed signs, nothing glows. Around sunset (or set the phone's
+   clock) the sky turns gold and pink, windows begin to light; at night the windows, street lamps and moon are lit
+   and the two of you are still visible.
+3. **Walk to → Lakeside**, turn towards the water: ripples, the far shore, birds by day; at sunset the sun over the
+   water. Walk the south and east streets back to the plaza.
+4. Stop touching for half a minute: birds and the train stop, the phone stays cool. Touch again: they carry on.
+5. With Reduce Motion on, nothing drifts and there are no birds.
+6. The Loft (Journal desk), the Garage (workbench), the bench, Moments, Chat, reactions and the avatar close-up work
+   as before, in portrait and landscape.
 
-## Sharper neon city (2026-11-28, second request)
+## Earlier versions
 
-Asked for: nicer graphics, sharp edges and characters in the neon city, with a cosmic reference picture (purple
-space, glowing frames, light streaks). Everything here is original and drawn on the phone.
-
-- **The finish** (`lib/courtyard/post.ts`): every frame is drawn multisampled (4×) in half-float, then bloom on
-  anything brighter than white, a soft vignette, and tone mapping. Neon materials are brighter than white on
-  purpose, so only neon, signs and the brightest windows glow. A phone without half-float render targets draws
-  straight to the screen instead (`data-finish="plain"`); the look stays, without the glow.
-- **The sky** (`lib/courtyard/sky.ts`): a violet gradient dome, 760 fixed stars, a ringed planet and three light
-  streaks, all painted on the phone. A small room of coloured light panels becomes the environment map, so glass,
-  chrome and the wet street reflect neon instead of grey.
-- **The towers** (`environment.ts`, `city-art.ts`): dark glass bodies whose windows are an emission map at a fixed
-  2.6 m scale (merged into one mesh per kind), neon strips up their corners or bands across them, setback upper
-  floors, glass spires and red beacons, a far ring of towers on every horizon. Around the plaza they are lower than
-  before (×0.7) so the sky shows above them. Four holograms (TWODO, SIGNAL, STARLIGHT, NEO TWODO) and two sky cars.
-- **The plaza**: dark tiles with glowing seams, painted crosswalk, three coloured street lamps (fountain, night
-  kitchen, photo kiosk) and cyan and pink rim light from behind, so people get a neon outline.
-- **Characters**: your partner has a name plate (name, then "Here now" / "Resting on the bench"), kept over their
-  head by the scene with a transform only. Three residents spend the evening outside the walkable plaza: a dancer
-  and a fan clapping at the night kitchen, a photographer at the east edge. They are models neither of you picked,
-  load after the two of you, and are decoration only (a failure is silent). They move only while the scene draws,
-  like the train, and stand still with Reduce Motion.
-- **The display**: a location badge (NEO TWODO, the area, the time), cut-corner panels in condensed italic
-  capitals with one neon edge, a pink Find button, a neon stick. Opaque panels, no blur.
-
-Unchanged: coordinates, rooms, seats, obstacles and walkable bounds (`state.ts`), presence, the on-demand render
-loop (nothing draws at rest), pausing behind other screens, the WebGL fallback, and every control's name.
-
-### Cost and fallbacks
-
-The opening phone-sized Chromium render is about 87 draw calls (including the post-processing passes) and 60,000
-triangles, plus three residents' models (0.5–1.2 MB each, same origin, kept by the service worker once fetched).
-`renderer.info` now counts every pass of a frame. A phone that misses 45 ms on most of 40 frames drops from
-1.5× to its plain pixel ratio once (`data-dpr`).
-
-### Physical iPhone checklist (additions)
-
-1. The towers' edges and the signs glow without smearing; text on holograms stays readable.
-2. Walk to the bench: Deiva's name plate stays over her head as the camera turns, and hides in the avatar close-up.
-3. Look up (drag down): stars, the planet and the far skyline above the towers.
-4. Walk for a minute: frame pacing and warmth compared with the previous neon city.
-
+- **Neon city** (first request): a night plaza with an illuminated fountain, towers, a photo kiosk and the train.
+- **Sharper neon city** (second request): post-processing (multisampled half-float frames, bloom, vignette), a
+  violet sky, neon towers and holograms, your partner's name plate and three residents (a dancer and a fan at the
+  night kitchen, a photographer, now at the lake railing). The finish, the name plate and the residents remain;
+  the violet sky, holograms, sky cars and corner neon were replaced by the light of the hour.
