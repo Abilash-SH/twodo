@@ -252,7 +252,7 @@ and data checks, and a short iPhone checklist.
 - **Facial geometry prototypes:** two locally sculpted face variants on the existing MIT rigs. Explore adds
   distinct expressions for Wave, Clap and Cheer and supports neutral Reduce Motion. The selected look and import
   priority are preserved. See `docs/explore-faces.md` for scope, asset cost and device acceptance.
-- **Neon city:** the user chose a cyber-city setting. A tower skyline, elevated train, fountain, loft and
+- **Neon city (draft PR #47):** the user chose a cyber-city setting. A tower skyline, elevated train, fountain, loft and
   motor bay replace the village scenery within the same walkable footprint. `docs/explore-city.md` records
   the visual and device checks.
 - **Next art milestone:** compare the prototypes to the originals on a physical iPhone before expanding to
