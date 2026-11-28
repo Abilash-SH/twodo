@@ -47,7 +47,7 @@ export function useKeyboard(): void {
       const canExtend = installedAtRest && Math.abs((vv?.scale ?? 1) - 1) < .01
         && Math.abs(screenWidth - innerWidth) <= 2 && Math.abs(innerHeight - height) <= 2 && Math.abs(top) <= 2
         && gap > 1 && gap <= 100;
-      root.style.setProperty('--explore-screen-gap', `${canExtend ? gap : 0}px`);
+      root.setProperty('--explore-screen-gap', `${canExtend ? gap : 0}px`);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
     const visible = () => { if (!document.hidden) schedule(); };
