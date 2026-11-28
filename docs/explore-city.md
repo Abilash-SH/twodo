@@ -33,9 +33,10 @@ top, realistic rather than flashy lights, a real sky by the time of day with sun
   badge with both faces, both first names and whether your partner is here; the place and the time of day sit
   below it; the way out (×) is top right. The doors (Task patch, Moments, camera, photos) sit above the bar, the
   stick and actions above them; in landscape the doors stack above the stick so the middle stays clear.
-- **The status bar**: iOS fills it with the page's theme colour, which was the app's light background (the white
-  strip). While Explore is open the theme colour is the sky at the top of the screen, worked out the way the frame
-  is (exposure, vignette, ACES tone mapping); leaving Explore gives the app's colour back (`applyTheme`).
+- **The status bar**: the manifest requests fullscreen. While Explore is in front, both the actual document edge
+  and theme colour take the rendered sky tint (exposure, vignette, ACES tone mapping); leaving Explore or covering
+  it restores the ordinary theme. Some iOS builds reserve or blur this OS-owned area even with the fullscreen
+  request. See `docs/iphone-validation.md` for the physical-device check.
 
 ### Staying alive, then resting
 

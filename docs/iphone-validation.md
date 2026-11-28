@@ -12,7 +12,7 @@ Use a paired test account and install the PR build with **Share → Add to Home 
 | a. Swipe back | Keep the full initial displacement, accept angled movement, and preserve release position. Velocity sampling interpolates coalesced events instead of dropping the boundary sample; holding before release clears flick velocity. Photo touch uses the shared touch hook; timer-ring drags are accepted. Task text on opened pages gives rightward touch swipes to navigation; checkbox completion and left-swipe actions remain. | Try the left edge and task text/blank space on opened pages. Try Settings, an account sub-page, a sheet, a photo, focus timer (including its ring), and effects picker. Flick right 30–60 px at a slight angle. Drag a little, hold, and release: it must spring back. Inputs/sliders keep their editing gestures. A Settings sub-page returns to Settings. |
 | b. Keyboard | Use focus/VisualViewport events with one measurement per frame. Remove saved keyboard-height predictions, layout transitions, and the `display:none` viewport repair. Send and reply-cancel preserve focus through `useTapKeep`; haptics no longer refocus fields. | Send several messages by tapping ↑, then a heart and a reply. The keyboard must stay up. Open/close it, change keyboard/language and rotate. Nothing should disappear or jump to an invented keyboard height. Scroll up in history, open the keyboard and check your place. |
 | c. Reply | Claim a rightward angled swipe after about 6 px; keep the initial distance, use coalescing-safe flick velocity, and issue one catch haptic. | Swipe a bubble right slowly until it catches, then try a short quick angled flick. Check the reply preview. A vertical scroll or short held drag must not select a reply. On supported iPhones with haptics enabled, feel one catch tick. |
-| d. Full screen | Retain `viewport-fit=cover`, black-translucent Apple status bar and safe-area tokens. At rest the standalone iPhone uses `100lvh`; fixed overlays share the measured visible viewport while the keyboard is present. | Launch from the Home Screen on a Dynamic Island/notched phone. Background reaches behind the status bar; controls sit below the Island, above the home indicator and inside landscape side insets. Repeat in photo, timer and effects overlays. |
+| d. Full screen | Retain `viewport-fit=cover`, black-translucent Apple status bar and safe-area tokens. Request manifest fullscreen; at rest the installed iPhone uses fixed inset sizing, and fixed overlays share the measured visible viewport while the keyboard is present. | Launch from the Home Screen on a Dynamic Island/notched phone. Background reaches behind the status bar; controls sit below the Island, above the home indicator and inside landscape side insets. Repeat in photo, timer and effects overlays. |
 | e. Secret to-dos | Optional 8–128 character passcodes with letters and numbers, alongside the existing six-digit keypad and Face ID. Both pass raw input to the existing vault API; `vault.ts`, PBKDF2 parameters, AES-GCM, file format and storage keys are unchanged. | Create a vault using “Use letters and numbers”, confirm, add a secret and reload. Choose that option again to unlock; reject a wrong code. Change between long and six-digit codes. Check Face ID, auto-lock after switching apps, and that secrets never appear in search, Today, counts, shared chat or exported backups. |
 | f. Made for two | Visible opposite-colour gradient edges, a crisp upright heart tail, one delivered heart/two overlapping seen hearts, and a tiny send heart. Bounded light/dark gradient stops keep text contrast above 4.5:1 across every palette pair. | Give each person a different colour. Send text, a link and a quote in each appearance. Check the opposite-colour edge and heart tail. With Deiva away, see one delivered heart; open her chat to see two. Send a new text and look for the small heart pop. |
 
@@ -27,3 +27,28 @@ Chromium cannot reproduce Safari's compositor, real keyboard animation timing, t
 ## Security review
 
 No encryption, sync format, data sanitization, storage key, dependency, production configuration, CSP or third-party-origin changes. Passcodes stay in transient component state and flow directly into the existing vault methods. Existing vault tests check encrypted-at-rest storage, wrong-code rejection, background auto-lock and secret exclusion from ordinary storage/counts/views. Passcode-change coverage verifies that changing the wrapper leaves the encrypted vault payload unchanged. Gesture listeners/timers are cleaned up, cancellation never commits a dismiss, and no HTML strings or inline scripts are added to product code.
+
+## Explore portrait fullscreen — reference comparison (2026-11-28)
+
+Owner's request: match the installed People of Bengaluru city experience in portrait; prefer genuine edge-to-edge
+over merely tinting the status bar. Reference: https://github.com/peopleofcity/peopleofcity (layout.tsx,
+manifest.ts, globals.css under src/app). Its manifest requests fullscreen, Apple metadata is capable and
+black-translucent, viewport-fit is cover, and the root is fixed with a dark document background and measured
+app height. Twodo already has fixed inset sizing and keyboard-aware VisualViewport measurements; do not copy
+the game's keyboard assumptions or its artwork. Request fullscreen and retain safe-area HUDs. Paint the actual
+html/body and shell with the existing validated sky tint while Explore is foregrounded, not only theme-color.
+Restore the ordinary theme when leaving or opening another screen, sheet or keyboard.
+
+WebKit reports https://bugs.webkit.org/show_bug.cgi?id=301994 and
+https://bugs.webkit.org/show_bug.cgi?id=317153 show OS-owned chrome and installation-time differences.
+The screenshot alone cannot establish that web pixels actually occupy the system status-bar region.
+
+Before merge, use a disposable paired test account and fresh PR Home Screen installation without deleting
+the production app, clearing website storage or losing local/secret tasks. Compare existing and fresh install
+on the same iOS version. Record portrait and landscape video while turning the camera: a moving sky/scene
+behind the clock establishes true edge-to-edge; a flat or blurred matching band is the fallback.
+Check the top HUD below the clock/Island and bottom controls above the home indicator, rotation, sunset/night,
+WebGL fallback, entering/leaving Explore, chat, journal, task sheet and repeated keyboard open/send/close.
+Check ordinary light/dark screens and Android installed mode (fullscreen may hide system bars; orientation
+is no longer manifest-locked). Verify Home Screen push eligibility and offline launch/update.
+Do not claim OS-level fullscreen until a physical iPhone confirms it.

@@ -30,6 +30,9 @@ async def main():
             await pg.locator('.world-enter').wait_for(timeout=15000)
             await pg.wait_for_function("() => !document.body.classList.contains('launching')")  # the splash has its own colour
             pg.theme_before = await pg.evaluate("() => document.querySelector('meta[name=theme-color]').content")
+            pg.edge_before = await pg.evaluate("() => getComputedStyle(document.documentElement).backgroundColor")
+            manifest = await pg.evaluate("""async () => (await fetch(document.querySelector('link[rel=manifest]').href)).json()""")
+            assert manifest['display'] == 'fullscreen'
             await pg.click('.world-enter')
             await pg.locator('.world-canvas[data-ready="yes"]').wait_for(timeout=45000)
             return ctx, pg
@@ -62,6 +65,15 @@ async def main():
         assert ' & ' in await A.locator('.world-couple b').inner_text()
         tint = await A.evaluate("() => document.querySelector('meta[name=theme-color]').content")
         assert tint.lower() != A.theme_before.lower() and tint.startswith('#'), (tint, A.theme_before)
+        # Chromium can verify the actual CSS edge and its cleanup, not the OS status-bar pixels.
+        await A.wait_for_function("""() => {
+          const root = document.documentElement;
+          const hex = root.style.getPropertyValue('--world-edge-tint').trim();
+          if (!/^#[0-9a-f]{6}$/i.test(hex)) return false;
+          const rgb = 'rgb(' + [1, 3, 5].map(i => parseInt(hex.slice(i, i+2), 16)).join(', ') + ')';
+          return root.dataset.exploreEdge === 'true'
+            && [root, document.body, document.querySelector('#app')].every(el => getComputedStyle(el).backgroundColor === rgb);
+        }""")
         canvas = A.locator('.world-canvas')
         print('Neon plaza render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
         async def position(page):
@@ -197,7 +209,10 @@ async def main():
         await A.locator('.world-toolbar button').click()
         assert await A.locator('.world-enter').is_visible()
         # Leaving gives the status bar back to the app.
+        await A.wait_for_function("() => !document.documentElement.hasAttribute('data-explore-edge')")
         assert (await A.evaluate("() => document.querySelector('meta[name=theme-color]').content")).lower() == A.theme_before.lower()
+        assert await A.evaluate("() => getComputedStyle(document.documentElement).backgroundColor") == A.edge_before
+        assert await A.evaluate("() => !document.documentElement.style.getPropertyValue('--world-edge-tint')")
         await A.locator('.world-enter').click()
         await A.locator('.world-canvas[data-ready="yes"]').wait_for(timeout=30000)
         await A.locator('.world-canvas').dispatch_event('webglcontextlost')

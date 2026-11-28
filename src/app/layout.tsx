@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   description: 'A beautiful to-do list made for two.',
   formatDetection: { telephone: false },
   // full screen on iPhone: the app draws under the status bar (every header already pads for the safe area)
-  appleWebApp: { title: 'Twodo', statusBarStyle: 'black-translucent' },
-  other: { 'apple-mobile-web-app-capable': 'yes', 'mobile-web-app-capable': 'yes' },
+  appleWebApp: { capable: true, title: 'Twodo', statusBarStyle: 'black-translucent' },
+  other: { 'mobile-web-app-capable': 'yes' },
 };
 export const viewport: Viewport = {
   width: 'device-width', initialScale: 1, maximumScale: 1, viewportFit: 'cover', interactiveWidget: 'resizes-content',

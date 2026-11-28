@@ -19,7 +19,7 @@ export const reducedMotion = { get matches() { const m = mq('(prefers-reduced-mo
 export const isTouch = (): boolean => { const m = mq('(hover: none)'); return !!m && m.matches; };
 export const isIOS = (): boolean => typeof navigator !== 'undefined'
   && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-export const standalone = (): boolean => { const m = mq('(display-mode: standalone)'); return (!!m && m.matches) || (navigator as Navigator & { standalone?: boolean }).standalone === true; };
+export const standalone = (): boolean => { const m = mq('(display-mode: standalone)'), f = mq('(display-mode: fullscreen)'); return (!!m && m.matches) || (!!f && f.matches) || (typeof navigator !== 'undefined' && (navigator as Navigator & { standalone?: boolean }).standalone === true); };
 
 export const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
 export const WD = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;

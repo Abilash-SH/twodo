@@ -1,0 +1,13 @@
+/* Keep the real page edge and fixed shell in the same colour as Explore's rendered sky.
+   This is a fallback for OS-owned status-bar chrome, not an attempt to fake a larger viewport.
+   The city still renders edge-to-edge when the OS grants it; existing safe-area controls and
+   VisualViewport keyboard sizing stay untouched. No extra hit targets or animated layers. */
+html[data-explore-edge]:not(:has(body.launching)) #app {
+  background-color: var(--world-edge-tint);
+}
+@media (max-width: 1240px) {
+  html[data-explore-edge]:not(:has(body.launching)),
+  html[data-explore-edge] body:not(.launching) {
+    background-color: var(--world-edge-tint);
+  }
+}
