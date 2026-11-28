@@ -135,6 +135,14 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   or *Read only* badge, then a sheet over it with the day in big capitals and the two pages. Only today's page has a
   writing box (empty, no prompt) and *Post* (*Posted* once it is, *Update* after a change); earlier days say so with a
   lock. No hearts (2026-11-18: they looked clumsy on every page), prompts, weather, counts or private pages.
+- **Routines** (2026-11-28, the owner's pick from five mockups). Every day, one punch card per routine: a ticket tinted
+  with the routine's colour, a stub with its emoji, name and count, a perforation with a notch either side, and seven
+  holes, Monday to Sunday. Today's hole has a solid ring; tapping it (or an earlier one this week) punches it in your
+  colour with a small pop; days to come are faint and can't be punched. Your partner's punches are a dot in their
+  colour under the hole; a routine only they keep shows their card, read-only. Every week, *Your week*: the quilt first
+  (a patch per routine per day, split corner to corner, your half in your colour and theirs in theirs, a dashed stitch
+  when you both kept it), then the receipt (a paper slip in the system monospace with each routine's days for each of
+  you and a few totals). Counts of the week only, never a streak or a winner. `docs/routines.md`.
 - **Text on a person's colour.** `--on-color` (`#1B1730`, at least 5.08:1 on all twelve colours in both themes) for
   labels on filled buttons and badges in a person's colour. New components use it instead of white `--me-ink`.
 - **Launch and the first screen.** No app name is shown. Two hearts, one in each of your colours (yours on the

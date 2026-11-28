@@ -15,7 +15,7 @@ import { D, L, cleanMap, cleanRecord, commit, ensureBasics, person, ptName, publ
 import { Vault } from '@/lib/vault';
 import { Inbox, Sync } from '@/lib/sync';
 import { applyTheme } from '@/lib/theme';
-import type { Goal, JournalEntry, List, PeopleRec, PersonKey, Task } from '@/lib/types';
+import type { Goal, JournalEntry, List, PeopleRec, PersonKey, Punch, Routine, Task } from '@/lib/types';
 import { PALETTE, downloadFile, firstWord, initial, isIOS, shortName, standalone, todayStr } from '@/lib/util';
 import { useApp } from '@/hooks/useApp';
 import { confirmDialog } from '@/ui/alert';
@@ -214,6 +214,9 @@ export async function importBackup(f: File): Promise<void> {
     // shared journal pages only: a private page never comes from a file
     for (const [id, e] of Object.entries(cleanMap<JournalEntry>(d.journal))) if (!e.private && (!D.journal[id] || (e.updatedAt || 0) > (D.journal[id].updatedAt || 0))) { D.journal[id] = e; commit(e, { silent: true }); n++; }
     for (const [id, g] of Object.entries(cleanMap<Goal>(d.goals))) if (!D.goals[id] || (g.updatedAt || 0) > (D.goals[id].updatedAt || 0)) { D.goals[id] = g; commit(g, { silent: true }); n++; }
+    for (const [id, r] of Object.entries(cleanMap<Routine>(d.routines))) if (!D.routines[id] || (r.updatedAt || 0) > (D.routines[id].updatedAt || 0)) { D.routines[id] = r; commit(r, { silent: true }); n++; }
+    // only your own punch cards: your partner's are theirs to send (docs/routines.md)
+    for (const [id, c] of Object.entries(cleanMap<Punch>(d.punches))) if (c.who === L.me && (!D.punches[id] || (c.updatedAt || 0) > (D.punches[id].updatedAt || 0))) { D.punches[id] = c; commit(c, { silent: true }); n++; }
     const pp = d.people ? cleanRecord(d.people) as PeopleRec | null : null;
     if (pp && pp.kind === 'people' && (!D.people || (pp.updatedAt || 0) > (D.people.updatedAt || 0))) { setPeopleRec(pp); commit(D.people!, { silent: true }); }
     ensureBasics(); applyTheme(); scheduleRender(); island({ e: '📦', text: `Imported ${n} item${n === 1 ? '' : 's'}`, sub: skip.size ? 'Unlock secret lists and import again for the secret ones' : undefined, ms: skip.size ? 4500 : undefined });

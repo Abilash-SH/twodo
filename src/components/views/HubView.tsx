@@ -7,7 +7,8 @@ import { Vault } from '@/lib/vault';
 import { island } from '@/ui/island';
 import { isIOS, isTouch, standalone } from '@/lib/util';
 import { renderNow } from '@/lib/render';
-import { openJournal, openList, openSearch, openSmart, openWeek } from '@/ui/nav';
+import { openJournal, openList, openRoutines, openSearch, openSmart, openWeek } from '@/ui/nav';
+import { todayCount } from '@/lib/routines';
 import { thisWeek, weekPlan } from '@/lib/week';
 import { Install } from '@/ui/install';
 import { colorVar, cssVars } from '../ui/Avatar';
@@ -48,7 +49,7 @@ export function HubView() {
   const all = liveTasks(), withSecret = liveTasks({ secret: true }), cnt = (k: SmartKey) => all.filter(SMART[k].match).length;
   const doneWeek = all.filter(t => t.done && (t.doneAt || 0) > Date.now() - 7 * 864e5).length;
   const streak = calcStreak();
-  const weekLeft = weekPlan(thisWeek()).days.reduce((n, d) => n + d.open.length, 0);
+  const weekLeft = weekPlan(thisWeek()).days.reduce((n, d) => n + d.open.length, 0), rt = todayCount();
   const stats = [streak ? `🔥 ${streak}-day streak` : '', doneWeek ? `💞 ${doneWeek} done together this week` : ''].filter(Boolean).join(' · ');
   return (<>
     <h1 className="large-title">To-dos</h1>{stats ? <div className="subtitle">{stats}</div> : null}
@@ -66,6 +67,8 @@ export function HubView() {
     <div className="group plan-group">
       <button className="cell" type="button" onClick={() => openWeek()}><span className="list-ic" style={colorVar('teal')}><Icon name="week" cls="sm" /></span>
         <span className="grow">This week</span><span className="val">{weekLeft || ''}</span><Icon name="chevR" cls="chev" /></button>
+      <button className="cell" type="button" onClick={() => openRoutines()}><span className="list-ic" style={colorVar('orange')}><Icon name="ticket" cls="sm" /></span>
+        <span className="grow">Routines</span><span className="val">{rt.of ? `${rt.done} of ${rt.of} today` : ''}</span><Icon name="chevR" cls="chev" /></button>
       <button className="cell" type="button" onClick={() => openJournal()}><span className="list-ic" style={colorVar('pink')}><Icon name="journal" cls="sm" /></span>
         <span className="grow">Journal</span><Icon name="chevR" cls="chev" /></button>
     </div>

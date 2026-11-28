@@ -3,7 +3,7 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-25.
+Last updated: 2026-11-28.
 
 ## The project in short
 
@@ -203,3 +203,16 @@ WebGL in the test). Fixed in `feat/people-stage` (nothing is drawn while a scree
 - New: people record field `model: { h, n }`; database path `spaces/{space}/av/{uid}/{h12}/{i}` (encrypted pieces,
   needs the rules change); IndexedDB `twodo-people`. Test 20 (needs an Avaturn .glb; Avaturn's sample is not in the
   repo: it has no license).
+
+## 2026-11-28 Routines (data decision, rule 13)
+
+- Asked for: mockups for routines "not like a normal iPhone or Android app" (gym, steps, no sugar, walk, home food),
+  ticked every day, with a summary every week. The mockups are a design canvas
+  (https://claude.ai/artifact/Hz8n4hXX14MutkUmfBaaED): bead strings, punch cards, a day ring; a receipt and a quilt.
+  The owner picked punch cards, and both summaries.
+- Built in `feat/routines`: `lib/routines.ts`, `views/RoutinesView.tsx` (both screens), `sheets/RoutineSheet.tsx`,
+  `46-routines.css`, test 21. Full decision: `docs/routines.md`.
+- New records `routine` (`r:<id>`) and `punch` (`w:<week>-<who>`); no new storage key, origin, rule or CSP change.
+  Only your own cards are pushed or imported from a backup.
+- Not done: a reminder to punch, Home showing routines (Home keeps one card), the iPhone app (`mobile/`).
+

@@ -1,7 +1,7 @@
 /* Twodo · state, persistence and data helpers.
    D = synced data (tasks, lists, the two of you), L = this device only (settings, account, view prefs). */
 import { scheduleRender } from './render';
-import type { AvatarLook, Data, Goal, JournalEntry, List, Local, Moment, Mood, PeopleRec, Person, PersonKey, Rec, Task } from './types';
+import type { AvatarLook, Data, Goal, JournalEntry, List, Local, Moment, Mood, PeopleRec, Person, PersonKey, Punch, Rec, Routine, Task } from './types';
 import { addDays, dayDiff, firstWord, fromYmd, PALETTE, REPEATS, todayStr, uid, ymd, type Color, type Repeat } from './util';
 
 const KD = 'twodo:data', KL = 'twodo:local';
@@ -16,10 +16,10 @@ export const defaultLocal = (): Local => ({
   view: {}, notified: {}, focus: null, tips: {},
 });
 
-export let D: Data = { tasks: {}, lists: {}, people: null, goals: {}, journal: {} };
+export let D: Data = { tasks: {}, lists: {}, people: null, goals: {}, journal: {}, routines: {}, punches: {} };
 export let L: Local = defaultLocal();
 /** Replace all synced data (used when a different account signs in on this phone) */
-export function resetData(): void { D = { tasks: {}, lists: {}, people: null, goals: {}, journal: {} }; }
+export function resetData(): void { D = { tasks: {}, lists: {}, people: null, goals: {}, journal: {}, routines: {}, punches: {} }; }
 
 /* ---------- Never trust stored or synced records: anything shown on screen is checked here first ----------
    Colours must come from the palette, numbers must be numbers, photos must be small inline images. */
@@ -105,11 +105,31 @@ export function cleanRecord(r: unknown): Rec | null {
     if (!deleted && !img) return null;
     return { kind: 'moment', id: who, who, img: deleted ? '' : img, caption: deleted ? '' : cStr(q.caption, 80), at: cNum(q.at), updatedAt: cNum(q.updatedAt), deleted } as Moment;
   }
+  if (q.kind === 'routine') { // a daily routine, shared (docs/routines.md)
+    const id = typeof q.id === 'string' && REC_ID_RE.test(q.id) ? q.id : null;
+    if (!id) return null;
+    return { kind: 'routine', id, name: cStr(q.name, 40), emoji: cEmoji(q.emoji) || '✅', color: cColor(q.color, 'green'),
+      who: q.who === 'a' || q.who === 'b' ? q.who : 'both', order: cNum(q.order), createdAt: cNum(q.createdAt), updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as Routine;
+  }
+  if (q.kind === 'punch') { // one person's punch card for one week: only theirs, only that week (docs/routines.md)
+    const week = typeof q.week === 'string' && DAY_RE.test(q.week) && ymd(fromYmd(q.week)) === q.week && fromYmd(q.week).getDay() === 1 ? q.week : null, who = q.who === 'a' || q.who === 'b' ? q.who : null;
+    if (!week || !who || q.id !== `${week}-${who}`) return null; // a card can't pretend to be another week or the other person's
+    const days: Record<string, number> = {}, src = q.days && typeof q.days === 'object' && !Array.isArray(q.days) ? q.days as Loose : {};
+    let n = 0;
+    for (const [k, v] of Object.entries(src)) {
+      if (n >= MAX_PUNCH_KEYS) break;
+      if (REC_ID_RE.test(k) && Number.isInteger(v) && (v as number) > 0 && (v as number) <= 127) { days[k] = v as number; n++; }
+    }
+    return { kind: 'punch', id: q.id, week, who, days, updatedAt: cNum(q.updatedAt), deleted: !!q.deleted } as Punch;
+  }
   return null;
 }
 /** a moment's photo: a JPEG, small enough that the encrypted record stays under the database's 200 000 characters */
 export const MOMENT_MAX = 140000;
 const MOMENT_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/;
+/** ids made by uid() (and the routines we start you with): short, letters, digits and dashes */
+export const REC_ID_RE = /^[0-9A-Za-z_-]{1,40}$/;
+const MAX_PUNCH_KEYS = 60;
 export const journalId = (priv: boolean, date: string, who: PersonKey): string => `${priv ? 'me' : 'us'}-${date}-${who}`;
 const POST_RE = /^us-p[0-9a-z]{10,24}$/;
 /** a heart on a post: `us-h-<the post's id>-<who gave it>` (docs/journal-and-planner.md, "Hearts") */
@@ -124,7 +144,8 @@ export function load(): void {
   try {
     const d = JSON.parse(localStorage.getItem(KD) || 'null');
     if (d) D = { tasks: cleanMap<Task>(d.tasks), lists: cleanMap<List>(d.lists), people: d.people ? cleanRecord(d.people) as PeopleRec : null, goals: cleanMap<Goal>(d.goals),
-      journal: Object.fromEntries(Object.entries(cleanMap<JournalEntry>(d.journal)).filter(([, e]) => !e.private)) }; // private pages only ever come from the vault
+      journal: Object.fromEntries(Object.entries(cleanMap<JournalEntry>(d.journal)).filter(([, e]) => !e.private)), // private pages only ever come from the vault
+      routines: cleanMap<Routine>(d.routines), punches: cleanMap<Punch>(d.punches) };
   } catch (e) { console.warn('load data', e); }
   try {
     const l = JSON.parse(localStorage.getItem(KL) || 'null');
@@ -143,7 +164,7 @@ export function publicData(): Data {
   for (const [id, t] of Object.entries(D.tasks)) if (!isSecret(t)) tasks[id] = t;
   const journal: Record<string, JournalEntry> = {};
   for (const [id, e] of Object.entries(D.journal)) if (!e.private) journal[id] = e; // private pages: only in the vault
-  return { tasks, lists, people: D.people, goals: D.goals, journal };
+  return { tasks, lists, people: D.people, goals: D.goals, journal, routines: D.routines, punches: D.punches };
 }
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 export function save(): void { clearTimeout(saveTimer); saveTimer = setTimeout(saveNow, 150); }
@@ -159,7 +180,8 @@ if (typeof window !== 'undefined') {
 }
 
 /* ---------- Records ---------- */
-export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : r.kind === 'journal' ? 'j:' + r.id : r.kind === 'moment' ? 'o:' + r.id : 'people';
+export const recKey = (r: Rec): string => r.kind === 'task' ? 't:' + r.id : r.kind === 'list' ? 'l:' + r.id : r.kind === 'goal' ? 'g:' + r.id : r.kind === 'journal' ? 'j:' + r.id : r.kind === 'moment' ? 'o:' + r.id
+  : r.kind === 'routine' ? 'r:' + r.id : r.kind === 'punch' ? 'w:' + r.id : 'people';
 export function stamp(rec: Rec): void { rec.updatedAt = Math.max(Date.now(), (rec.updatedAt || 0) + 1); }
 /** Sync registers itself here, so the data layer has no import cycle */
 export const hooks = { queue: (_k: string): void => {} };

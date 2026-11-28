@@ -85,6 +85,11 @@ reaches your partner's Home and round picture by itself; "Use a Twodo person aga
 of the database. Needs an avatar file: `AVATAR=/path/to/avatar.glb` (any Avaturn export; by default Avaturn's sample
 at `/tmp/avt/a/public/default_model.glb`, never committed) and `/tmp/mo/sunset.jpg`.
 
+Test 21 covers routines (docs/routines.md): the five to start with; punching today's hole and an earlier day this
+week, never a day to come; punches reaching the other phone as a dot in that person's colour; a routine only your
+partner keeps being read-only; the week's quilt (a patch you both kept is stitched) and its receipt (no streaks);
+forged or damaged cards dropped or cut down when read; text contrast for every colour in light and dark.
+
 Test 9 asserts one navigation per completed swipe (and none for a short cancelled one), rapid consecutive swipes,
 the browser Back button, a system back racing our own swipe (both orders), Back closing only an open menu or sheet,
 1:1 finger tracking, app sizing in portrait/landscape with and without `body.ios-fullscreen` (the message bar must be

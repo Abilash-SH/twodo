@@ -132,6 +132,18 @@ and data checks, and a short iPhone checklist.
 - **Data:** goals are a new record kind; planning only changes a to-do's date. `docs/journal-and-planner.md`.
 - **Done when:** test 14 passes; checked on an iPhone (the ribbon while scrolling, *Add to …* with the keyboard).
 
+### 18. Daily routines and the weekly summary — 🔎 this PR
+- **Asked for 2026-11-28:** mockups for to-do lists that don't look like a normal iPhone or Android app: daily routines
+  (gym, steps, no sugar, walk, home food) marked as done every day, and every week a summary of everything. From five
+  mockups the owner picked **punch cards** for every day and **both** weekly summaries (the quilt, then the receipt).
+- **Built:** To-dos → *Routines*. One ticket per routine in its colour, seven holes for the week: tap today's (or an
+  earlier one this week) to punch it; your partner's punches are a dot in their colour. A routine can be for both of you
+  or one. *Your week*: the quilt (each patch split corner to corner, yours and your partner's, stitched when you both
+  kept it), then the receipt. Counts of the week only: no streaks, no winner.
+- **Data:** two new record kinds, `routine` and `punch` (one card per person per week, written only by its owner).
+  `docs/routines.md`.
+- **Done when:** test 21 passes; checked on an iPhone (punching with a thumb, the quilt at large text).
+
 ### 15. Journal — ✅ #11 (pages) · ✅ thread (#19, #20) · ✅ the app by day (#25) · ✅ web by date (#29) · 🔎 web by day, designed (this PR)
 - **Asked for 2026-11-15**, with the planner: a journal for the two of you (first with a private one each).
 - **Changed the same day:** "a continuous thread with just posting … keep it raw", no private posts.
