@@ -13,7 +13,7 @@ import { avatarOf, dayLine, lines, roleOf, type Facts } from '@/lib/characters';
 import { haptic } from '@/lib/feedback';
 import { wroteOn } from '@/lib/journal';
 import { renderNow } from '@/lib/render';
-import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, partnerKey, person, sortTasks } from '@/lib/store';
+import { L, SMART, cStr, fmtDue, fmtTime, liveTasks, mineOrShared, partnerKey, person, sortTasks } from '@/lib/store';
 import { Inbox, Sync } from '@/lib/sync';
 import type { PersonKey } from '@/lib/types';
 import { dayDiff, firstWord, todayStr, ymd } from '@/lib/util';
@@ -70,7 +70,7 @@ function messageNote(): MsgNote {
   return note('last', last);
 }
 export function boardData(): Board {
-  const open = liveTasks().filter(t => !t.done); // never includes a secret list's to-dos
+  const open = liveTasks().filter(t => !t.done && mineOrShared(t)); // never a secret list's to-dos; only yours and shared ones (not your partner's own)
   const t0 = todayStr(), today = open.filter(SMART.today.match), pins = sortTasks(open.filter(t => t.pinned));
   const dueToday = open.filter(t => t.due === t0), timed = dueToday.filter(t => t.time).sort((a, b) => (a.time! < b.time! ? -1 : 1));
   const pk = partnerKey(), paired = !!(L.pair && L.pair.status === 'paired');

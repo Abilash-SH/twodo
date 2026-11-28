@@ -33,6 +33,7 @@ async def main():
         cb, B = await phone('/tmp/twodo-B.json')
         for pg in (A, B):
             await pg.click('.board .home-card'); await pg.wait_for_timeout(900)   # Home's Today card opens Today
+        await B.click('[data-seg=who] button[data-v=all]'); await B.wait_for_timeout(400)   # Today opens on your own and shared to-dos: Deiva looks at all of them
         held, release = asyncio.Event(), asyncio.Event()
         captured = {}
         async def hold_task(route):

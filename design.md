@@ -109,7 +109,8 @@ for dark mode). `--me-c` and `--pt-c` are set from those choices, so every rule 
   count of what's new, never a message's text; it opens your chat). A big rounded "Hello, name!" and, under it, what
   today holds in your character's voice (tap the line for the next thing). Then **one card** (2026-11-18: "just one
   card is enough"): Today, a wide wash of yellow into orange with a dark *Today* badge, how many to-dos are left in big
-  rounded capitals and the next one with a time, and a sun in a soft circle. Tap it to open Today. **Above it, the two
+  rounded capitals and the next one with a time, and a sun in a soft circle. Tap it to open Today. It counts your to-dos and the shared ones only (2026-11-23): under your name, for both of you,
+  or made by you for no one; your partner's own are left out, and Today opens on the same (its *All* shows theirs). **Above it, the two
   of you** (2026-11-25: "Don't stand on the card… animations, movements"): realistic 3D people, full height, standing
   free on Home's background with a soft shadow at your feet, yours on the left; they move by motion capture (look
   around, stretch, walk somewhere and turn back, turn to each other and wave). A sideways drag on one of you turns

@@ -64,6 +64,10 @@ a character's look, skin, hair and role from Settings (it reaches the partner's 
 is shown or said, offline and "Waiting to send", before pairing (the moments card leads to Add partner) and with nothing
 to do, and text contrast for every colour in light and dark.
 
+Test 17 covers Home's to-dos being only yours and the shared ones: your partner adds four for today (theirs, yours,
+both of yours, one for no one); Home counts two, Today opens on those two, *All* shows all four, and the To-dos
+screen counts Today the same way.
+
 Test 14 covers the weekly planner: goals (synced, three at most), picking a day, a time typed on its own landing
 on that day, planning a to-do from its menu, busy days, *Not planned yet*, to-dos left open from before, looking
 back, a secret to-do never showing (it creates a passcode in its own browser only), seven columns on wide screens,

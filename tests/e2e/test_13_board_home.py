@@ -105,7 +105,7 @@ async def main():
         bar = await q("[...document.querySelectorAll('.board-tray button')].map(b => b.getAttribute('aria-label'))")
         assert bar[:2] == ['Home', 'To-dos and reminders'] and bar[2].startswith('Journal') and bar[3].startswith('Message Deiva') and bar[4] == 'Add a to-do', bar
         board = await q(BOARD)
-        due0 = await q(TASKS + ".filter(t => !t.deleted && !t.done && t.due === (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })()).length")
+        due0 = await q(TASKS + ".filter(t => { const me = JSON.parse(localStorage.getItem('twodo:local')).me; return t.assignee === me || t.assignee === 'both' || (!t.assignee && t.createdBy === me); }).filter(t => !t.deleted && !t.done && t.due === (() => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })()).length")
         assert (f'{due0} ' in board['say']) if due0 else ('Nothing new today' in board['say'] or 'Nothing planned' in board['say'] or 'empty page' in board['say'] or 'quiet day' in board['say']), ('it says how many things today', due0, board['say'])
         assert not any(board['say'].startswith(g) for gs in GREET.values() for g in gs), ('Home says hello itself; the line is what today holds', board)
         assert await q("document.querySelectorAll('.board .home-card').length") == 1 and not await q("!!document.querySelector('.hc, .hc-dot, .home-two, .stage')"), 'one card; no fan, no "two of you"'
