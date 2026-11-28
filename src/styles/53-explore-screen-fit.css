@@ -1,0 +1,14 @@
+/* iOS installed Explore only: extend scenery into a missing screen-height strip, like a game canvas.
+   WebKit can still clip the extension at an OS-owned boundary. Keep bottom controls above the original
+   viewport edge in either case. Never apply this to the keyboard, ordinary pages or fixed overlays. */
+html[data-explore-edge]:has(body.ios-fullscreen),
+html[data-explore-edge] body.ios-fullscreen {
+  min-height: calc(var(--vvh, 100%) + var(--explore-screen-gap, 0px));
+}
+html[data-explore-edge] body.ios-fullscreen #app {
+  bottom: auto;
+  height: calc(var(--vvh, 100%) + var(--explore-screen-gap, 0px));
+}
+html[data-explore-edge] body.ios-fullscreen .courtyard-on {
+  --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--explore-screen-gap, 0px));
+}

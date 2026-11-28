@@ -3,7 +3,18 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-28 (Explore portrait fullscreen).
+Last updated: 2026-11-28 (Explore bottom viewport follow-up).
+
+## Current session: Explore bottom viewport (2026-11-28)
+
+- #50 merged and Pages deployed successfully; owner freshly installed and reports a white bottom strip.
+- Reference city measures physical screen size to extend scenery past the short viewport. This branch computes
+  a bounded gap (1–100 CSS px, matching screen width, no zoom/keyboard, installed iOS only) and extends only
+  foreground Explore, compensating bottom safe area so the HUD stays in the original visible viewport.
+- WebKit 313800/301994 also describe a system-owned gap CSS cannot reach; this is a scoped attempt, not a guarantee.
+  No change to the manifest, storage, sync, encryption, CSP or ordinary screen layout. Test 21 now simulates
+  a 62px gap and checks canvas/dock dimensions and restoration. Full build/typecheck/browser and real iPhone checks
+  have not been run here; draft until validated. Do not clear production app storage.
 
 ## Current session: Explore portrait fullscreen (2026-11-28)
 
