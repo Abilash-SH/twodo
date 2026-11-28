@@ -171,7 +171,7 @@ export function BoardView({ entry, cls }: { entry: Entry; cls: string }) {
         </AreaBoundary>
       </header>
       {exploring ? <AreaBoundary area="Our place"><CourtyardHome v={v} leave={() => setExploring(false)} /></AreaBoundary> : <>
-        <button type="button" className="world-enter" onClick={() => setExploring(true)}>Explore our place <span>Neon city</span></button>
+        <button type="button" className="world-enter" onClick={() => setExploring(true)}>Explore our place <span>Lakeside city</span></button>
         <AreaBoundary area="Home"><Notes v={v} online={typeof navigator === 'undefined' || navigator.onLine} /></AreaBoundary>
       </>}
       <nav className="board-tray home-dock" aria-label="Main">

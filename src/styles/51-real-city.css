@@ -1,0 +1,138 @@
+/* Explore, the city by the lake (lib/courtyard/*, home/CourtyardHome.tsx; docs/explore-city.md). Full screen: the
+   city runs under the status bar and under the bar at the bottom, Home's header steps aside for a small badge with the
+   two of you, and the light follows the phone's clock (the status bar takes the sky's colour). These are the city's
+   surfaces by day; the hour changes the light on them, not the surfaces. Controls are calm, opaque-enough panels
+   that never blur the moving city (design.md, "Blur"). Later than 49/50, so these win. */
+.courtyard-on {
+  --world-sky: #0b1020;
+  --world-asphalt: #3a3d43;
+  --world-sidewalk: #aaa59c;
+  --world-shore: #34402f;
+  --world-pavement: #ffffff;
+  --world-floor: #6f6459;
+  --world-frame: #2b2f36;
+  --world-panel: #ffffff;
+  --world-steel: #8e969e;
+  --world-concrete: #bab4a9;
+  --world-podium: #4b5058;
+  --world-glass: #2f4050;
+  --world-shop: #ffcf96;
+  --world-water: #2c4a5c;
+  --world-cloth: #56616c;
+  --world-cushion: #a36b52;
+  --world-wood: #8b6547;
+  --world-paint: #ebe7dd;
+  --world-bark: #4b3b2f;
+  --world-leaf: #4f7b3b;
+  --world-leaf2: #3c6531;
+  --world-train: #c8cdd3;
+  --world-stripe: #2f72c8;
+  --world-spray: #e2f4ff;
+  --world-white: #ffffff;
+  --world-lamp: #ffd8a3;
+  --world-cyan: #84e1ee;
+  --world-pink: #ff92c9;
+  --world-amber: #ffbf75;
+  --world-beacon: #ff4f4f;
+  --world-panel-bg: rgba(11, 15, 23, .74);
+  --world-line: rgba(255, 255, 255, .16);
+  --world-ink: #ffffff;
+  --world-ink2: rgba(255, 255, 255, .78);
+  --world-dock-h: calc(86px + var(--safe-bottom));
+  --world-doors-h: 52px;
+  --world-font: var(--round);
+}
+
+/* ---------- full screen ---------- */
+.boardview.courtyard-on { padding: 0; background: var(--world-tint, var(--world-sky)); }
+.courtyard-on .home-top { display: none; }
+.courtyard-on .world-home { position: absolute; inset: 0; width: auto; max-width: none; margin: 0; background: var(--world-tint, var(--world-sky)); }
+.courtyard-on .world-stage { position: absolute; inset: 0; min-height: 0; border: 0; background: var(--world-tint, var(--world-sky)); }
+.courtyard-on .home-dock { position: absolute; left: 0; right: 0; bottom: 0; margin: 0; }
+
+/* ---------- calm panels: rounded, a hairline edge, no neon ---------- */
+.courtyard-on :is(.world-hint, .world-find, .world-bench, .world-destination, .world-reactions, .world-interactions button, .world-toolbar button, .world-fallback button, .world-doors button) {
+  clip-path: none;
+  border-radius: 14px;
+}
+.courtyard-on :is(.world-find, .world-bench, .world-destination, .world-interactions button, .world-reactions button, .world-doors button) {
+  font: 700 15px/20px var(--round);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--world-ink);
+}
+.courtyard-on :is(.world-bench, .world-destination, .world-interactions button, .world-doors button, .world-reactions) {
+  background: var(--world-panel-bg);
+  box-shadow: inset 0 0 0 1px var(--world-line);
+}
+.courtyard-on :is(.world-find, .world-bench, .world-destination, .world-interactions button, .world-toolbar button, .world-doors button):focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.courtyard-on .world-travel .world-find { background: #fff; color: #10141c; box-shadow: none; }
+.courtyard-on .world-interactions button[aria-pressed="true"] { background: #fff; color: #10141c; }
+
+/* ---------- the top: the two of you, and the way out ---------- */
+.courtyard-on .world-toolbar {
+  position: absolute; z-index: var(--z-header); top: calc(var(--safe-top) + 8px); left: calc(12px + var(--safe-left)); right: calc(12px + var(--safe-right));
+  display: flex; flex-wrap: nowrap; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 0; pointer-events: none;
+}
+.world-couple { display: flex; align-items: center; gap: 9px; min-width: 0; max-width: min(320px, calc(100% - 56px)); padding: 5px 14px 5px 5px;
+  border-radius: 26px; background: var(--world-panel-bg); box-shadow: inset 0 0 0 1px var(--world-line); pointer-events: auto; }
+/* (the older toolbar rules style every span in it: these are specific enough to undo that) */
+.courtyard-on .world-couple-faces { display: flex; flex: none; }
+.courtyard-on .world-couple-faces .cv-portrait { display: inline-block; flex: none; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px #0e131c; }
+.courtyard-on .world-couple-faces .cv-portrait + .cv-portrait { margin-left: -11px; }
+.courtyard-on .world-couple-txt { display: flex; flex: 1 1 auto; flex-direction: column; min-width: 0; text-align: left; text-transform: none; letter-spacing: 0; }
+.world-couple-txt b { font: 700 15px/19px var(--round); color: var(--world-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.courtyard-on .world-couple-txt span { display: block; flex: none; font: 600 12px/16px var(--round); text-align: left; text-transform: none; letter-spacing: 0; color: var(--world-ink2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.courtyard-on .world-couple-txt span[data-presence="live"] { color: var(--world-ink); }
+.world-couple-txt span[data-presence="live"]::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: #5ee08a; vertical-align: 1px; }
+.courtyard-on .world-toolbar .world-leave { flex: none; display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%;
+  background: var(--world-panel-bg); color: var(--world-ink); box-shadow: inset 0 0 0 1px var(--world-line); pointer-events: auto; }
+.world-leave .i { width: 20px; height: 20px; stroke-width: 2.4; }
+
+/* ---------- where you are and the time of day; travel on the right ---------- */
+.courtyard-on .world-hint {
+  top: calc(var(--safe-top) + 66px); left: calc(12px + var(--safe-left)); right: auto; max-width: calc(48% - 12px);
+  gap: 0; padding: 6px 12px 7px; background: var(--world-panel-bg); box-shadow: inset 0 0 0 1px var(--world-line); color: var(--world-ink);
+}
+.courtyard-on .world-hint small { font: 700 11px/15px var(--round); letter-spacing: .8px; text-transform: uppercase; color: var(--world-ink2); }
+.courtyard-on .world-hint b { font: 800 19px/23px var(--round); font-stretch: normal; text-transform: none; letter-spacing: 0; color: var(--world-ink); }
+.courtyard-on .world-hint span { font: 500 12px/15px var(--round); color: var(--world-ink2); }
+.courtyard-on .world-travel { top: calc(var(--safe-top) + 62px); right: calc(12px + var(--safe-right)); max-width: calc(52% - 18px); }
+
+/* ---------- the bottom: doors above the bar, the stick and actions above the doors ---------- */
+.courtyard-on .world-doors {
+  position: absolute; z-index: var(--z-header); left: calc(8px + var(--safe-left)); right: calc(8px + var(--safe-right)); bottom: var(--world-dock-h);
+  justify-content: center; gap: 8px; padding: 0 0 8px; pointer-events: none;
+}
+.courtyard-on .world-doors button { pointer-events: auto; padding: 0 14px; }
+.courtyard-on .world-doors button[aria-label] { padding: 0; width: 44px; display: grid; place-items: center; }
+.courtyard-on .world-stick { left: calc(24px + var(--safe-left)); bottom: calc(var(--world-dock-h) + var(--world-doors-h) + 6px); }
+.courtyard-on .world-stick-base { opacity: 1; background: rgba(11, 15, 23, .42); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .55); }
+.courtyard-on .world-stick-knob { background: rgba(255, 255, 255, .92); color: #10141c; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+.courtyard-on .world-interactions { right: calc(12px + var(--safe-right)); bottom: calc(var(--world-dock-h) + var(--world-doors-h) + 6px); }
+.courtyard-on .world-reaction-status { background: var(--world-panel-bg); color: var(--world-ink); }
+
+/* your partner's name plate: a quiet tag, not a neon sign */
+.courtyard-on .world-plate b { font: 800 17px/20px var(--round); font-stretch: normal; text-transform: none; letter-spacing: 0; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); }
+.courtyard-on .world-plate span { border-radius: 10px; font: 700 11px/15px var(--round); text-transform: none; letter-spacing: 0; background: var(--world-panel-bg); box-shadow: none; }
+.courtyard-on .world-plate i { border-top-color: rgba(11, 15, 23, .74); }
+
+/* while the city loads, or if it can't: the sky of this hour behind the message */
+.courtyard-on .world-fallback { background: linear-gradient(180deg, var(--world-tint, #0b1020), #070a12 78%); color: var(--world-ink); }
+.courtyard-on .world-fallback b { font: 800 21px/26px var(--round); text-transform: none; }
+.courtyard-on .world-fallback button { background: #fff; color: #10141c; }
+
+/* landscape: the badge and travel along the top, the stick and actions beside the bar, the doors above it */
+@media (max-height: 480px) and (orientation: landscape) {
+  .courtyard-on { --world-dock-h: calc(78px + var(--safe-bottom)); }
+  .courtyard-on .home-dock { padding-top: 8px; padding-bottom: calc(8px + var(--safe-bottom)); }
+  .courtyard-on .world-toolbar { top: 8px; }
+  .courtyard-on .world-hint { display: none; }
+  .courtyard-on .world-travel { top: 8px; right: calc(66px + var(--safe-right)); max-width: calc(52% - 70px); flex-wrap: nowrap; }
+  .courtyard-on .world-find { flex: 0 1 auto; margin-left: 0; }
+  .courtyard-on .world-stick { left: calc(20px + var(--safe-left)); bottom: calc(10px + var(--safe-bottom)); }
+  /* the doors stack above the stick, so the middle of the city stays clear */
+  .courtyard-on .world-doors { left: calc(16px + var(--safe-left)); right: auto; bottom: calc(108px + var(--safe-bottom)); flex-direction: column; flex-wrap: nowrap; align-items: flex-start; gap: 6px; padding: 0; }
+  .courtyard-on .world-interactions { bottom: calc(10px + var(--safe-bottom)); right: calc(12px + var(--safe-right)); max-width: calc(50% - 200px); flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+}

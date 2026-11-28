@@ -33,12 +33,30 @@ for (const [name, room] of Object.entries(state.ROOMS)) {
   assert.equal(state.areaAt(back.x, back.z), 'garden', 'can leave through the same opening');
 }
 assert.equal(state.route(state.SPAWN, { x: NaN, z: 0 }).length, 0);
+// The bigger map: the promenade, the south and east walks are walkable; the lake and the streets are not.
+for (const [x, z] of [[-15, 2], [-18.9, -7], [-12, 12.9], [5, 11], [11.8, -6], [11.8, 12.5]]) assert(state.walkable(x, z), `walkable at ${x},${z}`);
+for (const [x, z] of [[-19.8, 2], [-25, 0], [0, 14.2], [13, 0], [0, -8.6], [-9.5, -8.2]]) assert(!state.walkable(x, z), `not walkable at ${x},${z}`);
+assert.deepEqual(['lake', 'south', 'east', 'plaza'].map(n => n), [state.outdoorAt(-15, 2), state.outdoorAt(0, 11), state.outdoorAt(11, 0), state.outdoorAt(0, 0)]);
+// The sun follows the clock: midday is day, a November evening in India has its sunset near a quarter to six, nine is night.
+{
+  const daylight = load('src/lib/courtyard/daylight.ts');
+  const at = (h, m) => daylight.daylight(new Date(2026, 10, 28, h, m), 20);
+  const noon = at(12, 30), sunset = at(17, 40), night = at(21, 0);
+  assert(noon.day === 1 && noon.night === 0 && noon.elevation > 40);
+  assert(sunset.golden > .5 && Math.abs(sunset.elevation) < 4, sunset.elevation);
+  assert(night.night === 1 && night.day === 0 && night.elevation < -20);
+  for (const d of [noon, sunset, night]) for (const c of [d.zenith, d.horizon, d.glow, d.sunColor]) assert(/^#[0-9a-f]{6}$/.test(c), c);
+  assert(Math.abs(Math.hypot(...sunset.sun) - 1) < 1e-9, 'the sun is a direction');
+  assert(daylight.daylight(new Date(2026, 5, 21, 12, 18), -25).elevation < daylight.daylight(new Date(2026, 5, 21, 12, 18), 20).elevation, 'June is winter in the south');
+}
 const pose = { v: 1, session: '0123456789abcdef', seq: 1, t: 100000, x: 0, z: 5, yaw: 0, mode: 'idle' };
 assert(state.cleanPose(pose));
 assert(store.cleanRecord(pose, 'courtyard'));
 assert.equal(store.cleanRecord({ ...pose, kind: 'courtyard', id: 'presence' }), null, 'poses never become saved/synced records');
 for (const bad of [{ x: Infinity }, { x: -7.65, z: -4.5 }, { x: .2, z: -.6 }, { yaw: 20 }, { seq: 0 }, { session: '../a' }, { mode: 'dance' }, { mode: 'sit' }, { t: '100' }]) assert.equal(state.cleanPose({ ...pose, ...bad }), null);
 assert.equal(state.cleanPose({ ...pose, ...state.DESTINATIONS.villa, mode: 'wave', gesture: 'clap' }).gesture, 'clap');
+assert(state.cleanPose({ ...pose, ...state.DESTINATIONS.lake }), 'a pose on the promenade');
+assert.equal(state.cleanPose({ ...pose, x: -25, z: 2 }), null, 'never in the lake');
 assert.equal(state.cleanPose({ ...pose, mode: 'wave', gesture: 'unrecognized' }).gesture, undefined);
 assert.equal(state.cleanPose({ ...pose, gesture: 'cheer' }).gesture, undefined);
 assert(state.cleanPose({ ...pose, ...state.SEATS[0], mode: 'sit' }));

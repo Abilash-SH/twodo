@@ -106,131 +106,168 @@ export function seededNoise(seed: number) {
   };
 }
 
-/** Dark plaza tiles with fine glowing seams, like a circuit board you can walk on (map and emission). */
+/** Light granite pavers in two tones with dark joints and a little speckle. */
 export function paintPavers(context: CanvasRenderingContext2D) {
   const random = seededNoise(602);
-  context.fillStyle = '#05040c';
+  context.fillStyle = '#6f6c68';
   context.fillRect(0, 0, 256, 256);
   for (let y = 0; y < 256; y += 64) for (let x = 0; x < 256; x += 64) {
-    const shade = Math.floor(22 + random() * 10);
-    const gradient = context.createLinearGradient(x, y, x + 60, y + 62);
-    gradient.addColorStop(0, `rgb(${shade + 8} ${shade + 4} ${shade + 30})`);
-    gradient.addColorStop(1, `rgb(${shade - 4} ${shade - 6} ${shade + 14})`);
+    const base = 168 + Math.floor(random() * 22), warm = random() < .5 ? 4 : -2;
+    const gradient = context.createLinearGradient(x, y, x + 62, y + 62);
+    gradient.addColorStop(0, `rgb(${base + 8 + warm} ${base + 6} ${base + 2})`);
+    gradient.addColorStop(1, `rgb(${base - 6 + warm} ${base - 8} ${base - 12})`);
     context.fillStyle = gradient;
     context.fillRect(x + 2, y + 2, 60, 60);
-    context.fillStyle = 'rgba(200,190,255,.12)';
-    context.fillRect(x + 2, y + 2, 60, 1);
   }
-  // Seams: most faint, a few lit, so lines of light run across the plaza.
-  for (let i = 0; i <= 4; i++) {
-    const lit = i === 0 || i === 2;
-    context.fillStyle = lit ? 'rgba(94,242,255,.75)' : 'rgba(94,242,255,.16)';
-    context.fillRect(i * 64 - 1, 0, 2, 256);
-    context.fillStyle = i === 2 ? 'rgba(255,111,208,.55)' : 'rgba(255,111,208,.1)';
-    context.fillRect(0, i * 64 - 1, 256, 2);
-  }
-  for (let i = 0; i < 1800; i++) {
-    context.fillStyle = i % 2 ? 'rgba(180,170,255,.05)' : 'rgba(0,0,0,.18)';
-    context.fillRect(random() * 256, random() * 256, 1 + random() * 2, 1);
+  for (let i = 0; i < 2600; i++) {
+    context.fillStyle = i % 3 ? 'rgba(60,58,55,.16)' : 'rgba(255,255,255,.16)';
+    context.fillRect(random() * 256, random() * 256, 1 + random() * 1.5, 1);
   }
 }
 
-/** Window light for the glass towers: 10 windows by 12 floors per tile, used as the emission map, so lit windows glow
- *  and everything else stays dark glass that reflects the neon. Three moods: warm offices, cool flats, neon bands. */
-export function paintFacade(context: CanvasRenderingContext2D, variant: number) {
-  const random = seededNoise(132 + variant * 17);
+/** Weathered wooden boardwalk planks for the lakeside. */
+export function paintBoardwalk(context: CanvasRenderingContext2D) {
+  const random = seededNoise(915);
+  context.fillStyle = '#3b2c22';
+  context.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 32) {
+    const tone = 112 + Math.floor(random() * 30);
+    context.fillStyle = `rgb(${tone + 22} ${tone - 2} ${tone - 30})`;
+    context.fillRect(0, y + 2, 256, 28);
+    for (let i = 0; i < 40; i++) { context.fillStyle = 'rgba(60,40,25,.18)'; context.fillRect(random() * 256, y + 4 + random() * 24, 20 + random() * 60, 1); }
+    const seam = random() * 256;
+    context.fillStyle = '#3b2c22'; context.fillRect(seam, y + 2, 2, 28);
+  }
+}
+
+/** Small waves for the lake, as a normal map (the slopes of a few crossing swells), tiling seamlessly. */
+export function paintRipples(context: CanvasRenderingContext2D) {
+  const size = context.canvas.width, image = context.createImageData(size, size), data = image.data, k = Math.PI * 2 / size;
+  const waves = [[3, 1, .9], [-2, 3, .7], [5, -2, .45], [1, 6, .35], [-7, -3, .25]]; // whole cycles across the tile, so it repeats
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    let dx = 0, dy = 0;
+    for (const [u, v, a] of waves) { const c = Math.cos((u * x + v * y) * k) * a; dx += c * u; dy += c * v; }
+    const nx = -dx * .06, ny = -dy * .06, inv = 1 / Math.hypot(nx, ny, 1), i = (y * size + x) * 4;
+    data[i] = (nx * inv * .5 + .5) * 255; data[i + 1] = (ny * inv * .5 + .5) * 255; data[i + 2] = (inv * .5 + .5) * 255; data[i + 3] = 255;
+  }
+  context.putImageData(image, 0, 0);
+}
+
+type Look = { wall: string; glass: string; frame: string; kind: 'glass' | 'concrete' | 'ribbon' };
+const LOOKS: Look[] = [
+  { kind: 'glass', wall: '#5d7489', glass: '#6f8aa3', frame: '#2c3640' },
+  { kind: 'concrete', wall: '#c8bfb0', glass: '#3c4b59', frame: '#ece6da' },
+  { kind: 'ribbon', wall: '#4b4f57', glass: '#6c7f92', frame: '#33363c' },
+];
+/** A tower's face by day: three kinds (glass curtain wall, concrete with punched windows, charcoal with ribbon
+ *  windows), 10 windows by 12 floors a tile. paintWindowsAtNight lights the same windows. */
+export function paintFacadeDay(context: CanvasRenderingContext2D, variant: number) {
+  const look = LOOKS[variant % LOOKS.length], random = seededNoise(211 + variant * 7);
+  const rows = 12, cols = 10, rowH = 512 / rows, colW = 512 / cols;
+  context.fillStyle = look.wall;
+  context.fillRect(0, 0, 512, 512);
+  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+    const x = col * colW, y = row * rowH, shade = random() * .18;
+    if (look.kind === 'glass') {
+      const g = context.createLinearGradient(x, y, x + colW, y + rowH);
+      g.addColorStop(0, look.glass); g.addColorStop(1, `rgba(20,30,40,${.25 + shade})`);
+      context.fillStyle = look.glass; context.fillRect(x, y, colW, rowH);
+      context.fillStyle = g; context.fillRect(x, y, colW, rowH);
+      context.fillStyle = look.frame; context.fillRect(x, y, 2, rowH); context.fillRect(x, y + rowH - 4, colW, 4);
+    } else if (look.kind === 'concrete') {
+      context.fillStyle = look.frame; context.fillRect(x + 6, y + 8, colW - 12, rowH - 16);
+      context.fillStyle = look.glass; context.fillRect(x + 9, y + 11, colW - 18, rowH - 22);
+      context.fillStyle = `rgba(255,255,255,${.06 + shade * .5})`; context.fillRect(x + 9, y + 11, colW - 18, (rowH - 22) * .4);
+      context.fillStyle = 'rgba(0,0,0,.12)'; context.fillRect(x, y + rowH - 3, colW, 3);
+    } else {
+      context.fillStyle = look.glass; context.fillRect(x, y + 10, colW, rowH - 22);
+      context.fillStyle = `rgba(255,255,255,${.05 + shade * .4})`; context.fillRect(x, y + 10, colW, (rowH - 22) * .35);
+      context.fillStyle = look.frame; context.fillRect(x, y + 10, 2, rowH - 22);
+    }
+  }
+  context.fillStyle = look.wall;
+  context.fillRect(0, 0, 5, 9);
+}
+/** The same windows at night: about half lit, warm or cool, brighter under the ceiling, some with blinds half down,
+ *  each with its mullion; whole office floors lit now and then. Used as the emission map. */
+export function paintWindowsAtNight(context: CanvasRenderingContext2D, variant: number) {
+  const look = LOOKS[variant % LOOKS.length], random = seededNoise(977 + variant * 13);
+  const rows = 12, cols = 10, rowH = 512 / rows, colW = 512 / cols;
   context.fillStyle = '#000';
   context.fillRect(0, 0, 512, 512);
-  const pick = (r: number) => variant === 0
-    ? (r < .62 ? '#ffe2b8' : r < .9 ? '#cfe9ff' : r < .96 ? '#5ef2ff' : '#ff6fd0')
-    : variant === 1 ? (r < .5 ? '#cfe9ff' : r < .82 ? '#ffe2b8' : r < .93 ? '#5ef2ff' : '#a98bff')
-      : (r < .45 ? '#ffe2b8' : r < .7 ? '#cfe9ff' : r < .86 ? '#a98bff' : '#ff6fd0');
-  const rows = 12, cols = 10, rowH = 512 / rows, colW = 512 / cols;
   for (let row = 0; row < rows; row++) {
-    const fullFloor = variant === 0 && random() < .14;
+    const office = random() < .08;
     for (let col = 0; col < cols; col++) {
-      const x = col * colW, y = row * rowH;
-      if (!fullFloor && random() < .5) continue; // dark window: glass only
-      context.globalAlpha = fullFloor ? .7 : .3 + random() * .5;
-      context.fillStyle = fullFloor ? '#ffe9c8' : pick(random());
-      context.fillRect(x + 4, y + 8, colW - 8, rowH - 14);
-      if (random() < .4) { context.globalAlpha = .6; context.fillStyle = '#000'; context.fillRect(x + 4, y + 8 + (rowH - 14) * (.4 + random() * .4), colW - 8, rowH - 14); }
-      context.globalAlpha = 1;
+      if (!office && random() < .5) continue;
+      const x = col * colW, y = row * rowH, r = random();
+      // the glass of this window, as paintFacadeDay draws it
+      const [gx, gy, gw, gh] = look.kind === 'concrete' ? [x + 9, y + 11, colW - 18, rowH - 22]
+        : look.kind === 'ribbon' ? [x + 2, y + 10, colW - 2, rowH - 22] : [x + 2, y + 1, colW - 2, rowH - 6];
+      const tone = office ? [255, 240, 214] : r < .6 ? [255, 214, 160] : r < .88 ? [214, 232, 255] : [255, 186, 150];
+      const level = office ? .6 : .35 + random() * .55;
+      const light = context.createLinearGradient(0, gy, 0, gy + gh);
+      light.addColorStop(0, `rgba(${tone[0]},${tone[1]},${tone[2]},${level})`);
+      light.addColorStop(1, `rgba(${tone[0]},${tone[1]},${tone[2]},${level * .55})`);
+      context.fillStyle = light;
+      context.fillRect(gx, gy, gw, gh);
+      if (!office && random() < .35) { context.fillStyle = 'rgba(0,0,0,.72)'; context.fillRect(gx, gy, gw, gh * (.25 + random() * .5)); } // a blind
+      if (!office && random() < .25) { context.fillStyle = 'rgba(0,0,0,.5)'; context.fillRect(gx + gw * random() * .6, gy + gh * .45, gw * .3, gh * .55); } // someone's furniture
       context.fillStyle = '#000';
-      context.fillRect(x + colW / 2 - 1, y + 8, 2, rowH - 14);
+      context.fillRect(gx + gw / 2 - 1, gy, 2, gh); // the mullion
     }
-    context.fillStyle = '#000';
-    context.fillRect(0, row * rowH + rowH - 6, 512, 6);
   }
-  if (variant === 2) for (let row = 2; row < rows; row += 4) { context.fillStyle = '#ff4fd8'; context.fillRect(0, row * rowH + rowH - 6, 512, 3); }
-  if (variant === 1) for (const x of [0, 256]) { context.fillStyle = '#5ef2ff'; context.fillRect(x, 0, 2, 512); }
-  // the top-left corner stays black: roofs and floors sample it
   context.fillStyle = '#000';
   context.fillRect(0, 0, 5, 9);
 }
 
 export function paintWallPanels(context: CanvasRenderingContext2D) {
-  const steel = context.createLinearGradient(0, 0, 128, 128);
-  steel.addColorStop(0, '#3a3466');
-  steel.addColorStop(.65, '#2a2550');
-  steel.addColorStop(1, '#332d5c');
-  context.fillStyle = steel;
+  const panel = context.createLinearGradient(0, 0, 128, 128);
+  panel.addColorStop(0, '#e2ddd3');
+  panel.addColorStop(1, '#cfc9be');
+  context.fillStyle = panel;
   context.fillRect(0, 0, 128, 128);
-  context.fillStyle = '#16122e';
+  context.fillStyle = '#a9a398';
   context.fillRect(0, 0, 2, 128);
   context.fillRect(0, 125, 128, 3);
-  context.fillStyle = '#5b528f';
+  context.fillStyle = '#f1ede6';
   context.fillRect(3, 0, 1, 128);
-  context.fillRect(0, 123, 128, 1);
-  context.fillStyle = 'rgba(156,123,255,.45)';
-  context.fillRect(64, 0, 1, 128);
 }
 
+/** A shop or street sign: a charcoal panel, a coloured bar and white letters. By day it reads as a printed sign; the
+ *  scene lights it from behind after sunset. */
 export function paintSign(context: CanvasRenderingContext2D, title: string, subtitle: string, hue: string) {
-  const background = context.createLinearGradient(0, 0, 512, 152);
-  background.addColorStop(0, '#1d1446');
-  background.addColorStop(1, '#0d0824');
+  const background = context.createLinearGradient(0, 0, 0, 152);
+  background.addColorStop(0, '#2a2d33');
+  background.addColorStop(1, '#1b1d22');
   context.fillStyle = background;
   context.fillRect(0, 0, 512, 152);
-  context.strokeStyle = hue;
-  context.lineWidth = 5;
-  context.strokeRect(6, 6, 500, 140);
+  context.strokeStyle = 'rgba(255,255,255,.18)';
+  context.lineWidth = 3;
+  context.strokeRect(5, 5, 502, 142);
   context.fillStyle = hue;
   context.fillRect(20, 27, 7, 94);
   context.textBaseline = 'middle';
-  context.shadowColor = hue;
-  context.shadowBlur = 14;
   context.fillStyle = '#ffffff';
-  context.font = 'italic 800 52px system-ui, sans-serif';
+  context.font = '800 50px system-ui, sans-serif';
   context.fillText(title, 44, 58, 431);
-  context.shadowBlur = 0;
   context.fillStyle = hue;
   context.font = '700 21px system-ui, sans-serif';
   context.fillText(subtitle, 46, 110, 429);
 }
 
-/** A hologram: glowing letters and corner brackets on nothing (drawn with additive blending). */
-export function paintHolo(context: CanvasRenderingContext2D, title: string, subtitle: string, hue: string) {
+/** A billboard: a printed advert by day, lit from inside at night (the material's emission). */
+export function paintBillboard(context: CanvasRenderingContext2D, title: string, subtitle: string, from: string, to: string) {
   const w = context.canvas.width, h = context.canvas.height;
-  context.clearRect(0, 0, w, h);
-  context.fillStyle = 'rgba(0,0,0,1)';
-  context.fillRect(0, 0, w, h);
-  context.strokeStyle = hue;
-  context.lineWidth = 6;
-  context.shadowColor = hue;
-  context.shadowBlur = 18;
-  const c = 60;
-  for (const [x, y, dx, dy] of [[14, 14, 1, 1], [w - 14, 14, -1, 1], [14, h - 14, 1, -1], [w - 14, h - 14, -1, -1]] as const) {
-    context.beginPath(); context.moveTo(x + dx * c, y); context.lineTo(x, y); context.lineTo(x, y + dy * c); context.stroke();
-  }
-  for (let y = 0; y < h; y += 6) { context.fillStyle = 'rgba(255,255,255,.035)'; context.fillRect(0, y, w, 2); }
-  context.textAlign = 'center';
+  const g = context.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, from); g.addColorStop(1, to);
+  context.fillStyle = g; context.fillRect(0, 0, w, h);
+  context.fillStyle = 'rgba(255,255,255,.12)';
+  context.beginPath(); context.arc(w * .82, h * .3, h * .5, 0, Math.PI * 2); context.fill();
   context.textBaseline = 'middle';
   context.fillStyle = '#ffffff';
-  context.font = `italic 900 ${Math.round(h * .36)}px system-ui, sans-serif`;
-  context.fillText(title, w / 2, h * .44, w - 90);
-  context.fillStyle = hue;
-  context.font = `700 ${Math.round(h * .1)}px system-ui, sans-serif`;
-  context.fillText(subtitle, w / 2, h * .76, w - 120);
-  context.shadowBlur = 0;
+  context.font = `italic 900 ${Math.round(h * .3)}px system-ui, sans-serif`;
+  context.fillText(title, w * .06, h * .42, w * .8);
+  context.font = `600 ${Math.round(h * .1)}px system-ui, sans-serif`;
+  context.fillStyle = 'rgba(255,255,255,.88)';
+  context.fillText(subtitle, w * .065, h * .72, w * .8);
 }

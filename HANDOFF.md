@@ -3,9 +3,24 @@
 For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task. Read this first, then
 `AGENTS.md`. **Update this file at the end of every working session** so the next one can continue.
 
-Last updated: 2026-11-28.
+Last updated: 2026-11-28 (Explore by the hour).
 
-## Current session: Sharper neon city (2026-11-28, Claude)
+## Current session: Explore by the hour (2026-11-28, Claude)
+
+- Asked for: full screen like other city apps (the status bar was white), a badge instead of the two names across
+  the top, realistic rather than flashy lights, a real sky by the time of day with sunsets and birds, and a bigger
+  map. Built on `feat/explore-real-world` (from `07d5d90`): `lib/courtyard/daylight.ts` (the sun from the phone's
+  clock, no location), `sky.ts` (dome, sun, clouds, stars, moon, reflections from the sky), `birds.ts`, a rewritten
+  `environment.ts` (daylit materials, windows lit after sunset, the lakeside promenade, south and east streets, far
+  shore), `state.ts` (walkable regions, obstacles, a binary-heap route grid), `post.ts` (bloom by the hour, the
+  status bar colour), `scene.ts` (the hour, 30 s ambient window, night fill light), the couple badge and full-screen
+  HUD in `CourtyardHome.tsx` + `styles/51-real-city.css`. Details: `docs/explore-city.md`.
+- No storage, record, rules, origin or CSP change. Poses on the new walks are rejected by a partner's phone still on
+  the old version (they see you resting) until it updates.
+- Test 21 waits for `data-ambient="off"` before its idle check, walks to Lakeside, and checks full screen and the
+  theme colour (it reads the colour after the launch splash, which has its own).
+
+## Earlier session: Sharper neon city (2026-11-28, Claude)
 
 - Asked for nicer graphics, sharp edges and characters in the neon city, with a cosmic reference picture. Built on
   `feat/neon-city-graphics` (from `96290ec`): `lib/courtyard/post.ts` (multisampled HDR, bloom, vignette, tone
