@@ -48,9 +48,11 @@ async def main():
             setTimeout(() => { window.requestAnimationFrame = nextFrame; }, 1900);
         }""")
         await B.wait_for_function("window.seenWorldReactions.has('cheer')", timeout=18000)
-        await A.screenshot(path='/tmp/twodo-courtyard.png')
+        assert await A.locator('.world-destination option').all_text_contents() == ['Walk to', 'Neon Plaza', 'Loft', 'Garage']
+        await A.locator('.world-reaction-status').wait_for(state='hidden')
+        await A.screenshot(path=SHOTS / 'twodo-neon-plaza.png')
         canvas = A.locator('.world-canvas')
-        print('Portrait render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
+        print('Neon plaza render:', await canvas.evaluate('(el) => ({ drawCalls: +el.dataset.drawCalls, triangles: +el.dataset.triangles })'), flush=True)
         async def position(page):
             return await page.locator('.world-canvas').evaluate('(el) => [Number(el.dataset.x), Number(el.dataset.z)]')
         before = await position(A)
@@ -82,7 +84,7 @@ async def main():
         journal = A.get_by_role('button', name='Open journal', exact=True)
         await journal.wait_for(timeout=60000)
         await B.wait_for_function("() => +document.querySelector('.world-canvas').dataset.peerZ < -4", timeout=30000)
-        await A.screenshot(path=SHOTS / 'twodo-villa.png')
+        await A.screenshot(path=SHOTS / 'twodo-city-loft.png')
         await journal.click()
         await A.locator('.jd').wait_for()
         await back_home(A)
@@ -94,7 +96,7 @@ async def main():
         await A.locator('.world-canvas[data-area="garage"]').wait_for(timeout=90000)
         workbench = A.get_by_role('button', name='Use workbench', exact=True)
         await workbench.wait_for(timeout=45000)
-        await A.screenshot(path=SHOTS / 'twodo-garage.png')
+        await A.screenshot(path=SHOTS / 'twodo-city-garage.png')
         await workbench.click()
         await A.locator('.sheet.open [data-s="done"]').click()
         await A.locator('.world-destination').select_option('garden')
@@ -169,7 +171,7 @@ async def main():
             }),
         })''')
         assert dimensions['fits'] and all(r and r['top'] >= 0 and r['bottom'] <= 390 for r in dimensions['bounds']), dimensions
-        await A.screenshot(path='/tmp/twodo-courtyard-landscape.png')
+        await A.screenshot(path=SHOTS / 'twodo-neon-plaza-landscape.png')
         await A.set_viewport_size({'width':390,'height':844})
         await A.emulate_media(reduced_motion='reduce')
         await A.locator('.world-stick').focus()

@@ -180,6 +180,18 @@ selected characters. Refine the eyelids, lips and cheeks and use small, distinct
 and Cheer. The smile fades back to neutral with the gesture. Reduce Motion holds the neutral face. Use the
 selected original model if the prototype cannot load and give a person's imported avatar priority.
 
+### Explore at night — approved 2026-11-28
+
+The user chose a neon city for Explore. The first view is a pedestrian plaza framed by layered towers, warm
+storefronts, an illuminated fountain and an elevated train. Dark blue surfaces carry cyan wayfinding, with
+amber indoors and a few magenta accents. Use original signs and geometric light reflections. Keep the plaza,
+loft, garage, bench and photo display easy to find at human scale.
+
+Keep the present walking footprint and room entrances so both phones can share virtual positions across
+versions. The loft still opens Journal and the garage still opens the workbench task patch. Build the city
+locally with batched geometry and static lighting. The train uses the existing render loop while it is awake.
+The city rests behind other screens or when hidden, and the train stands still in Reduce Motion.
+
 ## 6. Characters
 
 > **Web app, 2026-11-18:** the characters are now realistic 3D people (Microsoft Rocketbox, MIT), drawn with three.js;

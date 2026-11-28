@@ -5,9 +5,21 @@ For the next agent (Claude, Codex or anyone) picking this up, possibly mid-task.
 
 Last updated: 2026-11-28.
 
-## Current session: Explore face prototypes (2026-11-27)
+## Current session: Neon city in Explore (2026-11-28)
 
-- PR #44 merged at `4c3135e`. The avatar work is on `feat/explore-avatar-faces`.
+- The user chose a cyber-city setting. The branch `feat/explore-cyber-city` starts from `3c131ac`, with the
+  avatar and Routines changes merged.
+- Neon Plaza, the Loft, the Garage, a Moments kiosk and an elevated train share the previous walkable footprint.
+  Journal and the workbench retain their existing entry points. Internal area IDs and presence rules carry through.
+- The procedural city is in `src/lib/courtyard/environment.ts` and `city-art.ts`. Repeated geometry is batched
+  and the train uses the existing active scene frames. See `docs/explore-city.md` for the iPhone checklist.
+- The opening Chromium phone-sized render drew 49 calls and 31,714 triangles. The avatar PR recorded 119
+  calls and 33,666 triangles in the previous opening scene. Physical device performance remains unverified.
+
+## Previous session: Explore face prototypes (2026-11-27)
+
+- PR #44 merged at `4c3135e`. [PR #45](https://github.com/Abilash-SH/twodo/pull/45) merged at `cde3d56`.
+  Final avatar test notes are on `feat/explore-avatar-faces`.
 - The two Explore prototypes refine the jaw, cheeks, eyelids and lips on the MIT Rocketbox `f07` and `m17`
   rigs. Explore drives a smile and brow shape with the existing Wave, Clap and Cheer clips.
 - `docs/explore-faces.md` records the asset provenance, file sizes, regeneration and physical iPhone checklist.

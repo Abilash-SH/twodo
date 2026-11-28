@@ -26,7 +26,7 @@ import { Icon } from '../ui/Icon';
 import { openMoments, pickMoment } from './Moments';
 
 const INITIAL: SceneReport = { near: null, area: 'garden', portrait: false, sitting: false, canSit: false, ready: false, partnerReady: false };
-const PLACES = { garden: 'Garden', villa: 'Villa', garage: 'Garage' } as const;
+const PLACES = { garden: 'Neon Plaza', villa: 'Loft', garage: 'Garage' } as const;
 const REACTIONS = { wave: 'Wave', clap: 'Clap', cheer: 'Cheer' } as const;
 const NEAR_LABELS = { tasks: 'Task patch', workbench: 'Use workbench', moments: 'Open Moments', journal: 'Open journal', partner: 'Open chat' } as const;
 
@@ -169,7 +169,7 @@ export function CourtyardHome({ leave, v }: { leave(): void; v: number }) {
   };
   const status = !paired ? 'Add your partner to meet here' : !active ? 'Paused' : connection === 'unavailable' ? 'Live movement unavailable' : connection === 'offline' ? 'Offline · resting together' : connection === 'connecting' ? 'Connecting · resting avatar' : here ? `${name} is here` : `${name} is resting`;
   return (
-    <main className="world-home" aria-label="Our place, 3D Home preview">
+    <main className="world-home" aria-label="Neon city, 3D Explore preview">
       <div className="world-toolbar"><button type="button" onClick={leave}>Leave preview</button><span role="status" data-presence={here && active ? 'live' : 'resting'}>{status}</span></div>
       <div className="world-stage no-pan" ref={box}>
         <canvas key={canvasKey} ref={canvas} className="world-canvas" aria-hidden="true" />

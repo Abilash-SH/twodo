@@ -1,7 +1,3 @@
-:root {
-  --world-cloth: #a5a38e;
-  --world-cushion: #ba8f79;
-}
 .world-travel { max-width: calc(100% - 16px); }
 .world-find { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .world-destination {

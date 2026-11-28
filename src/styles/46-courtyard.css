@@ -1,11 +1,4 @@
-/* The opt-in courtyard owns its surface; all UI remains opaque over the moving world. */
-:root {
-  --world-sky: #e8e6dc; --world-earth: #746f55; --world-sun: #fff1d8;
-  --world-grass: #89906d; --world-plaster: #d6c7a7; --world-stone: #b6ad94;
-  --world-wood: #897054; --world-wood-dark: #5c4c39; --world-roof: #a38267;
-  --world-water: #829b91; --world-leaf: #6f7c4d;
-}
-[data-theme="dark"] { --world-sky: #343e3d; --world-sun: #e9dbbe; --world-grass: #657350; --world-plaster: #b1a38c; --world-stone: #99917c; --world-leaf: #536844; }
+/* Explore owns its surface. Its controls remain solid over moving geometry. */
 .world-enter { display: flex; justify-content: space-between; align-items: center; flex: none; min-height: 48px; margin: 8px 0; padding: 8px 16px; border: 0; border-radius: 24px; background: var(--bg2); color: var(--label); font: 600 15px/20px var(--round); }
 .world-enter span { font: 500 12px/18px var(--round); color: var(--label); }
 .courtyard-on { overflow: hidden; background:var(--world-sky); }
